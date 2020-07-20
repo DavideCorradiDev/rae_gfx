@@ -5,21 +5,21 @@
   feature = "opengl",
   feature = "vulkan"
 )))]
-extern crate gfx_backend_empty as backend;
+extern crate gfx_backend_empty as hal_backend;
 
 #[cfg(feature = "dx11")]
-extern crate gfx_backend_dx11 as backend;
+extern crate gfx_backend_dx11 as hal_backend;
 
 #[cfg(feature = "dx12")]
-extern crate gfx_backend_dx12 as backend;
+extern crate gfx_backend_dx12 as hal_backend;
 
 #[cfg(feature = "metal")]
-extern crate gfx_backend_metal as backend;
+extern crate gfx_backend_metal as hal_backend;
 
 #[cfg(feature = "opengl")]
-extern crate gfx_backend_gl as backend;
+extern crate gfx_backend_gl as hal_backend;
 
 #[cfg(feature = "vulkan")]
-extern crate gfx_backend_vulkan as backend;
+extern crate gfx_backend_vulkan as hal_backend;
 
-use backend::Backend;
+pub use hal_backend::Backend;
