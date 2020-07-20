@@ -1,0 +1,7 @@
+brace_style = "AlwaysNextLine"
+blank_lines_upper_bound = 3
+control_brace_style = "AlwaysNextLine"
+max_width = 80
+merge_imports = true
+newline_style = "Unix"
+tab_spaces = 2
