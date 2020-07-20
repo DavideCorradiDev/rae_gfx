@@ -12,16 +12,10 @@ pub struct Instance
 
 impl Instance
 {
-  pub const ENGINE_VERSION: u32 = 1;
-  pub const ENGINE_NAME: &'static str = "Red Ape Engine";
-
-  pub fn new() -> Result<Self, Error>
+  pub fn create(name: &str, version: u32) -> Result<Self, Error>
   {
     use hal::Instance;
-    match <Backend as hal::Backend>::Instance::create(
-      Self::ENGINE_NAME,
-      Self::ENGINE_VERSION,
-    )
+    match <Backend as hal::Backend>::Instance::create(name, version)
     {
       Ok(value) => Ok(Self { value }),
       Err(_) => Err(Error::UnsupportedBackend),
@@ -55,6 +49,6 @@ mod tests
   #[test]
   fn instance_creation()
   {
-    let _instance = Instance::new();
+    let _instance = Instance::create("Name", 42);
   }
 }
