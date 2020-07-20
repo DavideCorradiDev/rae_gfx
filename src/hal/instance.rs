@@ -2,6 +2,8 @@ extern crate gfx_hal as hal;
 
 use super::{Backend, Error};
 
+use std::ops;
+
 #[derive(Debug)]
 pub struct Instance
 {
@@ -27,7 +29,7 @@ impl Instance
   }
 }
 
-impl std::ops::Deref for Instance
+impl ops::Deref for Instance
 {
   type Target = <Backend as hal::Backend>::Instance;
 
@@ -37,7 +39,7 @@ impl std::ops::Deref for Instance
   }
 }
 
-impl std::ops::DerefMut for Instance
+impl ops::DerefMut for Instance
 {
   fn deref_mut(&mut self) -> &mut Self::Target
   {

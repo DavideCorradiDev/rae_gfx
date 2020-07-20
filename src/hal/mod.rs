@@ -8,3 +8,6 @@ pub use backend::Backend;
 
 mod instance;
 pub use instance::Instance;
+
+mod adapter;
+pub use adapter::Adapter;
