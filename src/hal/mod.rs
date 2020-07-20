@@ -1,5 +1,8 @@
 #![allow(dead_code)]
 
+mod error;
+pub use error::Error;
+
 mod backend;
 pub use backend::Backend;
 

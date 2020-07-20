@@ -1,6 +1,6 @@
 extern crate gfx_hal as hal;
 
-use super::Backend;
+use super::{Backend, Error};
 
 #[derive(Debug)]
 pub struct Instance
@@ -13,15 +13,17 @@ impl Instance
   pub const ENGINE_VERSION: u32 = 1;
   pub const ENGINE_NAME: &'static str = "Red Ape Engine";
 
-  pub fn new() -> Self
+  pub fn new() -> Result<Self, Error>
   {
     use hal::Instance;
-    let value = <Backend as hal::Backend>::Instance::create(
+    match <Backend as hal::Backend>::Instance::create(
       Self::ENGINE_NAME,
       Self::ENGINE_VERSION,
     )
-    .unwrap();
-    Self { value }
+    {
+      Ok(value) => Ok(Self { value }),
+      Err(_) => Err(Error::UnsupportedBackend),
+    }
   }
 }
 
