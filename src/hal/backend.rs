@@ -1,3 +1,5 @@
+extern crate gfx_hal as hal;
+
 #[cfg(not(any(
   feature = "dx11",
   feature = "dx12",
@@ -23,3 +25,13 @@ extern crate gfx_backend_gl as hal_backend;
 extern crate gfx_backend_vulkan as hal_backend;
 
 pub use hal_backend::Backend;
+
+pub type Adapter = hal::adapter::Adapter<Backend>;
+pub type PhysicalDevice = <Backend as hal::Backend>::PhysicalDevice;
+pub type Device = <Backend as hal::Backend>::Device;
+pub type Gpu = hal::adapter::Gpu<Backend>;
+pub type Surface = <Backend as hal::Backend>::Surface;
+pub type Swapchain = <Backend as hal::Backend>::Swapchain;
+pub type QueueFamily = <Backend as hal::Backend>::QueueFamily;
+pub type CommandQueue = <Backend as hal::Backend>::CommandQueue;
+pub type CommandBuffer = <Backend as hal::Backend>::CommandBuffer;
