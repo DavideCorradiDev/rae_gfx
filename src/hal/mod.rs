@@ -5,3 +5,6 @@ pub use backend::{
   Adapter, Backend, CommandBuffer, CommandQueue, Device, Gpu, Instance,
   PhysicalDevice, QueueFamily, Surface, Swapchain,
 };
+
+mod memory;
+pub use memory::Memory;
