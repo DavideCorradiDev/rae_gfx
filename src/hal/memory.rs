@@ -1,5 +1,6 @@
 extern crate gfx_hal as hal;
 
+use hal::device::Device as HalDevice;
 use std::{
   cell::RefCell,
   fmt::{Debug, Formatter},
@@ -24,8 +25,6 @@ impl Memory
     size: u64,
   ) -> Result<Memory, hal::device::AllocationError>
   {
-    use hal::device::Device;
-
     let memory =
       unsafe { gpu.borrow().device.allocate_memory(memory_type, size) }?;
     Ok(Self {
@@ -39,8 +38,6 @@ impl Drop for Memory
 {
   fn drop(&mut self)
   {
-    use hal::device::Device;
-
     unsafe {
       self
         .gpu
