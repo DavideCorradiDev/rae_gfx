@@ -35,4 +35,3 @@ pub type Surface = <Backend as hal::Backend>::Surface;
 pub type Swapchain = <Backend as hal::Backend>::Swapchain;
 pub type QueueFamily = <Backend as hal::Backend>::QueueFamily;
 pub type CommandQueue = <Backend as hal::Backend>::CommandQueue;
-pub type CommandBuffer = <Backend as hal::Backend>::CommandBuffer;
