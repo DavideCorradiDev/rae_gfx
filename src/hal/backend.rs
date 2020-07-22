@@ -36,3 +36,5 @@ pub type Swapchain = <Backend as hal::Backend>::Swapchain;
 pub type QueueFamily = <Backend as hal::Backend>::QueueFamily;
 pub type CommandQueue = <Backend as hal::Backend>::CommandQueue;
 pub type ImageView = <Backend as hal::Backend>::ImageView;
+pub type PipelineCache = <Backend as hal::Backend>::PipelineCache;
+pub type GraphicsPipelineDesc<'a> = hal::pso::GraphicsPipelineDesc<'a, Backend>;

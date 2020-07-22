@@ -2,8 +2,8 @@
 
 mod backend;
 pub use backend::{
-  Adapter, Backend, CommandQueue, Device, Gpu, ImageView, Instance,
-  PhysicalDevice, QueueFamily, Surface, Swapchain,
+  Adapter, Backend, CommandQueue, Device, Gpu, GraphicsPipelineDesc, ImageView,
+  Instance, PhysicalDevice, PipelineCache, QueueFamily, Surface, Swapchain,
 };
 
 mod memory;
@@ -44,3 +44,6 @@ pub use sampler::Sampler;
 
 mod pipeline_layout;
 pub use pipeline_layout::PipelineLayout;
+
+mod graphics_pipeline;
+pub use graphics_pipeline::GraphicsPipeline;
