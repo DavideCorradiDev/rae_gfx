@@ -3,7 +3,7 @@
 mod backend;
 pub use backend::{
   Adapter, Backend, CommandQueue, Device, Gpu, GraphicsPipelineDesc, Instance,
-  PhysicalDevice, PipelineCache, QueueFamily, Swapchain,
+  PhysicalDevice, PipelineCache, QueueFamily,
 };
 
 mod memory;
