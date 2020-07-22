@@ -26,3 +26,6 @@ pub use descriptor_pool::DescriptorPool;
 
 mod descriptor_set;
 pub use descriptor_set::DescriptorSet;
+
+mod fence;
+pub use fence::Fence;
