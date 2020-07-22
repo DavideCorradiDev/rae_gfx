@@ -33,6 +33,4 @@ pub type Device = <Backend as hal::Backend>::Device;
 pub type Gpu = hal::adapter::Gpu<Backend>;
 pub type QueueFamily = <Backend as hal::Backend>::QueueFamily;
 pub type CommandQueue = <Backend as hal::Backend>::CommandQueue;
-// Needs RAII wrapper.
-pub type PipelineCache = <Backend as hal::Backend>::PipelineCache;
 pub type GraphicsPipelineDesc<'a> = hal::pso::GraphicsPipelineDesc<'a, Backend>;

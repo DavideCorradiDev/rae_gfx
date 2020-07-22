@@ -3,7 +3,7 @@
 mod backend;
 pub use backend::{
   Adapter, Backend, CommandQueue, Device, Gpu, GraphicsPipelineDesc, Instance,
-  PhysicalDevice, PipelineCache, QueueFamily,
+  PhysicalDevice, QueueFamily,
 };
 
 mod memory;
@@ -53,6 +53,9 @@ pub use framebuffer::Framebuffer;
 
 mod pipeline_layout;
 pub use pipeline_layout::PipelineLayout;
+
+mod pipeline_cache;
+pub use pipeline_cache::PipelineCache;
 
 mod graphics_pipeline;
 pub use graphics_pipeline::GraphicsPipeline;
