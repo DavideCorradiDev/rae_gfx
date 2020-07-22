@@ -29,3 +29,6 @@ pub use descriptor_set::DescriptorSet;
 
 mod fence;
 pub use fence::Fence;
+
+mod semaphore;
+pub use semaphore::Semaphore;
