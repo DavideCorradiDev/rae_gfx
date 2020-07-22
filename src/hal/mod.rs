@@ -41,3 +41,6 @@ pub use framebuffer::Framebuffer;
 
 mod sampler;
 pub use sampler::Sampler;
+
+mod pipeline_layout;
+pub use pipeline_layout::PipelineLayout;
