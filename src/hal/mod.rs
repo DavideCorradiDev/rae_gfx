@@ -2,8 +2,8 @@
 
 mod backend;
 pub use backend::{
-  Adapter, Backend, CommandQueue, Device, Gpu, Instance, PhysicalDevice,
-  QueueFamily, Surface, Swapchain,
+  Adapter, Backend, CommandQueue, Device, Gpu, ImageView, Instance,
+  PhysicalDevice, QueueFamily, Surface, Swapchain,
 };
 
 mod memory;
@@ -35,3 +35,6 @@ pub use semaphore::Semaphore;
 
 mod render_pass;
 pub use render_pass::RenderPass;
+
+mod framebuffer;
+pub use framebuffer::Framebuffer;

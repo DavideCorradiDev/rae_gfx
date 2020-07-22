@@ -19,7 +19,7 @@ pub struct DescriptorPool
 
 impl DescriptorPool
 {
-  pub fn new<I>(
+  pub fn create<I>(
     gpu: Rc<RefCell<Gpu>>,
     max_sets: usize,
     descriptor_ranges: I,
