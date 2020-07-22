@@ -5,26 +5,24 @@ pub struct Instance
   instance: hal::Instance,
 }
 
-use super::{Error, InstanceCreationError};
+use super::InstanceCreationError;
 
 impl Instance
 {
   const ENGINE_NAME: &'static str = "Red Ape Engine";
   const ENGINE_VERSION: u32 = 1;
 
-  pub fn create() -> Result<Self, Error>
+  pub fn create() -> Result<Self, InstanceCreationError>
   {
     let instance = Self::create_instance()?;
     Ok(Self { instance })
   }
 
-  fn create_instance() -> Result<hal::Instance, Error>
+  fn create_instance() -> Result<hal::Instance, InstanceCreationError>
   {
-    hal::Instance::create(Self::ENGINE_NAME, Self::ENGINE_VERSION).map_err(
-      |_| {
-        Error::InstanceCreationFailed(InstanceCreationError::UnsupportedBackend)
-      },
-    )
+    let instance =
+      hal::Instance::create(Self::ENGINE_NAME, Self::ENGINE_VERSION)?;
+    Ok(instance)
   }
 }
 
