@@ -1,11 +1,13 @@
 use crate::hal;
 
-pub struct Instance
-{
-  instance: hal::Instance,
-}
+use std::{cell::RefCell, rc::Rc};
 
 use super::InstanceCreationError;
+
+pub struct Instance
+{
+  instance: Rc<RefCell<hal::Instance>>,
+}
 
 impl Instance
 {
@@ -15,6 +17,7 @@ impl Instance
   pub fn create() -> Result<Self, InstanceCreationError>
   {
     let instance = Self::create_instance()?;
+    let instance = Rc::new(RefCell::new(instance));
     Ok(Self { instance })
   }
 
