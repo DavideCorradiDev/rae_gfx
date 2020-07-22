@@ -12,16 +12,19 @@ use std::{
 
 use super::{Backend, Instance};
 
-pub struct Surface {
+pub struct Surface
+{
   value: ManuallyDrop<<Backend as hal::Backend>::Surface>,
   instance: Rc<RefCell<Instance>>,
 }
 
-impl Surface {
+impl Surface
+{
   pub fn create(
     instance: Rc<RefCell<Instance>>,
     handle: &impl raw_window_handle::HasRawWindowHandle,
-  ) -> Result<Self, hal::window::InitError> {
+  ) -> Result<Self, hal::window::InitError>
+  {
     let surface = unsafe { instance.borrow().create_surface(handle) }?;
     Ok(Self {
       value: ManuallyDrop::new(surface),
@@ -30,8 +33,10 @@ impl Surface {
   }
 }
 
-impl Drop for Surface {
-  fn drop(&mut self) {
+impl Drop for Surface
+{
+  fn drop(&mut self)
+  {
     unsafe {
       self
         .instance
@@ -41,21 +46,27 @@ impl Drop for Surface {
   }
 }
 
-impl Deref for Surface {
+impl Deref for Surface
+{
   type Target = <Backend as hal::Backend>::Surface;
-  fn deref(&self) -> &Self::Target {
+  fn deref(&self) -> &Self::Target
+  {
     &self.value
   }
 }
 
-impl DerefMut for Surface {
-  fn deref_mut(&mut self) -> &mut Self::Target {
+impl DerefMut for Surface
+{
+  fn deref_mut(&mut self) -> &mut Self::Target
+  {
     &mut self.value
   }
 }
 
-impl Debug for Surface {
-  fn fmt(&self, f: &mut Formatter) -> std::fmt::Result {
+impl Debug for Surface
+{
+  fn fmt(&self, f: &mut Formatter) -> std::fmt::Result
+  {
     write!(f, "Surface {{ value: {:?} }}", self.value)
   }
 }

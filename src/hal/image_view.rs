@@ -11,12 +11,14 @@ use std::{
 
 use super::{Backend, Gpu, Image};
 
-pub struct ImageView {
+pub struct ImageView
+{
   value: ManuallyDrop<<Backend as hal::Backend>::ImageView>,
   gpu: Rc<RefCell<Gpu>>,
 }
 
-impl ImageView {
+impl ImageView
+{
   pub fn create(
     gpu: Rc<RefCell<Gpu>>,
     image: &Image,
@@ -24,7 +26,8 @@ impl ImageView {
     format: hal::format::Format,
     swizzle: hal::format::Swizzle,
     range: hal::image::SubresourceRange,
-  ) -> Result<Self, hal::image::ViewCreationError> {
+  ) -> Result<Self, hal::image::ViewCreationError>
+  {
     let image_view = unsafe {
       gpu
         .borrow()
@@ -38,8 +41,10 @@ impl ImageView {
   }
 }
 
-impl Drop for ImageView {
-  fn drop(&mut self) {
+impl Drop for ImageView
+{
+  fn drop(&mut self)
+  {
     unsafe {
       self
         .gpu
@@ -50,21 +55,27 @@ impl Drop for ImageView {
   }
 }
 
-impl Deref for ImageView {
+impl Deref for ImageView
+{
   type Target = <Backend as hal::Backend>::ImageView;
-  fn deref(&self) -> &Self::Target {
+  fn deref(&self) -> &Self::Target
+  {
     &self.value
   }
 }
 
-impl DerefMut for ImageView {
-  fn deref_mut(&mut self) -> &mut Self::Target {
+impl DerefMut for ImageView
+{
+  fn deref_mut(&mut self) -> &mut Self::Target
+  {
     &mut self.value
   }
 }
 
-impl Debug for ImageView {
-  fn fmt(&self, f: &mut Formatter) -> std::fmt::Result {
+impl Debug for ImageView
+{
+  fn fmt(&self, f: &mut Formatter) -> std::fmt::Result
+  {
     write!(f, "ImageView {{ value: {:?} }}", self.value)
   }
 }

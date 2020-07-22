@@ -11,12 +11,14 @@ use std::{
 
 use super::{Backend, Gpu};
 
-pub struct Image {
+pub struct Image
+{
   value: ManuallyDrop<<Backend as hal::Backend>::Image>,
   gpu: Rc<RefCell<Gpu>>,
 }
 
-impl Image {
+impl Image
+{
   pub fn create(
     gpu: Rc<RefCell<Gpu>>,
     kind: hal::image::Kind,
@@ -25,7 +27,8 @@ impl Image {
     tiling: hal::image::Tiling,
     usage: hal::image::Usage,
     view_caps: hal::image::ViewCapabilities,
-  ) -> Result<Self, hal::image::CreationError> {
+  ) -> Result<Self, hal::image::CreationError>
+  {
     let image = unsafe {
       gpu
         .borrow()
@@ -39,8 +42,10 @@ impl Image {
   }
 }
 
-impl Drop for Image {
-  fn drop(&mut self) {
+impl Drop for Image
+{
+  fn drop(&mut self)
+  {
     unsafe {
       self
         .gpu
@@ -51,21 +56,27 @@ impl Drop for Image {
   }
 }
 
-impl Deref for Image {
+impl Deref for Image
+{
   type Target = <Backend as hal::Backend>::Image;
-  fn deref(&self) -> &Self::Target {
+  fn deref(&self) -> &Self::Target
+  {
     &self.value
   }
 }
 
-impl DerefMut for Image {
-  fn deref_mut(&mut self) -> &mut Self::Target {
+impl DerefMut for Image
+{
+  fn deref_mut(&mut self) -> &mut Self::Target
+  {
     &mut self.value
   }
 }
 
-impl Debug for Image {
-  fn fmt(&self, f: &mut Formatter) -> std::fmt::Result {
+impl Debug for Image
+{
+  fn fmt(&self, f: &mut Formatter) -> std::fmt::Result
+  {
     write!(f, "Image {{ value: {:?} }}", self.value)
   }
 }
