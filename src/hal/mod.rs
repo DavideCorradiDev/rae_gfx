@@ -38,3 +38,6 @@ pub use render_pass::RenderPass;
 
 mod framebuffer;
 pub use framebuffer::Framebuffer;
+
+mod sampler;
+pub use sampler::Sampler;

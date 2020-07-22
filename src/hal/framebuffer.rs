@@ -9,7 +9,7 @@ use std::{
   rc::Rc,
 };
 
-use super::{Backend, Gpu, ImageView, RenderPass};
+use super::{Backend, Gpu, RenderPass};
 
 pub struct Framebuffer
 {
@@ -27,7 +27,7 @@ impl Framebuffer
   ) -> Result<Self, hal::device::OutOfMemory>
   where
     I: std::iter::IntoIterator,
-    I::Item: std::borrow::Borrow<ImageView>,
+    I::Item: std::borrow::Borrow<<Backend as hal::Backend>::ImageView>,
   {
     let framebuffer = unsafe {
       gpu
