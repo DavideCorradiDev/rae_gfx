@@ -32,8 +32,6 @@ pub type PhysicalDevice = <Backend as hal::Backend>::PhysicalDevice;
 pub type Device = <Backend as hal::Backend>::Device;
 pub type Gpu = hal::adapter::Gpu<Backend>;
 // Needs RAII wrapper.
-pub type Surface = <Backend as hal::Backend>::Surface;
-// Needs RAII wrapper.
 pub type Swapchain = <Backend as hal::Backend>::Swapchain;
 pub type QueueFamily = <Backend as hal::Backend>::QueueFamily;
 pub type CommandQueue = <Backend as hal::Backend>::CommandQueue;
