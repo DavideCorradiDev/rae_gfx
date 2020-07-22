@@ -17,3 +17,6 @@ pub use command_pool::CommandPool;
 
 mod command_buffer;
 pub use command_buffer::CommandBuffer;
+
+mod descriptor_set_layout;
+pub use descriptor_set_layout::DescriptorSetLayout;

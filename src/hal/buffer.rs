@@ -19,7 +19,7 @@ pub struct Buffer
 
 impl Buffer
 {
-  pub fn new(
+  pub fn create(
     gpu: Rc<RefCell<Gpu>>,
     size: u64,
     usage: hal::buffer::Usage,
