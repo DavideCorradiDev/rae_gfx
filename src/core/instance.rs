@@ -9,8 +9,8 @@ use super::InstanceCreationError;
 
 impl Instance
 {
-  const ENGINE_NAME: &'static str = "Red Ape Engine";
-  const ENGINE_VERSION: u32 = 1;
+  pub const ENGINE_NAME: &'static str = "Red Ape Engine";
+  pub const ENGINE_VERSION: u32 = 1;
 
   pub fn create() -> Result<Self, InstanceCreationError>
   {
