@@ -8,3 +8,6 @@ pub use backend::{
 
 mod memory;
 pub use memory::Memory;
+
+mod buffer;
+pub use buffer::Buffer;
