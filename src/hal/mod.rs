@@ -47,3 +47,6 @@ pub use pipeline_layout::PipelineLayout;
 
 mod graphics_pipeline;
 pub use graphics_pipeline::GraphicsPipeline;
+
+mod shader_module;
+pub use shader_module::ShaderModule;
