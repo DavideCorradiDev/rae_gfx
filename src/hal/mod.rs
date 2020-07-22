@@ -32,3 +32,6 @@ pub use fence::Fence;
 
 mod semaphore;
 pub use semaphore::Semaphore;
+
+mod render_pass;
+pub use render_pass::RenderPass;
