@@ -1,12 +1,16 @@
-use crate::hal;
+extern crate gfx_hal as hal;
 
 use std::{cell::RefCell, rc::Rc};
 
+use hal::Instance as HalInstance;
+
 use super::InstanceCreationError;
+use crate::halw;
 
 pub struct Instance
 {
-  instance: Rc<RefCell<hal::Instance>>,
+  instance: Rc<RefCell<halw::Instance>>,
+  adapter: halw::Adapter,
 }
 
 impl Instance
@@ -16,16 +20,47 @@ impl Instance
 
   pub fn create() -> Result<Self, InstanceCreationError>
   {
-    let instance = Self::create_instance()?;
-    let instance = Rc::new(RefCell::new(instance));
-    Ok(Self { instance })
+    let instance = Rc::new(RefCell::new(Self::create_instance()?));
+    let adapter = Self::select_adapter(&*instance.borrow())?;
+    Ok(Self { instance, adapter })
   }
 
-  fn create_instance() -> Result<hal::Instance, InstanceCreationError>
+  fn create_instance() -> Result<halw::Instance, InstanceCreationError>
   {
     let instance =
-      hal::Instance::create(Self::ENGINE_NAME, Self::ENGINE_VERSION)?;
+      halw::Instance::create(Self::ENGINE_NAME, Self::ENGINE_VERSION)?;
     Ok(instance)
+  }
+
+  fn select_adapter(
+    instance: &halw::Instance,
+  ) -> Result<halw::Adapter, InstanceCreationError>
+  {
+    let mut adapters = instance.enumerate_adapters();
+    adapters.retain(|a| {
+      a.info.device_type == hal::adapter::DeviceType::DiscreteGpu
+        || a.info.device_type == hal::adapter::DeviceType::IntegratedGpu
+    });
+    if adapters.is_empty()
+    {
+      return Err(InstanceCreationError::NoSuitableAdapter);
+    }
+
+    adapters.sort_by(|a, b| {
+      if a.info.device_type == b.info.device_type
+      {
+        return std::cmp::Ordering::Equal;
+      }
+      else if a.info.device_type == hal::adapter::DeviceType::DiscreteGpu
+      {
+        return std::cmp::Ordering::Less;
+      }
+      else
+      {
+        return std::cmp::Ordering::Greater;
+      }
+    });
+    Ok(adapters.remove(0))
   }
 }
 

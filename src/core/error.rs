@@ -6,6 +6,7 @@ use std::fmt::{Display, Formatter};
 pub enum InstanceCreationError
 {
   UnsupportedBackend,
+  NoSuitableAdapter,
 }
 
 impl Display for InstanceCreationError
@@ -17,6 +18,10 @@ impl Display for InstanceCreationError
       InstanceCreationError::UnsupportedBackend =>
       {
         write!(f, "Unsupported backend")
+      }
+      InstanceCreationError::NoSuitableAdapter =>
+      {
+        write!(f, "Could not find a suitable adapter")
       }
     }
   }
