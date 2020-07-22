@@ -7,12 +7,13 @@ edition = "2018"
 [features]
 default = ["gfx-backend-empty"]
 metal = ["gfx-backend-metal"]
-gl = ["gfx-backend-gl"]
+opengl = ["gfx-backend-gl"]
 dx11 = ["gfx-backend-dx11"]
 dx12 = ["gfx-backend-dx12"]
 vulkan = ["gfx-backend-vulkan"]
 
 [dependencies]
+raw-window-handle = "0.3.3"
 gfx-hal = "0.5.*"
 gfx-backend-empty = { version = "0.5.*", optional = true }
 gfx-backend-metal = { version = "0.5.*", optional = true }
