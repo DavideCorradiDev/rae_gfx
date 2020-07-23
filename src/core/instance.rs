@@ -41,9 +41,9 @@ impl Instance
     })
   }
 
-  pub fn instance(&mut self) -> Rc<RefCell<halw::Instance>>
+  pub fn instance(&self) -> &Rc<RefCell<halw::Instance>>
   {
-    Rc::clone(&self.instance)
+    &self.instance
   }
 
   pub fn adapter(&self) -> &halw::Adapter
@@ -51,20 +51,30 @@ impl Instance
     &self.adapter
   }
 
-  pub fn adapter_mut(&mut self) -> &mut halw::Adapter
+  pub fn gpu(&self) -> &Rc<RefCell<halw::Gpu>>
   {
-    &mut self.adapter
-  }
-
-  pub fn gpu(&mut self) -> Rc<RefCell<halw::Gpu>>
-  {
-    Rc::clone(&self.gpu)
+    &self.gpu
   }
 
   pub fn canvas_color_format(&self) -> TextureFormat
   {
     self.canvas_color_format
   }
+
+  // pub fn queue_group(&self) -> &halw::QueueGroup
+  // {
+  //   &self.gpu.borrow().queue_groups[0]
+  // }
+
+  // pub fn queue_family(&self) -> &halw::QueueFamily
+  // {
+  //   self
+  //     .adapter
+  //     .queue_families
+  //     .iter()
+  //     .find(|a| a.id() == self.queue_group().family)
+  //     .unwrap()
+  // }
 
   fn create_instance() -> Result<halw::Instance, InstanceCreationError>
   {
