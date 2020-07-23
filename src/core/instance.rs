@@ -2,14 +2,16 @@ extern crate gfx_hal as hal;
 
 use std::{cell::RefCell, mem::ManuallyDrop, rc::Rc};
 
-use hal::Instance as HalInstance;
+use hal::{window::Surface as HalSurface, Instance as HalInstance};
 
+use super::TextureFormat;
 use crate::{halw, window};
 
 pub struct Instance
 {
   instance: Rc<RefCell<halw::Instance>>,
   adapter: halw::Adapter,
+  canvas_color_format: TextureFormat,
 }
 
 impl Instance
@@ -23,7 +25,13 @@ impl Instance
     let adapter = Self::select_adapter(&*instance.borrow())?;
     let (_, _, mut dummy_surface) =
       Self::create_dummy_surface(Rc::clone(&instance))?;
-    Ok(Self { instance, adapter })
+    let canvas_color_format =
+      Self::select_canvas_color_format(&adapter, &dummy_surface);
+    Ok(Self {
+      instance,
+      adapter,
+      canvas_color_format,
+    })
   }
 
   fn create_instance() -> Result<halw::Instance, InstanceCreationError>
@@ -78,6 +86,21 @@ impl Instance
       .unwrap();
     let dummy_surface = halw::Surface::create(instance, &dummy_window)?;
     Ok((dummy_event_loop, dummy_window, dummy_surface))
+  }
+
+  fn select_canvas_color_format(
+    adapter: &halw::Adapter,
+    surface: &halw::Surface,
+  ) -> hal::format::Format
+  {
+    let formats = surface.supported_formats(&adapter.physical_device);
+    formats.map_or(hal::format::Format::Rgba8Srgb, |formats| {
+      formats
+        .iter()
+        .find(|a| a.base_format().1 == hal::format::ChannelType::Srgb)
+        .map(|a| *a)
+        .unwrap_or(formats[0])
+    })
   }
 }
 
