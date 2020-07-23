@@ -1,10 +1,10 @@
 extern crate gfx_hal as hal;
 
-use std::{cell::RefCell, rc::Rc};
+use std::{cell::RefCell, mem::ManuallyDrop, rc::Rc};
 
 use hal::Instance as HalInstance;
 
-use crate::halw;
+use crate::{halw, window};
 
 pub struct Instance
 {
@@ -21,6 +21,8 @@ impl Instance
   {
     let instance = Rc::new(RefCell::new(Self::create_instance()?));
     let adapter = Self::select_adapter(&*instance.borrow())?;
+    let (_, _, mut dummy_surface) =
+      Self::create_dummy_surface(Rc::clone(&instance))?;
     Ok(Self { instance, adapter })
   }
 
@@ -61,6 +63,22 @@ impl Instance
     });
     Ok(adapters.remove(0))
   }
+
+  fn create_dummy_surface(
+    instance: Rc<RefCell<halw::Instance>>,
+  ) -> Result<
+    (window::EventLoop, window::Window, halw::Surface),
+    InstanceCreationError,
+  >
+  {
+    let dummy_event_loop = window::EventLoop::new();
+    let dummy_window = window::WindowBuilder::new()
+      .with_visible(false)
+      .build(&dummy_event_loop)
+      .unwrap();
+    let dummy_surface = halw::Surface::create(instance, &dummy_window)?;
+    Ok((dummy_event_loop, dummy_window, dummy_surface))
+  }
 }
 
 #[derive(Debug)]
@@ -68,6 +86,7 @@ pub enum InstanceCreationError
 {
   UnsupportedBackend,
   NoSuitableAdapter,
+  SurfaceCreationFailed,
 }
 
 impl std::fmt::Display for InstanceCreationError
@@ -83,6 +102,10 @@ impl std::fmt::Display for InstanceCreationError
       InstanceCreationError::NoSuitableAdapter =>
       {
         write!(f, "Could not find a suitable adapter")
+      }
+      InstanceCreationError::SurfaceCreationFailed =>
+      {
+        write!(f, "Failed to create window surface")
       }
     }
   }
@@ -104,6 +127,14 @@ impl From<hal::UnsupportedBackend> for InstanceCreationError
   fn from(_: hal::UnsupportedBackend) -> InstanceCreationError
   {
     InstanceCreationError::UnsupportedBackend
+  }
+}
+
+impl From<hal::window::InitError> for InstanceCreationError
+{
+  fn from(_: hal::window::InitError) -> InstanceCreationError
+  {
+    InstanceCreationError::SurfaceCreationFailed
   }
 }
 
