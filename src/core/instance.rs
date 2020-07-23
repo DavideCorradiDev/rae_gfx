@@ -1,9 +1,8 @@
 extern crate gfx_hal as hal;
 
-use std::{cell::RefCell, mem::ManuallyDrop, rc::Rc};
+use std::{cell::RefCell, rc::Rc};
 
 use hal::{
-  adapter::PhysicalDevice as HalPhysicalDevice,
   queue::QueueFamily as HalQueueFamily, window::Surface as HalSurface,
   Instance as HalInstance,
 };
@@ -28,7 +27,7 @@ impl Instance
   {
     let instance = Rc::new(RefCell::new(Self::create_instance()?));
     let adapter = Self::select_adapter(&*instance.borrow())?;
-    let (_, _, mut dummy_surface) =
+    let (_, _, dummy_surface) =
       Self::create_dummy_surface(Rc::clone(&instance))?;
     let gpu =
       Rc::new(RefCell::new(Self::open_device(&adapter, &dummy_surface)?));
@@ -40,6 +39,31 @@ impl Instance
       gpu,
       canvas_color_format,
     })
+  }
+
+  pub fn instance(&mut self) -> Rc<RefCell<halw::Instance>>
+  {
+    Rc::clone(&self.instance)
+  }
+
+  pub fn adapter(&self) -> &halw::Adapter
+  {
+    &self.adapter
+  }
+
+  pub fn adapter_mut(&mut self) -> &mut halw::Adapter
+  {
+    &mut self.adapter
+  }
+
+  pub fn gpu(&mut self) -> Rc<RefCell<halw::Gpu>>
+  {
+    Rc::clone(&self.gpu)
+  }
+
+  pub fn canvas_color_format(&self) -> TextureFormat
+  {
+    self.canvas_color_format
   }
 
   fn create_instance() -> Result<halw::Instance, InstanceCreationError>
