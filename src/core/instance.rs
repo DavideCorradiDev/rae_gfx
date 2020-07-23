@@ -15,7 +15,7 @@ pub struct Instance
 {
   instance: Rc<RefCell<halw::Instance>>,
   adapter: halw::Adapter,
-  // gpu: Rc<RefCell<halw::Gpu>>,
+  gpu: Rc<RefCell<halw::Gpu>>,
   canvas_color_format: TextureFormat,
 }
 
@@ -30,14 +30,14 @@ impl Instance
     let adapter = Self::select_adapter(&*instance.borrow())?;
     let (_, _, mut dummy_surface) =
       Self::create_dummy_surface(Rc::clone(&instance))?;
-    // let gpu =
-    //   Rc::new(RefCell::new(Self::open_device(&adapter, &dummy_surface)))?;
+    let gpu =
+      Rc::new(RefCell::new(Self::open_device(&adapter, &dummy_surface)?));
     let canvas_color_format =
       Self::select_canvas_color_format(&adapter, &dummy_surface);
     Ok(Self {
       instance,
       adapter,
-      // gpu,
+      gpu,
       canvas_color_format,
     })
   }
@@ -127,26 +127,20 @@ impl Instance
     }
   }
 
-  // fn open_device(
-  //   adapter: &halw::Adapter,
-  //   surface: &halw::Surface,
-  // ) -> Result<halw::Gpu, InstanceCreationError>
-  // {
-  //   // Eventually add required GPU features here.
-  //   let queue_family = Self::select_queue_family(adapter, surface)?;
-  //   let gpu = halw::Gpu::open()
-  //   match unsafe {
-  //     adapter
-  //       .physical_device
-  //       .open(&[(queue_family, &[1.0])], Features::empty())
-  //   }
-  //   {
-  //     Ok(gpu) => Ok(gpu),
-  //     Err(e) => Err(Error::ContextCreationFailed(
-  //       ContextCreationError::DeviceCouldNotBeOpened(e),
-  //     )),
-  //   }
-  // }
+  fn open_device(
+    adapter: &halw::Adapter,
+    surface: &halw::Surface,
+  ) -> Result<halw::Gpu, InstanceCreationError>
+  {
+    // Eventually add required GPU features here.
+    let queue_family = Self::select_queue_family(adapter, surface)?;
+    let gpu = halw::Gpu::open(
+      adapter,
+      &[(queue_family, &[1.0])],
+      hal::Features::empty(),
+    )?;
+    Ok(gpu)
+  }
 }
 
 #[derive(Debug)]
@@ -156,6 +150,7 @@ pub enum InstanceCreationError
   NoSuitableAdapter,
   NoSuitableQueueFamily,
   SurfaceCreationFailed,
+  DeviceCreationFailed,
 }
 
 impl std::fmt::Display for InstanceCreationError
@@ -179,6 +174,10 @@ impl std::fmt::Display for InstanceCreationError
       InstanceCreationError::SurfaceCreationFailed =>
       {
         write!(f, "Failed to create window surface")
+      }
+      InstanceCreationError::DeviceCreationFailed =>
+      {
+        write!(f, "Failed to create device")
       }
     }
   }
@@ -208,6 +207,14 @@ impl From<hal::window::InitError> for InstanceCreationError
   fn from(_: hal::window::InitError) -> InstanceCreationError
   {
     InstanceCreationError::SurfaceCreationFailed
+  }
+}
+
+impl From<hal::device::CreationError> for InstanceCreationError
+{
+  fn from(_: hal::device::CreationError) -> InstanceCreationError
+  {
+    InstanceCreationError::DeviceCreationFailed
   }
 }
 

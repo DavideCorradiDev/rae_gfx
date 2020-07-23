@@ -15,13 +15,14 @@ pub struct Gpu
 
 impl Gpu
 {
-  unsafe fn open(
+  pub fn open(
     adapter: &Adapter,
     families: &[(&QueueFamily, &[hal::queue::QueuePriority])],
     requested_features: hal::Features,
   ) -> Result<Self, hal::device::CreationError>
   {
-    let gpu = adapter.physical_device.open(families, requested_features)?;
+    let gpu =
+      unsafe { adapter.physical_device.open(families, requested_features) }?;
     Ok(Self { value: gpu })
   }
 }
