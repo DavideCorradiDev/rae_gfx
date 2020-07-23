@@ -1,6 +1,9 @@
 extern crate gfx_hal as hal;
 
-use std::{cell::RefCell, rc::Rc};
+use std::{
+  cell::{Ref, RefCell},
+  rc::Rc,
+};
 
 use hal::{
   queue::QueueFamily as HalQueueFamily, window::Surface as HalSurface,
@@ -61,20 +64,20 @@ impl Instance
     self.canvas_color_format
   }
 
-  // pub fn queue_group(&self) -> &halw::QueueGroup
-  // {
-  //   &self.gpu.borrow().queue_groups[0]
-  // }
+  pub fn queue_group(&self) -> Ref<'_, halw::QueueGroup>
+  {
+    Ref::map(self.gpu.borrow(), |gpu| &gpu.queue_groups[0])
+  }
 
-  // pub fn queue_family(&self) -> &halw::QueueFamily
-  // {
-  //   self
-  //     .adapter
-  //     .queue_families
-  //     .iter()
-  //     .find(|a| a.id() == self.queue_group().family)
-  //     .unwrap()
-  // }
+  pub fn queue_family(&self) -> &halw::QueueFamily
+  {
+    self
+      .adapter
+      .queue_families
+      .iter()
+      .find(|a| a.id() == self.queue_group().family)
+      .unwrap()
+  }
 
   fn create_instance() -> Result<halw::Instance, InstanceCreationError>
   {
