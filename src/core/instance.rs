@@ -267,10 +267,7 @@ impl std::error::Error for InstanceCreationError
 {
   fn source(&self) -> Option<&(dyn std::error::Error + 'static)>
   {
-    match self
-    {
-      _ => None,
-    }
+    None
   }
 }
 
