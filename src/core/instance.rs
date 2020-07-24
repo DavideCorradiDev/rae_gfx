@@ -44,7 +44,17 @@ impl Instance
     })
   }
 
-  pub fn instance(&self) -> &Rc<RefCell<halw::Instance>>
+  pub fn instance(&self) -> Ref<halw::Instance>
+  {
+    self.instance.borrow()
+  }
+
+  pub fn instance_mut(&mut self) -> RefMut<halw::Instance>
+  {
+    self.instance.borrow_mut()
+  }
+
+  pub fn instance_rc(&self) -> &Rc<RefCell<halw::Instance>>
   {
     &self.instance
   }
@@ -54,7 +64,22 @@ impl Instance
     &self.adapter
   }
 
-  pub fn gpu(&self) -> &Rc<RefCell<halw::Gpu>>
+  pub fn adapter_mut(&mut self) -> &mut halw::Adapter
+  {
+    &mut self.adapter
+  }
+
+  pub fn gpu(&self) -> Ref<halw::Gpu>
+  {
+    self.gpu.borrow()
+  }
+
+  pub fn gpu_mut(&mut self) -> RefMut<halw::Gpu>
+  {
+    self.gpu.borrow_mut()
+  }
+
+  pub fn gpu_rc(&self) -> &Rc<RefCell<halw::Gpu>>
   {
     &self.gpu
   }
@@ -76,6 +101,7 @@ impl Instance
 
   pub fn queue_family(&self) -> &halw::QueueFamily
   {
+    // The find method is guaranteed to find something, excluding programming errors.
     self
       .adapter
       .queue_families
