@@ -1,4 +1,5 @@
 extern crate gfx_hal as hal;
+extern crate winit;
 
 use std::{
   cell::{Ref, RefCell, RefMut},
@@ -9,6 +10,7 @@ use hal::{
   queue::QueueFamily as HalQueueFamily, window::Surface as HalSurface,
   Instance as HalInstance,
 };
+use winit::platform::windows::EventLoopExtWindows;
 
 use super::TextureFormat;
 use crate::{halw, window};
@@ -167,7 +169,7 @@ impl Instance
     InstanceCreationError,
   >
   {
-    let dummy_event_loop = window::EventLoop::new();
+    let dummy_event_loop = window::EventLoop::new_any_thread();
     let dummy_window = window::WindowBuilder::new()
       .with_visible(false)
       .build(&dummy_event_loop)
