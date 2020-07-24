@@ -15,7 +15,7 @@ use hal::{
 use winit::platform::windows::EventLoopExtWindows;
 
 #[cfg(target_os = "linux")]
-use winit::platform::linux::EventLoopExtLinux;
+use winit::platform::unix::EventLoopExtUnix;
 
 #[cfg(target_os = "macos")]
 use winit::platform::macos::EventLoopExtMacos;
