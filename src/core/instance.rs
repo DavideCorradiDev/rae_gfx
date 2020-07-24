@@ -131,15 +131,41 @@ impl Instance
     Ok(instance)
   }
 
+  #[cfg(not(any(
+    feature = "dx11",
+    feature = "dx12",
+    feature = "metal",
+    feature = "opengl",
+    feature = "vulkan"
+  )))]
+  fn adapter_selection_criteria(
+    _adapter: &hal::adapter::Adapter<halw::Backend>,
+  ) -> bool
+  {
+    true
+  }
+
+  #[cfg(any(
+    feature = "dx11",
+    feature = "dx12",
+    feature = "metal",
+    feature = "opengl",
+    feature = "vulkan"
+  ))]
+  fn adapter_selection_criteria(
+    adapter: &hal::adapter::Adapter<halw::Backend>,
+  ) -> bool
+  {
+    adapter.info.device_type == hal::adapter::DeviceType::DiscreteGpu
+      || adapter.info.device_type == hal::adapter::DeviceType::IntegratedGpu
+  }
+
   fn select_adapter(
     instance: &halw::Instance,
   ) -> Result<halw::Adapter, InstanceCreationError>
   {
     let mut adapters = instance.enumerate_adapters();
-    adapters.retain(|a| {
-      a.info.device_type == hal::adapter::DeviceType::DiscreteGpu
-        || a.info.device_type == hal::adapter::DeviceType::IntegratedGpu
-    });
+    adapters.retain(Self::adapter_selection_criteria);
     if adapters.is_empty()
     {
       return Err(InstanceCreationError::NoSuitableAdapter);
