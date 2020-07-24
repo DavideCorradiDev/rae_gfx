@@ -34,7 +34,7 @@ jobs:
 
     env:
       RUST_BACKTRACE: 1
-      FEATURES: ${{ format(',{0}', matrix.platform.backend ) }}
+      FEATURES: ${{ matrix.platform.backend }}
 
     runs-on: windows-latest
 
