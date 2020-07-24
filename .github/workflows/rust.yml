@@ -13,16 +13,11 @@ jobs:
   build:
     env:
       RUST_BACKTRACE: 1
-      DISPLAY: ":0"
 
-    runs-on: ubuntu-latest
+    runs-on: windows-latest
 
     steps:
     - uses: actions/checkout@v2
-    - name: Download dependencies
-      run: sudo apt-get update && sudo apt-get install libx11-dev
-    - name: Echo DISPLAY 
-      run: echo $DISPLAY
     - name: Build
       run: cargo build --verbose
     - name: Run tests
