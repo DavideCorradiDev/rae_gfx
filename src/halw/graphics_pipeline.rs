@@ -11,17 +11,20 @@ use std::{
 
 use super::{Backend, Gpu, GraphicsPipelineDesc, PipelineCache};
 
-pub struct GraphicsPipeline {
+pub struct GraphicsPipeline
+{
   value: ManuallyDrop<<Backend as hal::Backend>::GraphicsPipeline>,
   gpu: Rc<RefCell<Gpu>>,
 }
 
-impl GraphicsPipeline {
+impl GraphicsPipeline
+{
   pub fn create<'a>(
     gpu: Rc<RefCell<Gpu>>,
     desc: &GraphicsPipelineDesc<'a>,
     cache: Option<&PipelineCache>,
-  ) -> Result<Self, hal::pso::CreationError> {
+  ) -> Result<Self, hal::pso::CreationError>
+  {
     let graphics_pipeline = unsafe {
       gpu
         .borrow()
@@ -35,8 +38,10 @@ impl GraphicsPipeline {
   }
 }
 
-impl Drop for GraphicsPipeline {
-  fn drop(&mut self) {
+impl Drop for GraphicsPipeline
+{
+  fn drop(&mut self)
+  {
     unsafe {
       self
         .gpu
@@ -47,21 +52,27 @@ impl Drop for GraphicsPipeline {
   }
 }
 
-impl Deref for GraphicsPipeline {
+impl Deref for GraphicsPipeline
+{
   type Target = <Backend as hal::Backend>::GraphicsPipeline;
-  fn deref(&self) -> &Self::Target {
+  fn deref(&self) -> &Self::Target
+  {
     &self.value
   }
 }
 
-impl DerefMut for GraphicsPipeline {
-  fn deref_mut(&mut self) -> &mut Self::Target {
+impl DerefMut for GraphicsPipeline
+{
+  fn deref_mut(&mut self) -> &mut Self::Target
+  {
     &mut self.value
   }
 }
 
-impl Debug for GraphicsPipeline {
-  fn fmt(&self, f: &mut Formatter) -> std::fmt::Result {
+impl Debug for GraphicsPipeline
+{
+  fn fmt(&self, f: &mut Formatter) -> std::fmt::Result
+  {
     write!(f, "GraphicsPipeline {{ value: {:?} }}", self.value)
   }
 }

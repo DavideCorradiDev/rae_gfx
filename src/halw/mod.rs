@@ -2,9 +2,15 @@
 
 mod backend;
 pub use backend::{
-  Adapter, Backend, CommandQueue, Device, Gpu, GraphicsPipelineDesc, Instance,
-  PhysicalDevice, QueueFamily,
+  Adapter, Backend, CommandQueue, Device, GraphicsPipelineDesc, PhysicalDevice,
+  QueueFamily, QueueGroup,
 };
+
+mod instance;
+pub use instance::Instance;
+
+mod gpu;
+pub use gpu::Gpu;
 
 mod memory;
 pub use memory::Memory;

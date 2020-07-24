@@ -26,11 +26,10 @@ extern crate gfx_backend_vulkan as hal_backend;
 
 pub use hal_backend::Backend;
 
-pub type Instance = <Backend as hal::Backend>::Instance;
 pub type Adapter = hal::adapter::Adapter<Backend>;
 pub type PhysicalDevice = <Backend as hal::Backend>::PhysicalDevice;
 pub type Device = <Backend as hal::Backend>::Device;
-pub type Gpu = hal::adapter::Gpu<Backend>;
+pub type QueueGroup = hal::queue::family::QueueGroup<Backend>;
 pub type QueueFamily = <Backend as hal::Backend>::QueueFamily;
 pub type CommandQueue = <Backend as hal::Backend>::CommandQueue;
 pub type GraphicsPipelineDesc<'a> = hal::pso::GraphicsPipelineDesc<'a, Backend>;

@@ -11,16 +11,19 @@ use std::{
 
 use super::{Backend, Gpu};
 
-pub struct PipelineCache {
+pub struct PipelineCache
+{
   value: ManuallyDrop<<Backend as hal::Backend>::PipelineCache>,
   gpu: Rc<RefCell<Gpu>>,
 }
 
-impl PipelineCache {
+impl PipelineCache
+{
   pub fn create(
     gpu: Rc<RefCell<Gpu>>,
     data: Option<&[u8]>,
-  ) -> Result<Self, hal::device::OutOfMemory> {
+  ) -> Result<Self, hal::device::OutOfMemory>
+  {
     let pipeline_cache =
       unsafe { gpu.borrow().device.create_pipeline_cache(data) }?;
     Ok(Self {
@@ -30,8 +33,10 @@ impl PipelineCache {
   }
 }
 
-impl Drop for PipelineCache {
-  fn drop(&mut self) {
+impl Drop for PipelineCache
+{
+  fn drop(&mut self)
+  {
     unsafe {
       self
         .gpu
@@ -42,21 +47,27 @@ impl Drop for PipelineCache {
   }
 }
 
-impl Deref for PipelineCache {
+impl Deref for PipelineCache
+{
   type Target = <Backend as hal::Backend>::PipelineCache;
-  fn deref(&self) -> &Self::Target {
+  fn deref(&self) -> &Self::Target
+  {
     &self.value
   }
 }
 
-impl DerefMut for PipelineCache {
-  fn deref_mut(&mut self) -> &mut Self::Target {
+impl DerefMut for PipelineCache
+{
+  fn deref_mut(&mut self) -> &mut Self::Target
+  {
     &mut self.value
   }
 }
 
-impl Debug for PipelineCache {
-  fn fmt(&self, f: &mut Formatter) -> std::fmt::Result {
+impl Debug for PipelineCache
+{
+  fn fmt(&self, f: &mut Formatter) -> std::fmt::Result
+  {
     write!(f, "PipelineCache {{ value: {:?} }}", self.value)
   }
 }

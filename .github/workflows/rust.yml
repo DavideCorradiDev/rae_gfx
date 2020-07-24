@@ -11,8 +11,10 @@ env:
 
 jobs:
   build:
+    env:
+      RUST_BACKTRACE: 1
 
-    runs-on: ubuntu-latest
+    runs-on: windows-latest
 
     steps:
     - uses: actions/checkout@v2
