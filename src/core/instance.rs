@@ -305,6 +305,6 @@ mod tests
   #[test]
   fn instance_creation()
   {
-    let _instance = Instance::create();
+    let _instance = Instance::create().unwrap();
   }
 }
