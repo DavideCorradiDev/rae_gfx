@@ -17,7 +17,7 @@ jobs:
     steps:
     - uses: actions/checkout@v2
     - name: Download dependencies
-      run: sudo apt-get update && sudo apt-get install libx11
+      run: sudo apt-get update && sudo apt-get install libx11-dev
     - name: Build
       run: cargo build --verbose
     - name: Run tests
