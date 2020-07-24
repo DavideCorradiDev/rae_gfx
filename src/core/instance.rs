@@ -10,7 +10,21 @@ use hal::{
   queue::QueueFamily as HalQueueFamily, window::Surface as HalSurface,
   Instance as HalInstance,
 };
+
+#[cfg(target_os = "windows")]
 use winit::platform::windows::EventLoopExtWindows;
+
+#[cfg(target_os = "linux")]
+use winit::platform::linux::EventLoopExtLinux;
+
+#[cfg(target_os = "macos")]
+use winit::platform::macos::EventLoopExtMacos;
+
+#[cfg(target_os = "ios")]
+use winit::platform::ios::EventLoopExtIos;
+
+#[cfg(target_os = "android")]
+use winit::platform::android::EventLoopExtAndroid;
 
 use super::TextureFormat;
 use crate::{halw, window};
