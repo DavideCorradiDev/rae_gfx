@@ -40,8 +40,6 @@ jobs:
 
     steps:
     - uses: actions/checkout@v2
-    - name: Echo features
-      run: echo $FEATURES
     - name: Build
       run: cargo build --verbose $OPTIONS
     - name: Run tests
