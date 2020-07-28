@@ -10,18 +10,20 @@ use std::{
   rc::Rc,
 };
 
-use super::{Backend, Instance};
+use super::{Backend, Gpu, Instance};
 
 pub struct Surface
 {
   value: ManuallyDrop<<Backend as hal::Backend>::Surface>,
   instance: Rc<RefCell<Instance>>,
+  gpu: Rc<RefCell<Gpu>>,
 }
 
 impl Surface
 {
   pub fn create(
     instance: Rc<RefCell<Instance>>,
+    gpu: Rc<RefCell<Gpu>>,
     handle: &impl raw_window_handle::HasRawWindowHandle,
   ) -> Result<Self, hal::window::InitError>
   {
@@ -29,7 +31,21 @@ impl Surface
     Ok(Self {
       value: ManuallyDrop::new(surface),
       instance,
+      gpu,
     })
+  }
+
+  pub fn configure_swapchain(
+    &mut self,
+    config: hal::window::SwapchainConfig,
+  ) -> Result<(), hal::window::CreationError>
+  {
+    use hal::window::PresentationSurface;
+    unsafe {
+      self
+        .value
+        .configure_swapchain(&self.gpu.borrow().device, config)
+    }
   }
 }
 

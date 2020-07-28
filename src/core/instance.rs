@@ -3,12 +3,13 @@ extern crate winit;
 
 use std::{
   cell::{Ref, RefCell, RefMut},
+  mem::ManuallyDrop,
   rc::Rc,
 };
 
 use hal::{
   queue::QueueFamily as HalQueueFamily, window::Surface as HalSurface,
-  Instance as HalInstance,
+  Backend as HalBackend, Instance as HalInstance,
 };
 
 use super::TextureFormat;
@@ -29,16 +30,16 @@ impl Instance
 
   pub fn create() -> Result<Self, InstanceCreationError>
   {
-    let instance = Rc::new(RefCell::new(Self::create_instance()?));
-    let adapter = Self::select_adapter(&*instance.borrow())?;
-    let (_, _, dummy_surface) =
-      Self::create_dummy_surface(Rc::clone(&instance))?;
+    let instance = Self::create_instance()?;
+    let adapter = Self::select_adapter(&instance)?;
+    let (_, _, mut dummy_surface) = Self::create_dummy_surface(&instance)?;
     let gpu =
       Rc::new(RefCell::new(Self::open_device(&adapter, &dummy_surface)?));
     let canvas_color_format =
       Self::select_canvas_color_format(&adapter, &dummy_surface);
+    Self::destroy_dummy_surface(&instance, &mut dummy_surface);
     Ok(Self {
-      instance,
+      instance: Rc::new(RefCell::new(instance)),
       adapter,
       gpu,
       canvas_color_format,
@@ -188,9 +189,13 @@ impl Instance
   }
 
   fn create_dummy_surface(
-    instance: Rc<RefCell<halw::Instance>>,
+    instance: &halw::Instance,
   ) -> Result<
-    (window::EventLoop, window::Window, halw::Surface),
+    (
+      window::EventLoop,
+      window::Window,
+      ManuallyDrop<<halw::Backend as HalBackend>::Surface>,
+    ),
     InstanceCreationError,
   >
   {
@@ -199,13 +204,24 @@ impl Instance
       .with_visible(false)
       .build(&dummy_event_loop)
       .unwrap();
-    let dummy_surface = halw::Surface::create(instance, &dummy_window)?;
+    let dummy_surface =
+      ManuallyDrop::new(unsafe { instance.create_surface(&dummy_window) }?);
     Ok((dummy_event_loop, dummy_window, dummy_surface))
+  }
+
+  fn destroy_dummy_surface(
+    instance: &halw::Instance,
+    dummy_surface: &mut ManuallyDrop<<halw::Backend as HalBackend>::Surface>,
+  )
+  {
+    unsafe {
+      instance.destroy_surface(ManuallyDrop::take(dummy_surface));
+    }
   }
 
   fn select_canvas_color_format(
     adapter: &halw::Adapter,
-    surface: &halw::Surface,
+    surface: &<halw::Backend as HalBackend>::Surface,
   ) -> hal::format::Format
   {
     let formats = surface.supported_formats(&adapter.physical_device);
@@ -220,7 +236,7 @@ impl Instance
 
   fn select_queue_family<'a>(
     adapter: &'a halw::Adapter,
-    surface: &halw::Surface,
+    surface: &<halw::Backend as HalBackend>::Surface,
   ) -> Result<&'a halw::QueueFamily, InstanceCreationError>
   {
     // Eventually add required constraints here.
@@ -236,7 +252,7 @@ impl Instance
 
   fn open_device(
     adapter: &halw::Adapter,
-    surface: &halw::Surface,
+    surface: &<halw::Backend as HalBackend>::Surface,
   ) -> Result<halw::Gpu, InstanceCreationError>
   {
     // Eventually add required GPU features here.
@@ -272,19 +288,19 @@ impl std::fmt::Display for InstanceCreationError
       }
       InstanceCreationError::NoSuitableAdapter =>
       {
-        write!(f, "Could not find a suitable adapter")
+        write!(f, "No suitable adapter")
       }
       InstanceCreationError::NoSuitableQueueFamily =>
       {
-        write!(f, "Could not find a suitable queue family")
+        write!(f, "No suitable queue family")
       }
       InstanceCreationError::SurfaceCreationFailed =>
       {
-        write!(f, "Failed to create window surface")
+        write!(f, "Window surface creation failed")
       }
       InstanceCreationError::DeviceCreationFailed =>
       {
-        write!(f, "Failed to create device")
+        write!(f, "Device creation failed")
       }
     }
   }
