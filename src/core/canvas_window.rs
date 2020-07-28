@@ -2,9 +2,10 @@ extern crate gfx_hal as hal;
 
 use std::{cell::RefCell, rc::Rc};
 
-use super::Instance;
+use super::{Canvas, Instance};
 use crate::{halw, window, window::EventLoopExt};
 
+#[derive(Debug)]
 pub struct CanvasWindow
 {
   window: window::Window,
@@ -37,6 +38,8 @@ impl CanvasWindow
     })
   }
 }
+
+impl Canvas for CanvasWindow {}
 
 #[derive(Debug)]
 pub enum CanvasWindowCreationError
