@@ -11,23 +11,8 @@ use hal::{
   Instance as HalInstance,
 };
 
-#[cfg(target_os = "windows")]
-use winit::platform::windows::EventLoopExtWindows;
-
-#[cfg(target_os = "linux")]
-use winit::platform::unix::EventLoopExtUnix;
-
-#[cfg(target_os = "macos")]
-use winit::platform::macos::EventLoopExtMacos;
-
-#[cfg(target_os = "ios")]
-use winit::platform::ios::EventLoopExtIos;
-
-#[cfg(target_os = "android")]
-use winit::platform::android::EventLoopExtAndroid;
-
 use super::TextureFormat;
-use crate::{halw, window};
+use crate::{halw, window, window::EventLoopExt};
 
 pub struct Instance
 {
@@ -315,7 +300,7 @@ impl std::error::Error for InstanceCreationError
 
 impl From<hal::UnsupportedBackend> for InstanceCreationError
 {
-  fn from(_: hal::UnsupportedBackend) -> InstanceCreationError
+  fn from(_: hal::UnsupportedBackend) -> Self
   {
     InstanceCreationError::UnsupportedBackend
   }
@@ -323,7 +308,7 @@ impl From<hal::UnsupportedBackend> for InstanceCreationError
 
 impl From<hal::window::InitError> for InstanceCreationError
 {
-  fn from(_: hal::window::InitError) -> InstanceCreationError
+  fn from(_: hal::window::InitError) -> Self
   {
     InstanceCreationError::SurfaceCreationFailed
   }
@@ -331,7 +316,7 @@ impl From<hal::window::InitError> for InstanceCreationError
 
 impl From<hal::device::CreationError> for InstanceCreationError
 {
-  fn from(_: hal::device::CreationError) -> InstanceCreationError
+  fn from(_: hal::device::CreationError) -> Self
   {
     InstanceCreationError::DeviceCreationFailed
   }
