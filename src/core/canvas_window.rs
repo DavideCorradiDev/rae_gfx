@@ -2,8 +2,8 @@ extern crate gfx_hal as hal;
 
 use std::{cell::RefCell, rc::Rc};
 
-use super::{Canvas, Instance};
-use crate::{halw, window, window::EventLoopExt};
+use super::{Canvas, Instance, Size};
+use crate::{halw, window};
 
 #[derive(Debug)]
 pub struct CanvasWindow
@@ -11,6 +11,7 @@ pub struct CanvasWindow
   window: window::Window,
   gpu: Rc<RefCell<halw::Gpu>>,
   surface: halw::Surface,
+  canvas_size: Size<u32>,
 }
 
 impl CanvasWindow
@@ -31,10 +32,15 @@ impl CanvasWindow
   {
     let surface =
       halw::Surface::create(Rc::clone(&instance.instance_rc()), &window)?;
+    let canvas_size = Size {
+      width: 0,
+      height: 0,
+    };
     Ok(Self {
       window,
       gpu: Rc::clone(&instance.gpu_rc()),
       surface,
+      canvas_size,
     })
   }
 }
@@ -95,6 +101,7 @@ impl From<hal::window::InitError> for CanvasWindowCreationError
 mod tests
 {
   use super::*;
+  use crate::window::EventLoopExt;
 
   #[test]
   fn canvas_window_creation()
