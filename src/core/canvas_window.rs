@@ -1,18 +1,40 @@
-use crate::{window, window::EventLoopExt};
+extern crate gfx_hal as hal;
+
+use std::{cell::RefCell, rc::Rc};
+
+use super::Instance;
+use crate::{halw, window, window::EventLoopExt};
 
 pub struct CanvasWindow
 {
   window: window::Window,
+  gpu: Rc<RefCell<halw::Gpu>>,
+  surface: halw::Surface,
 }
 
 impl CanvasWindow
 {
   pub fn new(
+    instance: &Instance,
     event_loop: &window::EventLoop,
   ) -> Result<Self, CanvasWindowCreationError>
   {
     let window = window::Window::new(event_loop)?;
-    Ok(Self { window })
+    Self::with_window(instance, window)
+  }
+
+  pub fn with_window(
+    instance: &Instance,
+    window: window::Window,
+  ) -> Result<Self, CanvasWindowCreationError>
+  {
+    let surface =
+      halw::Surface::create(Rc::clone(&instance.instance_rc()), &window)?;
+    Ok(Self {
+      window,
+      gpu: Rc::clone(&instance.gpu_rc()),
+      surface,
+    })
   }
 }
 
@@ -20,6 +42,7 @@ impl CanvasWindow
 pub enum CanvasWindowCreationError
 {
   OsError(window::OsError),
+  SurfaceCreationFailed(hal::window::InitError),
 }
 
 impl std::fmt::Display for CanvasWindowCreationError
@@ -29,6 +52,10 @@ impl std::fmt::Display for CanvasWindowCreationError
     match self
     {
       CanvasWindowCreationError::OsError(e) => write!(f, "OS Error ({})", e),
+      CanvasWindowCreationError::SurfaceCreationFailed(e) =>
+      {
+        write!(f, "Surface creation failed ({})", e)
+      }
     }
   }
 }
@@ -40,6 +67,7 @@ impl std::error::Error for CanvasWindowCreationError
     match self
     {
       CanvasWindowCreationError::OsError(e) => Some(e),
+      CanvasWindowCreationError::SurfaceCreationFailed(e) => Some(e),
     }
   }
 }
@@ -52,6 +80,14 @@ impl From<window::OsError> for CanvasWindowCreationError
   }
 }
 
+impl From<hal::window::InitError> for CanvasWindowCreationError
+{
+  fn from(e: hal::window::InitError) -> Self
+  {
+    CanvasWindowCreationError::SurfaceCreationFailed(e)
+  }
+}
+
 #[cfg(test)]
 mod tests
 {
@@ -60,7 +96,8 @@ mod tests
   #[test]
   fn canvas_window_creation()
   {
+    let instance = Instance::create().unwrap();
     let event_loop = window::EventLoop::new_any_thread();
-    let _window = CanvasWindow::new(&event_loop);
+    let _window = CanvasWindow::new(&instance, &event_loop).unwrap();
   }
 }
