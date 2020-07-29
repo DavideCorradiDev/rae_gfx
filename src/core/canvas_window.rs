@@ -94,6 +94,49 @@ impl CanvasWindow
 
 impl Canvas for CanvasWindow {}
 
+pub struct CanvasWindowBuilder
+{
+  builder: window::WindowBuilder,
+}
+
+impl CanvasWindowBuilder
+{
+  pub fn new() -> Self
+  {
+    CanvasWindowBuilder {
+      builder: window::WindowBuilder::new(),
+    }
+  }
+
+  pub fn with_inner_size<S>(self, size: S) -> Self
+  where
+    S: Into<window::Size>,
+  {
+    CanvasWindowBuilder {
+      builder: self.builder.with_inner_size(size),
+    }
+  }
+
+  pub fn with_title(self, title: &str) -> Self
+  {
+    CanvasWindowBuilder {
+      builder: self.builder.with_title(title),
+    }
+  }
+
+  pub fn build<T>(
+    self,
+    instance: &Instance,
+    window_target: &window::EventLoopWindowTarget<T>,
+  ) -> Result<CanvasWindow, CanvasWindowCreationError>
+  where
+    T: 'static,
+  {
+    let window = self.builder.build(window_target)?;
+    CanvasWindow::with_window(instance, window)
+  }
+}
+
 #[derive(Debug)]
 pub enum CanvasWindowCreationError
 {

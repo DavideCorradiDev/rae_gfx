@@ -8,7 +8,7 @@ mod canvas;
 pub use canvas::Canvas;
 
 mod canvas_window;
-pub use canvas_window::CanvasWindow;
+pub use canvas_window::{CanvasWindow, CanvasWindowBuilder};
 
 mod texture_format;
 pub use texture_format::TextureFormat;
