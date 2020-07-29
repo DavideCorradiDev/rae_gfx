@@ -226,7 +226,7 @@ impl CanvasWindow
       window,
       gpu: Rc::clone(&instance.gpu_rc()),
       surface,
-      surface_color_format: instance.surface_color_format(),
+      surface_color_format: instance.canvas_color_format(),
       surface_extent: hal::window::Extent2D {
         width: 0,
         height: 0,
