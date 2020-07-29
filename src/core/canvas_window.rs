@@ -43,6 +43,162 @@ impl CanvasWindow
     self.window.request_redraw()
   }
 
+  pub fn inner_position(
+    &self,
+  ) -> Result<window::PhysicalPosition<i32>, CanvasWindowOperationError>
+  {
+    let pos = self.window.inner_position()?;
+    Ok(pos)
+  }
+
+  pub fn outer_position(
+    &self,
+  ) -> Result<window::PhysicalPosition<i32>, CanvasWindowOperationError>
+  {
+    let pos = self.window.outer_position()?;
+    Ok(pos)
+  }
+
+  pub fn set_outer_position<P>(&self, position: P)
+  where
+    P: Into<window::Position>,
+  {
+    self.window.set_outer_position(position);
+  }
+
+  pub fn inner_size(&self) -> window::PhysicalSize<u32>
+  {
+    self.window.inner_size()
+  }
+
+  pub fn outer_size(&self) -> window::PhysicalSize<u32>
+  {
+    self.window.outer_size()
+  }
+
+  pub fn set_inner_size<S>(
+    &mut self,
+    size: S,
+  ) -> Result<(), CanvasWindowOperationError>
+  where
+    S: Into<window::Size>,
+  {
+    self.window.set_inner_size(size);
+    Ok(())
+    //self.resize_canvas()
+  }
+
+  pub fn set_min_inner_size<S>(
+    &mut self,
+    min_size: Option<S>,
+  ) -> Result<(), CanvasWindowOperationError>
+  where
+    S: Into<window::Size>,
+  {
+    self.window.set_min_inner_size(min_size);
+    Ok(())
+    // self.resize_canvas()
+  }
+
+  pub fn set_max_inner_size<S>(
+    &mut self,
+    max_size: Option<S>,
+  ) -> Result<(), CanvasWindowOperationError>
+  where
+    S: Into<window::Size>,
+  {
+    self.window.set_max_inner_size(max_size);
+    Ok(())
+    // self.resize_canvas()
+  }
+
+  pub fn set_title(&self, title: &str)
+  {
+    self.window.set_title(title)
+  }
+
+  pub fn set_visible(&self, visible: bool)
+  {
+    self.window.set_visible(visible)
+  }
+
+  pub fn set_resizable(&self, resizable: bool)
+  {
+    self.window.set_resizable(resizable)
+  }
+
+  pub fn set_minimized(&self, minimized: bool)
+  {
+    self.window.set_minimized(minimized)
+  }
+
+  pub fn set_maximized(&self, maximized: bool)
+  {
+    self.window.set_maximized(maximized)
+  }
+
+  pub fn set_fullsceen(&self, fullscreen: Option<window::Fullscreen>)
+  {
+    self.window.set_fullscreen(fullscreen)
+  }
+
+  pub fn fullscreen(&self) -> Option<window::Fullscreen>
+  {
+    self.window.fullscreen()
+  }
+
+  pub fn set_decorations(&self, decorations: bool)
+  {
+    self.window.set_decorations(decorations)
+  }
+
+  pub fn set_always_on_top(&self, always_on_top: bool)
+  {
+    self.window.set_always_on_top(always_on_top)
+  }
+
+  pub fn set_window_icon(&self, window_icon: Option<window::Icon>)
+  {
+    self.window.set_window_icon(window_icon)
+  }
+
+  pub fn set_ime_position<P>(&self, position: P)
+  where
+    P: Into<window::Position>,
+  {
+    self.window.set_ime_position(position)
+  }
+
+  pub fn set_cursor_icon(&self, cursor: window::CursorIcon)
+  {
+    self.window.set_cursor_icon(cursor)
+  }
+
+  pub fn set_cursor_position<P>(
+    &self,
+    position: P,
+  ) -> Result<(), CanvasWindowOperationError>
+  where
+    P: Into<window::Position>,
+  {
+    self.window.set_cursor_position(position)?;
+    Ok(())
+  }
+
+  pub fn set_cursor_grab(
+    &self,
+    grab: bool,
+  ) -> Result<(), CanvasWindowOperationError>
+  {
+    self.window.set_cursor_grab(grab)?;
+    Ok(())
+  }
+
+  pub fn set_cursor_visible(&self, visible: bool)
+  {
+    self.window.set_cursor_visible(visible)
+  }
+
   fn with_window(
     instance: &Instance,
     window: window::Window,
@@ -266,6 +422,73 @@ impl From<hal::window::CreationError> for CanvasWindowCreationError
   fn from(e: hal::window::CreationError) -> Self
   {
     CanvasWindowCreationError::SwapchainCreationFailed(e)
+  }
+}
+
+#[derive(Debug)]
+pub enum CanvasWindowOperationError
+{
+  UnsupportedOperation(window::NotSupportedError),
+  ExternalError(window::ExternalError),
+  SwapchainConfigurationFailed(hal::window::CreationError),
+}
+
+impl std::fmt::Display for CanvasWindowOperationError
+{
+  fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result
+  {
+    match self
+    {
+      CanvasWindowOperationError::UnsupportedOperation(e) =>
+      {
+        write!(f, "Unsupported operation ({})", e)
+      }
+      CanvasWindowOperationError::ExternalError(e) =>
+      {
+        write!(f, "External error ({})", e)
+      }
+      CanvasWindowOperationError::SwapchainConfigurationFailed(e) =>
+      {
+        write!(f, "Swapchain configuration failed ({})", e)
+      }
+    }
+  }
+}
+
+impl std::error::Error for CanvasWindowOperationError
+{
+  fn source(&self) -> Option<&(dyn std::error::Error + 'static)>
+  {
+    match self
+    {
+      CanvasWindowOperationError::UnsupportedOperation(e) => Some(e),
+      CanvasWindowOperationError::ExternalError(e) => Some(e),
+      CanvasWindowOperationError::SwapchainConfigurationFailed(e) => Some(e),
+    }
+  }
+}
+
+impl From<window::NotSupportedError> for CanvasWindowOperationError
+{
+  fn from(e: window::NotSupportedError) -> Self
+  {
+    CanvasWindowOperationError::UnsupportedOperation(e)
+  }
+}
+
+impl From<window::ExternalError> for CanvasWindowOperationError
+{
+  fn from(e: window::ExternalError) -> Self
+  {
+    CanvasWindowOperationError::ExternalError(e)
+  }
+}
+
+impl From<hal::window::CreationError> for CanvasWindowOperationError
+{
+  fn from(e: hal::window::CreationError) -> Self
+  {
+    CanvasWindowOperationError::SwapchainConfigurationFailed(e)
   }
 }
 
