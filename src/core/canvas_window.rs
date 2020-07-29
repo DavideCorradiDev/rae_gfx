@@ -18,6 +18,7 @@ pub struct CanvasWindow
 impl CanvasWindow
 {
   const FRAME_COUNT: usize = 3;
+
   pub fn new(
     instance: &Instance,
     event_loop: &window::EventLoop,
@@ -37,10 +38,7 @@ impl CanvasWindow
       Rc::clone(&instance.gpu_rc()),
       &window,
     )?;
-    let canvas_size = Size {
-      width: 0,
-      height: 0,
-    };
+    let canvas_size = Size::new(0, 0);
     let mut canvas_window = Self {
       window,
       gpu: Rc::clone(&instance.gpu_rc()),
