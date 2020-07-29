@@ -11,8 +11,8 @@ pub struct CanvasWindow
   window: window::Window,
   gpu: Rc<RefCell<halw::Gpu>>,
   surface: halw::Surface,
-  canvas_color_format: TextureFormat,
-  canvas_extent: hal::window::Extent2D,
+  surface_color_format: TextureFormat,
+  surface_extent: hal::window::Extent2D,
 }
 
 impl CanvasWindow
@@ -204,8 +204,8 @@ impl CanvasWindow
   ) -> Result<(), hal::window::CreationError>
   {
     let current_size = self.inner_size();
-    if self.canvas_extent.width != current_size.width
-      || self.canvas_extent.height != current_size.height
+    if self.surface_extent.width != current_size.width
+      || self.surface_extent.height != current_size.height
     {
       self.configure_swapchain()?;
     }
@@ -226,8 +226,8 @@ impl CanvasWindow
       window,
       gpu: Rc::clone(&instance.gpu_rc()),
       surface,
-      canvas_color_format: instance.canvas_color_format(),
-      canvas_extent: hal::window::Extent2D {
+      surface_color_format: instance.surface_color_format(),
+      surface_extent: hal::window::Extent2D {
         width: 0,
         height: 0,
       },
@@ -246,14 +246,14 @@ impl CanvasWindow
     let config = hal::window::SwapchainConfig {
       present_mode: hal::window::PresentMode::FIFO,
       composite_alpha_mode: hal::window::CompositeAlphaMode::POSTMULTIPLIED,
-      format: self.canvas_color_format,
+      format: self.surface_color_format,
       extent: extent,
       image_count: Self::FRAME_COUNT as u32,
       image_layers: 1,
       image_usage: hal::window::DEFAULT_USAGE,
     };
     self.surface.configure_swapchain(config)?;
-    self.canvas_extent = extent;
+    self.surface_extent = extent;
     Ok(())
   }
 }
