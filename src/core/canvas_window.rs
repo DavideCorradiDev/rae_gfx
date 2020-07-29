@@ -84,7 +84,7 @@ impl CanvasWindow
     S: Into<window::Size>,
   {
     self.window.set_inner_size(size);
-    self.reconfigure_swapchain()?;
+    self.resize_canvas_if_necessary()?;
     Ok(())
   }
 
@@ -96,7 +96,7 @@ impl CanvasWindow
     S: Into<window::Size>,
   {
     self.window.set_min_inner_size(min_size);
-    self.reconfigure_swapchain()?;
+    self.resize_canvas_if_necessary()?;
     Ok(())
   }
 
@@ -108,7 +108,7 @@ impl CanvasWindow
     S: Into<window::Size>,
   {
     self.window.set_max_inner_size(max_size);
-    self.reconfigure_swapchain()?;
+    self.resize_canvas_if_necessary()?;
     Ok(())
   }
 
@@ -199,6 +199,19 @@ impl CanvasWindow
     self.window.set_cursor_visible(visible)
   }
 
+  pub fn resize_canvas_if_necessary(
+    &mut self,
+  ) -> Result<(), hal::window::CreationError>
+  {
+    let current_size = self.inner_size();
+    if self.canvas_extent.width != current_size.width
+      || self.canvas_extent.height != current_size.height
+    {
+      self.configure_swapchain()?;
+    }
+    Ok(())
+  }
+
   fn with_window(
     instance: &Instance,
     window: window::Window,
@@ -241,18 +254,6 @@ impl CanvasWindow
     };
     self.surface.configure_swapchain(config)?;
     self.canvas_extent = extent;
-    Ok(())
-  }
-
-  fn reconfigure_swapchain(&mut self)
-    -> Result<(), hal::window::CreationError>
-  {
-    let current_size = self.inner_size();
-    if self.canvas_extent.width != current_size.width
-      || self.canvas_extent.height != current_size.height
-    {
-      self.configure_swapchain()?;
-    }
     Ok(())
   }
 }
