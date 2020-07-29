@@ -108,26 +108,87 @@ impl CanvasWindowBuilder
     }
   }
 
-  pub fn with_title(self, title: &str) -> Self
+  pub fn with_inner_size<S: Into<window::Size>>(self, size: S) -> Self
+  {
+    CanvasWindowBuilder {
+      builder: self.builder.with_inner_size(size),
+    }
+  }
+
+  pub fn with_min_inner_size<S: Into<window::Size>>(self, size: S) -> Self
+  {
+    CanvasWindowBuilder {
+      builder: self.builder.with_min_inner_size(size),
+    }
+  }
+
+  pub fn with_max_inner_size<S: Into<window::Size>>(self, size: S) -> Self
+  {
+    CanvasWindowBuilder {
+      builder: self.builder.with_max_inner_size(size),
+    }
+  }
+
+  pub fn with_title<T: Into<String>>(self, title: T) -> Self
   {
     CanvasWindowBuilder {
       builder: self.builder.with_title(title),
     }
   }
 
-  pub fn with_visibility(self, visible: bool) -> Self
+  pub fn with_window_icon(self, icon: Option<window::Icon>) -> Self
+  {
+    CanvasWindowBuilder {
+      builder: self.builder.with_window_icon(icon),
+    }
+  }
+
+  pub fn with_fullscreen(self, monitor: Option<window::Fullscreen>) -> Self
+  {
+    CanvasWindowBuilder {
+      builder: self.builder.with_fullscreen(monitor),
+    }
+  }
+
+  pub fn with_resizable(self, resizable: bool) -> Self
+  {
+    CanvasWindowBuilder {
+      builder: self.builder.with_resizable(resizable),
+    }
+  }
+
+  pub fn with_maximized(self, maximized: bool) -> Self
+  {
+    CanvasWindowBuilder {
+      builder: self.builder.with_maximized(maximized),
+    }
+  }
+
+  pub fn with_visible(self, visible: bool) -> Self
   {
     CanvasWindowBuilder {
       builder: self.builder.with_visible(visible),
     }
   }
 
-  pub fn with_inner_size<S>(self, size: S) -> Self
-  where
-    S: Into<window::Size>,
+  pub fn with_transparent(self, transparent: bool) -> Self
   {
     CanvasWindowBuilder {
-      builder: self.builder.with_inner_size(size),
+      builder: self.builder.with_transparent(transparent),
+    }
+  }
+
+  pub fn with_decorations(self, decorations: bool) -> Self
+  {
+    CanvasWindowBuilder {
+      builder: self.builder.with_decorations(decorations),
+    }
+  }
+
+  pub fn with_always_on_top(self, always_on_top: bool) -> Self
+  {
+    CanvasWindowBuilder {
+      builder: self.builder.with_always_on_top(always_on_top),
     }
   }
 
@@ -244,7 +305,7 @@ mod tests
           width: 640,
           height: 480,
         }))
-        .with_visibility(false)
+        .with_visible(false)
         .build(&self.instance, &self.event_loop)
         .unwrap()
     }
