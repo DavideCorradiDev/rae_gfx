@@ -2,7 +2,7 @@ extern crate gfx_hal as hal;
 
 use std::{cell::RefCell, rc::Rc};
 
-use super::{Canvas, Instance, Size, TextureFormat};
+use super::{Canvas, Instance, TextureFormat};
 use crate::{halw, window};
 
 #[derive(Debug)]
@@ -12,7 +12,7 @@ pub struct CanvasWindow
   gpu: Rc<RefCell<halw::Gpu>>,
   surface: halw::Surface,
   canvas_color_format: TextureFormat,
-  canvas_size: Size<u32>,
+  canvas_extent: hal::window::Extent2D,
 }
 
 impl CanvasWindow
@@ -28,6 +28,21 @@ impl CanvasWindow
     Self::with_window(instance, window)
   }
 
+  pub fn id(&self) -> window::WindowId
+  {
+    self.window.id()
+  }
+
+  pub fn scale_factor(&self) -> f64
+  {
+    self.window.scale_factor()
+  }
+
+  pub fn request_redraw(&self)
+  {
+    self.window.request_redraw()
+  }
+
   fn with_window(
     instance: &Instance,
     window: window::Window,
@@ -38,13 +53,15 @@ impl CanvasWindow
       Rc::clone(&instance.gpu_rc()),
       &window,
     )?;
-    let canvas_size = Size::new(0, 0);
     let mut canvas_window = Self {
       window,
       gpu: Rc::clone(&instance.gpu_rc()),
       surface,
       canvas_color_format: instance.canvas_color_format(),
-      canvas_size,
+      canvas_extent: hal::window::Extent2D {
+        width: 0,
+        height: 0,
+      },
     };
     canvas_window.configure_swapchain(instance.canvas_color_format())?;
     Ok(canvas_window)
@@ -69,7 +86,9 @@ impl CanvasWindow
       image_layers: 1,
       image_usage: hal::window::DEFAULT_USAGE,
     };
-    self.surface.configure_swapchain(config)
+    self.surface.configure_swapchain(config)?;
+    self.canvas_extent = extent;
+    Ok(())
   }
 }
 
@@ -142,14 +161,58 @@ impl From<hal::window::CreationError> for CanvasWindowCreationError
 #[cfg(test)]
 mod tests
 {
+  extern crate galvanic_assert;
+
+  use galvanic_assert::{matchers::*, *};
+
   use super::*;
   use crate::window::EventLoopExt;
 
-  #[test]
-  fn canvas_window_creation()
+  struct TestFixture
   {
-    let instance = Instance::create().unwrap();
-    let event_loop = window::EventLoop::new_any_thread();
-    let _window = CanvasWindow::new(&instance, &event_loop).unwrap();
+    pub instance: Instance,
+    pub event_loop: window::EventLoop,
+  }
+
+  impl TestFixture
+  {
+    pub fn setup() -> Self
+    {
+      let instance = Instance::create().unwrap();
+      let event_loop = window::EventLoop::new_any_thread();
+      Self {
+        instance,
+        event_loop,
+      }
+    }
+
+    pub fn new_window(&self) -> CanvasWindow
+    {
+      CanvasWindow::new(&self.instance, &self.event_loop).unwrap()
+    }
+  }
+
+  #[test]
+  fn new()
+  {
+    let tf = TestFixture::setup();
+    let _window = CanvasWindow::new(&tf.instance, &tf.event_loop).unwrap();
+  }
+
+  #[test]
+  fn id()
+  {
+    let tf = TestFixture::setup();
+    let window1 = tf.new_window();
+    let window2 = tf.new_window();
+    assert_that!(&window1.id(), not(eq(window2.id())));
+  }
+
+  #[test]
+  fn scale_factor()
+  {
+    let tf = TestFixture::setup();
+    let window = tf.new_window();
+    assert_that!(&window.scale_factor(), not(eq(0.)));
   }
 }
