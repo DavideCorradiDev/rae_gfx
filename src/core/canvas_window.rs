@@ -84,8 +84,8 @@ impl CanvasWindow
     S: Into<window::Size>,
   {
     self.window.set_inner_size(size);
+    self.reconfigure_swapchain()?;
     Ok(())
-    //self.resize_canvas()
   }
 
   pub fn set_min_inner_size<S>(
@@ -96,8 +96,8 @@ impl CanvasWindow
     S: Into<window::Size>,
   {
     self.window.set_min_inner_size(min_size);
+    self.reconfigure_swapchain()?;
     Ok(())
-    // self.resize_canvas()
   }
 
   pub fn set_max_inner_size<S>(
@@ -108,8 +108,8 @@ impl CanvasWindow
     S: Into<window::Size>,
   {
     self.window.set_max_inner_size(max_size);
+    self.reconfigure_swapchain()?;
     Ok(())
-    // self.resize_canvas()
   }
 
   pub fn set_title(&self, title: &str)
@@ -219,14 +219,11 @@ impl CanvasWindow
         height: 0,
       },
     };
-    canvas_window.configure_swapchain(instance.canvas_color_format())?;
+    canvas_window.configure_swapchain()?;
     Ok(canvas_window)
   }
 
-  fn configure_swapchain(
-    &mut self,
-    canvas_color_format: TextureFormat,
-  ) -> Result<(), hal::window::CreationError>
+  fn configure_swapchain(&mut self) -> Result<(), hal::window::CreationError>
   {
     let size = self.window.inner_size();
     let extent = hal::window::Extent2D {
@@ -236,7 +233,7 @@ impl CanvasWindow
     let config = hal::window::SwapchainConfig {
       present_mode: hal::window::PresentMode::FIFO,
       composite_alpha_mode: hal::window::CompositeAlphaMode::POSTMULTIPLIED,
-      format: canvas_color_format,
+      format: self.canvas_color_format,
       extent: extent,
       image_count: Self::FRAME_COUNT as u32,
       image_layers: 1,
@@ -244,6 +241,18 @@ impl CanvasWindow
     };
     self.surface.configure_swapchain(config)?;
     self.canvas_extent = extent;
+    Ok(())
+  }
+
+  fn reconfigure_swapchain(&mut self)
+    -> Result<(), hal::window::CreationError>
+  {
+    let current_size = self.inner_size();
+    if self.canvas_extent.width != current_size.width
+      || self.canvas_extent.height != current_size.height
+    {
+      self.configure_swapchain()?;
+    }
     Ok(())
   }
 }
