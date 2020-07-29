@@ -108,19 +108,26 @@ impl CanvasWindowBuilder
     }
   }
 
+  pub fn with_title(self, title: &str) -> Self
+  {
+    CanvasWindowBuilder {
+      builder: self.builder.with_title(title),
+    }
+  }
+
+  pub fn with_visibility(self, visible: bool) -> Self
+  {
+    CanvasWindowBuilder {
+      builder: self.builder.with_visible(visible),
+    }
+  }
+
   pub fn with_inner_size<S>(self, size: S) -> Self
   where
     S: Into<window::Size>,
   {
     CanvasWindowBuilder {
       builder: self.builder.with_inner_size(size),
-    }
-  }
-
-  pub fn with_title(self, title: &str) -> Self
-  {
-    CanvasWindowBuilder {
-      builder: self.builder.with_title(title),
     }
   }
 
@@ -231,7 +238,15 @@ mod tests
 
     pub fn new_window(&self) -> CanvasWindow
     {
-      CanvasWindow::new(&self.instance, &self.event_loop).unwrap()
+      let b = CanvasWindowBuilder::new();
+      b.with_title("Test")
+        .with_inner_size(window::Size::Physical(window::PhysicalSize {
+          width: 640,
+          height: 480,
+        }))
+        .with_visibility(false)
+        .build(&self.instance, &self.event_loop)
+        .unwrap()
     }
   }
 
