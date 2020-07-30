@@ -18,6 +18,7 @@ pub struct CanvasWindow
   cmd_buffers: Vec<halw::CommandBuffer>,
   semaphores: Vec<halw::Semaphore>,
   fences: Vec<halw::Fence>,
+  current_image: Option<halw::SwapchainImage>,
 }
 
 impl CanvasWindow
@@ -242,6 +243,7 @@ impl CanvasWindow
       cmd_buffers,
       semaphores,
       fences,
+      current_image: None,
     };
     canvas_window.configure_swapchain()?;
     Ok(canvas_window)
