@@ -19,6 +19,7 @@ pub struct CanvasWindow
   semaphores: Vec<halw::Semaphore>,
   fences: Vec<halw::Fence>,
   current_image: Option<halw::SwapchainImage>,
+  current_frame_idx: usize,
 }
 
 impl CanvasWindow
@@ -244,6 +245,7 @@ impl CanvasWindow
       semaphores,
       fences,
       current_image: None,
+      current_frame_idx: 0,
     };
     canvas_window.configure_swapchain()?;
     Ok(canvas_window)
