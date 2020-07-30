@@ -16,6 +16,8 @@ pub struct CanvasWindow
   surface_color_format: TextureFormat,
   surface_extent: hal::window::Extent2D,
   cmd_buffers: Vec<halw::CommandBuffer>,
+  semaphores: Vec<halw::Semaphore>,
+  fences: Vec<halw::Fence>,
 }
 
 impl CanvasWindow
@@ -226,6 +228,8 @@ impl CanvasWindow
       &window,
     )?;
     let cmd_buffers = Self::create_command_buffers(instance)?;
+    let semaphores = Self::create_semaphores(instance)?;
+    let fences = Self::create_fences(instance)?;
     let mut canvas_window = Self {
       window,
       gpu: Rc::clone(&instance.gpu_rc()),
@@ -236,6 +240,8 @@ impl CanvasWindow
         height: 0,
       },
       cmd_buffers,
+      semaphores,
+      fences,
     };
     canvas_window.configure_swapchain()?;
     Ok(canvas_window)
@@ -255,6 +261,30 @@ impl CanvasWindow
       hal::command::Level::Primary,
       Self::FRAME_COUNT,
     ))
+  }
+
+  fn create_semaphores(
+    instance: &Instance,
+  ) -> Result<Vec<halw::Semaphore>, hal::device::OutOfMemory>
+  {
+    let mut semaphores = Vec::with_capacity(Self::FRAME_COUNT);
+    for _ in 0..Self::FRAME_COUNT
+    {
+      semaphores.push(halw::Semaphore::create(Rc::clone(&instance.gpu_rc()))?);
+    }
+    Ok(semaphores)
+  }
+
+  fn create_fences(
+    instance: &Instance,
+  ) -> Result<Vec<halw::Fence>, hal::device::OutOfMemory>
+  {
+    let mut fences = Vec::with_capacity(Self::FRAME_COUNT);
+    for _ in 0..Self::FRAME_COUNT
+    {
+      fences.push(halw::Fence::create(Rc::clone(&instance.gpu_rc()), true)?);
+    }
+    Ok(fences)
   }
 
   fn configure_swapchain(&mut self) -> Result<(), hal::window::CreationError>
