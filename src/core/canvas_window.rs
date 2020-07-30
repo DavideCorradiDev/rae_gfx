@@ -2,7 +2,7 @@ extern crate gfx_hal as hal;
 
 use std::{cell::RefCell, rc::Rc};
 
-use super::{Canvas, Instance, TextureFormat};
+use super::{BeginFrameError, Canvas, EndFrameError, Instance, TextureFormat};
 use crate::{halw, window};
 
 #[derive(Debug)]
@@ -258,7 +258,18 @@ impl CanvasWindow
   }
 }
 
-impl Canvas for CanvasWindow {}
+impl Canvas for CanvasWindow
+{
+  fn begin_frame(&mut self) -> Result<(), BeginFrameError>
+  {
+    Ok(())
+  }
+
+  fn end_frame(&mut self) -> Result<(), EndFrameError>
+  {
+    Ok(())
+  }
+}
 
 pub struct CanvasWindowBuilder
 {

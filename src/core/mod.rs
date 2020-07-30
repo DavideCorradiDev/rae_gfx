@@ -5,7 +5,7 @@ mod size;
 pub use size::Size;
 
 mod canvas;
-pub use canvas::Canvas;
+pub use canvas::{BeginFrameError, Canvas, EndFrameError};
 
 mod canvas_window;
 pub use canvas_window::{CanvasWindow, CanvasWindowBuilder};
