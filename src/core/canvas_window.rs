@@ -2,6 +2,8 @@ extern crate gfx_hal as hal;
 
 use std::{cell::RefCell, rc::Rc};
 
+use hal::queue::QueueFamily as HalQueueFamily;
+
 use super::{BeginFrameError, Canvas, EndFrameError, Instance, TextureFormat};
 use crate::{halw, window};
 
@@ -13,6 +15,7 @@ pub struct CanvasWindow
   surface: halw::Surface,
   surface_color_format: TextureFormat,
   surface_extent: hal::window::Extent2D,
+  cmd_buffers: Vec<halw::CommandBuffer>,
 }
 
 impl CanvasWindow
@@ -222,6 +225,7 @@ impl CanvasWindow
       Rc::clone(&instance.gpu_rc()),
       &window,
     )?;
+    let cmd_buffers = Self::create_command_buffers(instance)?;
     let mut canvas_window = Self {
       window,
       gpu: Rc::clone(&instance.gpu_rc()),
@@ -231,9 +235,26 @@ impl CanvasWindow
         width: 0,
         height: 0,
       },
+      cmd_buffers,
     };
     canvas_window.configure_swapchain()?;
     Ok(canvas_window)
+  }
+
+  fn create_command_buffers(
+    instance: &Instance,
+  ) -> Result<Vec<halw::CommandBuffer>, hal::device::OutOfMemory>
+  {
+    let cmd_pool = halw::CommandPool::create(
+      Rc::clone(&instance.gpu_rc()),
+      instance.queue_family().id(),
+      hal::pool::CommandPoolCreateFlags::empty(),
+    )?;
+    Ok(halw::CommandBuffer::allocate(
+      Rc::new(RefCell::new(cmd_pool)),
+      hal::command::Level::Primary,
+      Self::FRAME_COUNT,
+    ))
   }
 
   fn configure_swapchain(&mut self) -> Result<(), hal::window::CreationError>
@@ -388,6 +409,7 @@ pub enum CanvasWindowCreationError
   OsError(window::OsError),
   SurfaceCreationFailed(hal::window::InitError),
   SwapchainCreationFailed(hal::window::CreationError),
+  OutOfMemory(hal::device::OutOfMemory),
 }
 
 impl std::fmt::Display for CanvasWindowCreationError
@@ -405,6 +427,10 @@ impl std::fmt::Display for CanvasWindowCreationError
       {
         write!(f, "Swapchain configuration failed ({})", e)
       }
+      CanvasWindowCreationError::OutOfMemory(e) =>
+      {
+        write!(f, "Out of memory ({})", e)
+      }
     }
   }
 }
@@ -418,6 +444,7 @@ impl std::error::Error for CanvasWindowCreationError
       CanvasWindowCreationError::OsError(e) => Some(e),
       CanvasWindowCreationError::SurfaceCreationFailed(e) => Some(e),
       CanvasWindowCreationError::SwapchainCreationFailed(e) => Some(e),
+      CanvasWindowCreationError::OutOfMemory(e) => Some(e),
     }
   }
 }
@@ -443,6 +470,14 @@ impl From<hal::window::CreationError> for CanvasWindowCreationError
   fn from(e: hal::window::CreationError) -> Self
   {
     CanvasWindowCreationError::SwapchainCreationFailed(e)
+  }
+}
+
+impl From<hal::device::OutOfMemory> for CanvasWindowCreationError
+{
+  fn from(e: hal::device::OutOfMemory) -> Self
+  {
+    CanvasWindowCreationError::OutOfMemory(e)
   }
 }
 
