@@ -12,6 +12,7 @@ pub struct CanvasWindow
 {
   window: window::Window,
   gpu: Rc<RefCell<halw::Gpu>>,
+  render_pass: halw::RenderPass,
   surface: halw::Surface,
   surface_color_format: TextureFormat,
   surface_extent: hal::window::Extent2D,
@@ -224,6 +225,7 @@ impl CanvasWindow
     window: window::Window,
   ) -> Result<Self, CanvasWindowCreationError>
   {
+    let render_pass = Self::create_render_pass(instance)?;
     let surface = halw::Surface::create(
       Rc::clone(&instance.instance_rc()),
       Rc::clone(&instance.gpu_rc()),
@@ -235,6 +237,7 @@ impl CanvasWindow
     let mut canvas_window = Self {
       window,
       gpu: Rc::clone(&instance.gpu_rc()),
+      render_pass,
       surface,
       surface_color_format: instance.canvas_color_format(),
       surface_extent: hal::window::Extent2D {
@@ -249,6 +252,35 @@ impl CanvasWindow
     };
     canvas_window.configure_swapchain()?;
     Ok(canvas_window)
+  }
+
+  fn create_render_pass(
+    instance: &Instance,
+  ) -> Result<halw::RenderPass, hal::device::OutOfMemory>
+  {
+    let color_attachment = hal::pass::Attachment {
+      format: Some(instance.canvas_color_format()),
+      samples: 1,
+      ops: hal::pass::AttachmentOps::new(
+        hal::pass::AttachmentLoadOp::Clear,
+        hal::pass::AttachmentStoreOp::Store,
+      ),
+      stencil_ops: hal::pass::AttachmentOps::DONT_CARE,
+      layouts: hal::image::Layout::Undefined..hal::image::Layout::Present,
+    };
+    let subpass = hal::pass::SubpassDesc {
+      colors: &[(0, hal::image::Layout::ColorAttachmentOptimal)],
+      depth_stencil: None,
+      inputs: &[],
+      resolves: &[],
+      preserves: &[],
+    };
+    halw::RenderPass::create(
+      Rc::clone(&instance.gpu_rc()),
+      &[color_attachment],
+      &[subpass],
+      &[],
+    )
   }
 
   fn create_command_buffers(
