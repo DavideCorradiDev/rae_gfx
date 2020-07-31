@@ -1,8 +1,12 @@
 extern crate gfx_hal as hal;
 
-use std::{cell::RefCell, rc::Rc};
+use std::{borrow::Borrow, cell::RefCell, rc::Rc};
 
-use hal::queue::QueueFamily as HalQueueFamily;
+use hal::{
+  command::CommandBuffer as HalCommandBuffer,
+  queue::QueueFamily as HalQueueFamily,
+  window::PresentationSurface as HalPresentatationSurface,
+};
 
 use super::{
   BeginFrameError, Canvas, EndFrameError, Instance, SynchronizeFrameError,
@@ -359,6 +363,62 @@ impl Canvas for CanvasWindow
 
   fn begin_frame(&mut self) -> Result<(), BeginFrameError>
   {
+    if self.is_processing_frame()
+    {
+      return Err(BeginFrameError::AlreadyProcessingFrame);
+    }
+
+    self.synchronize()?;
+
+    let (image, _) = unsafe { self.surface.acquire_image(!0) }?;
+    let framebuffer = halw::Framebuffer::create(
+      Rc::clone(&self.gpu),
+      &self.render_pass,
+      std::iter::once(image.borrow()),
+      hal::image::Extent {
+        width: self.surface_extent.width,
+        height: self.surface_extent.height,
+        depth: 1,
+      },
+    )?;
+    let viewport_rect = hal::pso::Rect {
+      x: 0,
+      y: 0,
+      w: self.surface_extent.width as i16,
+      h: self.surface_extent.height as i16,
+    };
+    let viewport = hal::pso::Viewport {
+      rect: viewport_rect,
+      depth: 0.0..1.0,
+    };
+    let cmd_buf = &mut self.cmd_buffers[self.current_frame_idx];
+
+    unsafe {
+      cmd_buf.reset(true);
+      cmd_buf.begin_primary(hal::command::CommandBufferFlags::ONE_TIME_SUBMIT);
+      cmd_buf.set_scissors(0, &[viewport.rect]);
+      cmd_buf.set_viewports(
+        0,
+        &[hal::pso::Viewport {
+          rect: viewport_rect,
+          depth: 0.0..1.0,
+        }],
+      );
+      cmd_buf.begin_render_pass(
+        &self.render_pass,
+        &framebuffer,
+        viewport.rect,
+        &[hal::command::ClearValue {
+          color: hal::command::ClearColor {
+            float32: [0., 0., 0., 1.],
+          },
+        }],
+        hal::command::SubpassContents::Inline,
+      )
+    }
+
+    self.current_image = Some(image);
+    self.current_framebuffer = Some(framebuffer);
     Ok(())
   }
 

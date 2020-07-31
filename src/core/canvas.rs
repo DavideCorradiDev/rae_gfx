@@ -13,6 +13,8 @@ pub enum BeginFrameError
 {
   AlreadyProcessingFrame,
   ImageAcquisitionFailed(hal::window::AcquireError),
+  FrameSynchronizationFailed(SynchronizeFrameError),
+  OutOfMemory(hal::device::OutOfMemory),
 }
 
 impl std::fmt::Display for BeginFrameError
@@ -29,6 +31,15 @@ impl std::fmt::Display for BeginFrameError
       {
         write!(f, "Failed to begin frame: failed to acquire image ({})", e)
       }
+      BeginFrameError::FrameSynchronizationFailed(e) => write!(
+        f,
+        "Failed to begin frame: failed to synchronize frame ({})",
+        e
+      ),
+      BeginFrameError::OutOfMemory(e) =>
+      {
+        write!(f, "Failed to begin frame: out of memory ({})", e)
+      }
     }
   }
 }
@@ -40,6 +51,8 @@ impl std::error::Error for BeginFrameError
     match self
     {
       BeginFrameError::ImageAcquisitionFailed(e) => Some(e),
+      BeginFrameError::FrameSynchronizationFailed(e) => Some(e),
+      BeginFrameError::OutOfMemory(e) => Some(e),
       _ => None,
     }
   }
@@ -50,6 +63,22 @@ impl From<hal::window::AcquireError> for BeginFrameError
   fn from(e: hal::window::AcquireError) -> Self
   {
     BeginFrameError::ImageAcquisitionFailed(e)
+  }
+}
+
+impl From<SynchronizeFrameError> for BeginFrameError
+{
+  fn from(e: SynchronizeFrameError) -> Self
+  {
+    BeginFrameError::FrameSynchronizationFailed(e)
+  }
+}
+
+impl From<hal::device::OutOfMemory> for BeginFrameError
+{
+  fn from(e: hal::device::OutOfMemory) -> Self
+  {
+    BeginFrameError::OutOfMemory(e)
   }
 }
 
@@ -87,9 +116,12 @@ impl std::fmt::Display for SynchronizeFrameError
     {
       SynchronizeFrameError::OutOfMemory(e) =>
       {
-        write!(f, "Out of memory ({})", e)
+        write!(f, "Falied to synchronize frame: out of memory ({})", e)
       }
-      SynchronizeFrameError::DeviceLost(e) => write!(f, "Device lost ({})", e),
+      SynchronizeFrameError::DeviceLost(e) =>
+      {
+        write!(f, "Failed to synchronize frame: device lost ({})", e)
+      }
     }
   }
 }
