@@ -664,10 +664,10 @@ mod tests
   }
 
   #[test]
-  fn new()
+  fn window_creation()
   {
     let tf = TestFixture::setup();
-    let _window = CanvasWindow::new(&tf.instance, &tf.event_loop).unwrap();
+    let _window = tf.new_window();
   }
 
   #[test]

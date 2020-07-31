@@ -30,6 +30,25 @@ impl Fence
       gpu,
     })
   }
+
+  pub fn wait(
+    &self,
+    timeout_ns: u64,
+  ) -> Result<bool, hal::device::OomOrDeviceLost>
+  {
+    unsafe {
+      self
+        .gpu
+        .borrow()
+        .device
+        .wait_for_fence(&self.value, timeout_ns)
+    }
+  }
+
+  pub fn reset(&self) -> Result<(), hal::device::OutOfMemory>
+  {
+    unsafe { self.gpu.borrow().device.reset_fence(&self.value) }
+  }
 }
 
 impl Drop for Fence
