@@ -351,7 +351,7 @@ impl Canvas for CanvasWindow
 {
   fn is_processing_frame(&self) -> bool
   {
-    false
+    self.current_framebuffer.is_some()
   }
 
   fn begin_frame(&mut self) -> Result<(), BeginFrameError>
