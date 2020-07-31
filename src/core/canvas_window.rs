@@ -4,7 +4,10 @@ use std::{cell::RefCell, rc::Rc};
 
 use hal::queue::QueueFamily as HalQueueFamily;
 
-use super::{BeginFrameError, Canvas, EndFrameError, Instance, TextureFormat};
+use super::{
+  BeginFrameError, Canvas, EndFrameError, Instance, SynchronizeFrameError,
+  TextureFormat,
+};
 use crate::{halw, window};
 
 #[derive(Debug)]
@@ -360,6 +363,11 @@ impl Canvas for CanvasWindow
   }
 
   fn end_frame(&mut self) -> Result<(), EndFrameError>
+  {
+    Ok(())
+  }
+
+  fn synchronize(&self) -> Result<(), SynchronizeFrameError>
   {
     Ok(())
   }

@@ -5,6 +5,7 @@ pub trait Canvas
   fn is_processing_frame(&self) -> bool;
   fn begin_frame(&mut self) -> Result<(), BeginFrameError>;
   fn end_frame(&mut self) -> Result<(), EndFrameError>;
+  fn synchronize(&self) -> Result<(), SynchronizeFrameError>;
 }
 
 #[derive(Debug)]
@@ -44,6 +45,14 @@ impl std::error::Error for BeginFrameError
   }
 }
 
+impl From<hal::window::AcquireError> for BeginFrameError
+{
+  fn from(e: hal::window::AcquireError) -> Self
+  {
+    BeginFrameError::ImageAcquisitionFailed(e)
+  }
+}
+
 #[derive(Debug)]
 pub struct EndFrameError {}
 
@@ -60,5 +69,73 @@ impl std::error::Error for EndFrameError
   fn source(&self) -> Option<&(dyn std::error::Error + 'static)>
   {
     None
+  }
+}
+
+#[derive(Debug)]
+pub enum SynchronizeFrameError
+{
+  OutOfMemory(hal::device::OutOfMemory),
+  DeviceLost(hal::device::DeviceLost),
+}
+
+impl std::fmt::Display for SynchronizeFrameError
+{
+  fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result
+  {
+    match self
+    {
+      SynchronizeFrameError::OutOfMemory(e) =>
+      {
+        write!(f, "Out of memory ({})", e)
+      }
+      SynchronizeFrameError::DeviceLost(e) => write!(f, "Device lost ({})", e),
+    }
+  }
+}
+
+impl std::error::Error for SynchronizeFrameError
+{
+  fn source(&self) -> Option<&(dyn std::error::Error + 'static)>
+  {
+    match self
+    {
+      SynchronizeFrameError::OutOfMemory(e) => Some(e),
+      SynchronizeFrameError::DeviceLost(e) => Some(e),
+    }
+  }
+}
+
+impl From<hal::device::OutOfMemory> for SynchronizeFrameError
+{
+  fn from(e: hal::device::OutOfMemory) -> Self
+  {
+    SynchronizeFrameError::OutOfMemory(e)
+  }
+}
+
+impl From<hal::device::DeviceLost> for SynchronizeFrameError
+{
+  fn from(e: hal::device::DeviceLost) -> Self
+  {
+    SynchronizeFrameError::DeviceLost(e)
+  }
+}
+
+impl From<hal::device::OomOrDeviceLost> for SynchronizeFrameError
+{
+  fn from(e: hal::device::OomOrDeviceLost) -> Self
+  {
+    match e
+    {
+      hal::device::OomOrDeviceLost::OutOfMemory(e) =>
+      {
+        SynchronizeFrameError::OutOfMemory(e)
+      }
+      hal::device::OomOrDeviceLost::DeviceLost(e) =>
+      {
+        SynchronizeFrameError::DeviceLost(e)
+      }
+    }
   }
 }
