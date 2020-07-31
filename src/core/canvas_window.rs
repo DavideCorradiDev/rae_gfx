@@ -369,6 +369,9 @@ impl Canvas for CanvasWindow
 
   fn synchronize(&self) -> Result<(), SynchronizeFrameError>
   {
+    let fence = &self.fences[self.current_frame_idx];
+    fence.wait(!0)?;
+    fence.reset()?;
     Ok(())
   }
 }
