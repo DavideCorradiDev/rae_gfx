@@ -20,6 +20,7 @@ pub struct CanvasWindow
   semaphores: Vec<halw::Semaphore>,
   fences: Vec<halw::Fence>,
   current_image: Option<halw::SwapchainImage>,
+  current_framebuffer: Option<halw::Framebuffer>,
   current_frame_idx: usize,
 }
 
@@ -248,6 +249,7 @@ impl CanvasWindow
       semaphores,
       fences,
       current_image: None,
+      current_framebuffer: None,
       current_frame_idx: 0,
     };
     canvas_window.configure_swapchain()?;
@@ -347,6 +349,11 @@ impl CanvasWindow
 
 impl Canvas for CanvasWindow
 {
+  fn is_processing_frame(&self) -> bool
+  {
+    false
+  }
+
   fn begin_frame(&mut self) -> Result<(), BeginFrameError>
   {
     Ok(())
