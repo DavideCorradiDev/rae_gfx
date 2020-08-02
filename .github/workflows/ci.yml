@@ -30,7 +30,6 @@ jobs:
           - {os: windows-latest, options: "--features dx12", test: false, doc: false}
           - {os: ubuntu-latest, options: "--features opengl", test: false, doc: false}
           - {os: ubuntu-latest, options: "--features vulkan", test: false, doc: false}
-          - {os: macos-latest, options: "--features metal", test: false, doc: false}
 
     env:
       RUST_BACKTRACE: 1
