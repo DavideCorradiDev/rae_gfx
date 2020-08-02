@@ -1,6 +1,11 @@
 extern crate gfx_hal as hal;
 
-use std::{borrow::Borrow, cell::RefCell, ops::DerefMut, rc::Rc};
+use std::{
+  borrow::Borrow,
+  cell::RefCell,
+  ops::{Deref, DerefMut},
+  rc::Rc,
+};
 
 use hal::{
   command::CommandBuffer as HalCommandBuffer,
@@ -441,8 +446,8 @@ impl Canvas for CanvasWindow
       cmd_buf.finish();
     }
 
-    let fence = &*self.fences[self.current_frame_idx];
-    let semaphore = &*self.semaphores[self.current_frame_idx];
+    let fence = &self.fences[self.current_frame_idx];
+    let semaphore = &self.semaphores[self.current_frame_idx];
     let image = match std::mem::replace(&mut self.current_image, None)
     {
       Some(image) => image,
@@ -451,12 +456,18 @@ impl Canvas for CanvasWindow
     let submission = hal::queue::Submission {
       command_buffers: std::iter::once(&*cmd_buf),
       wait_semaphores: None,
-      signal_semaphores: std::iter::once(semaphore),
+      signal_semaphores: std::iter::once(semaphore.deref()),
     };
+
+    fence.reset()?;
     unsafe {
       let queue = &mut self.gpu.borrow_mut().queue_groups[0].queues[0];
-      queue.submit(submission, Some(fence));
-      queue.present_surface(&mut self.surface, image, Some(semaphore))?;
+      queue.submit(submission, Some(fence.deref()));
+      queue.present_surface(
+        &mut self.surface,
+        image,
+        Some(semaphore.deref()),
+      )?;
     }
 
     self.current_framebuffer = None;
@@ -469,7 +480,6 @@ impl Canvas for CanvasWindow
   {
     let fence = &self.fences[self.current_frame_idx];
     fence.wait(!0)?;
-    fence.reset()?;
     Ok(())
   }
 }
@@ -818,5 +828,28 @@ mod tests
       &window.begin_frame(),
       eq(Err(BeginFrameError::AlreadyProcessingFrame))
     );
+  }
+
+  #[test]
+  fn double_frame_end_error()
+  {
+    let tf = TestFixture::setup();
+    let mut window = tf.new_window();
+    expect_that!(
+      &window.end_frame(),
+      eq(Err(EndFrameError::NotProcessingFrame))
+    );
+  }
+
+  #[test]
+  fn synchronization()
+  {
+    let tf = TestFixture::setup();
+    let mut window = tf.new_window();
+    window.synchronize().unwrap();
+    window.begin_frame().unwrap();
+    window.synchronize().unwrap();
+    window.end_frame().unwrap();
+    window.synchronize().unwrap();
   }
 }

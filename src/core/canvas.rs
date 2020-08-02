@@ -85,6 +85,7 @@ pub enum EndFrameError
   NotProcessingFrame,
   ImageAcquisitionFailed,
   SurfacePresentationFailed(hal::window::PresentError),
+  OutOfMemory(hal::device::OutOfMemory),
 }
 
 impl std::fmt::Display for EndFrameError
@@ -105,6 +106,7 @@ impl std::fmt::Display for EndFrameError
       {
         write!(f, "Failed to present surface ({})", e)
       }
+      EndFrameError::OutOfMemory(e) => write!(f, "Out of memory ({})", e),
     }
   }
 }
@@ -116,6 +118,7 @@ impl std::error::Error for EndFrameError
     match self
     {
       EndFrameError::SurfacePresentationFailed(e) => Some(e),
+      EndFrameError::OutOfMemory(e) => Some(e),
       _ => None,
     }
   }
@@ -126,6 +129,14 @@ impl From<hal::window::PresentError> for EndFrameError
   fn from(e: hal::window::PresentError) -> Self
   {
     EndFrameError::SurfacePresentationFailed(e)
+  }
+}
+
+impl From<hal::device::OutOfMemory> for EndFrameError
+{
+  fn from(e: hal::device::OutOfMemory) -> Self
+  {
+    EndFrameError::OutOfMemory(e)
   }
 }
 
