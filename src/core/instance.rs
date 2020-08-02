@@ -91,16 +91,6 @@ impl Instance
     self.canvas_color_format
   }
 
-  pub fn queue_group(&self) -> Ref<halw::QueueGroup>
-  {
-    Ref::map(self.gpu.borrow(), |gpu| &gpu.queue_groups[0])
-  }
-
-  pub fn queue_group_mut(&mut self) -> RefMut<halw::QueueGroup>
-  {
-    RefMut::map(self.gpu.borrow_mut(), |gpu| &mut gpu.queue_groups[0])
-  }
-
   pub fn queue_family(&self) -> &halw::QueueFamily
   {
     // The find method is guaranteed to find something, excluding programming errors.
@@ -108,20 +98,8 @@ impl Instance
       .adapter
       .queue_families
       .iter()
-      .find(|a| a.id() == self.queue_group().family)
+      .find(|a| a.id() == self.gpu.borrow().queue_groups[0].family)
       .unwrap()
-  }
-
-  pub fn queue(&self) -> Ref<halw::CommandQueue>
-  {
-    Ref::map(self.queue_group(), |queue_group| &queue_group.queues[0])
-  }
-
-  pub fn queue_mut(&mut self) -> RefMut<halw::CommandQueue>
-  {
-    RefMut::map(self.queue_group_mut(), |queue_group| {
-      &mut queue_group.queues[0]
-    })
   }
 
   fn create_instance() -> Result<halw::Instance, InstanceCreationError>

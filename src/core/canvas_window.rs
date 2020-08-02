@@ -1,10 +1,10 @@
 extern crate gfx_hal as hal;
 
-use std::{borrow::Borrow, cell::RefCell, rc::Rc};
+use std::{borrow::Borrow, cell::RefCell, ops::DerefMut, rc::Rc};
 
 use hal::{
   command::CommandBuffer as HalCommandBuffer,
-  queue::QueueFamily as HalQueueFamily,
+  queue::{CommandQueue as HalCommandQueue, QueueFamily as HalQueueFamily},
   window::PresentationSurface as HalPresentatationSurface,
 };
 
@@ -424,6 +424,45 @@ impl Canvas for CanvasWindow
 
   fn end_frame(&mut self) -> Result<(), EndFrameError>
   {
+    if !self.is_processing_frame()
+    {
+      return Err(EndFrameError {});
+    }
+
+    let fence = &self.fences[self.current_frame_idx];
+    let semaphore = &*self.semaphores[self.current_frame_idx];
+    let cmd_buf = &mut self.cmd_buffers[self.current_frame_idx].deref_mut();
+
+    let queue = &mut self.gpu.borrow_mut().queue_groups[0].queues[0];
+    let image = match std::mem::replace(&mut self.current_image, None)
+    {
+      Some(image) => image,
+      None => return Err(EndFrameError {}),
+    };
+
+    unsafe {
+      cmd_buf.end_render_pass();
+      cmd_buf.finish();
+    }
+
+    let submission = hal::queue::Submission {
+      command_buffers: std::iter::once(&*cmd_buf),
+      wait_semaphores: None,
+      signal_semaphores: std::iter::once(semaphore),
+    };
+
+    let result = unsafe {
+      queue.submit(submission, Some(fence));
+      queue.present_surface(&mut self.surface, image, Some(semaphore))
+    };
+
+    self.current_framebuffer = None;
+    self.current_frame_idx = (self.current_frame_idx + 1) % Self::FRAME_COUNT;
+    if result.is_err()
+    {
+      return Err(EndFrameError {});
+    }
+
     Ok(())
   }
 
