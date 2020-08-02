@@ -33,3 +33,7 @@ pub type QueueGroup = hal::queue::family::QueueGroup<Backend>;
 pub type QueueFamily = <Backend as hal::Backend>::QueueFamily;
 pub type CommandQueue = <Backend as hal::Backend>::CommandQueue;
 pub type GraphicsPipelineDesc<'a> = hal::pso::GraphicsPipelineDesc<'a, Backend>;
+pub type SwapchainImage =
+  <<Backend as hal::Backend>::Surface as hal::window::PresentationSurface<
+    Backend,
+  >>::SwapchainImage;
