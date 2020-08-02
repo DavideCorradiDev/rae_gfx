@@ -357,9 +357,9 @@ impl CanvasWindow
 
 impl Canvas for CanvasWindow
 {
-  fn image_count(&self) -> u32
+  fn image_count(&self) -> usize
   {
-    2
+    CanvasWindow::FRAME_COUNT
   }
 
   fn is_processing_frame(&self) -> bool
