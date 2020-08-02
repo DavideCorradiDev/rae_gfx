@@ -41,7 +41,7 @@ jobs:
     steps:
     - uses: actions/checkout@v2
     - name: Echo
-      run: echo Options $OPTIONS OtherEnv $OTHER_ENV Workflow $GITHUB_WORKFLOW
+      run: echo Options ${OPTIONS} OtherEnv ${OTHER_ENV} Workflow ${GITHUB_WORKFLOW}
       env:
         OTHER_ENV: foobar
     - name: Build
