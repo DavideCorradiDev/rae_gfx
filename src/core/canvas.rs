@@ -83,13 +83,32 @@ impl From<hal::device::OutOfMemory> for BeginFrameError
 }
 
 #[derive(Debug)]
-pub struct EndFrameError {}
+pub enum EndFrameError
+{
+  NotProcessingFrame,
+  ImageAcquisitionFailed,
+  SurfacePresentationFailed(hal::window::PresentError),
+}
 
 impl std::fmt::Display for EndFrameError
 {
   fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result
   {
-    write!(f, "Failed to end frame")
+    match self
+    {
+      EndFrameError::NotProcessingFrame =>
+      {
+        write!(f, "No frame is being processed")
+      }
+      EndFrameError::ImageAcquisitionFailed =>
+      {
+        write!(f, "Failed to acquire image")
+      }
+      EndFrameError::SurfacePresentationFailed(e) =>
+      {
+        write!(f, "Failed to present surface ({})", e)
+      }
+    }
   }
 }
 
@@ -97,7 +116,19 @@ impl std::error::Error for EndFrameError
 {
   fn source(&self) -> Option<&(dyn std::error::Error + 'static)>
   {
-    None
+    match self
+    {
+      EndFrameError::SurfacePresentationFailed(e) => Some(e),
+      _ => None,
+    }
+  }
+}
+
+impl From<hal::window::PresentError> for EndFrameError
+{
+  fn from(e: hal::window::PresentError) -> Self
+  {
+    EndFrameError::SurfacePresentationFailed(e)
   }
 }
 

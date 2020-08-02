@@ -426,7 +426,7 @@ impl Canvas for CanvasWindow
   {
     if !self.is_processing_frame()
     {
-      return Err(EndFrameError {});
+      return Err(EndFrameError::NotProcessingFrame);
     }
 
     let cmd_buf = &mut self.cmd_buffers[self.current_frame_idx].deref_mut();
@@ -441,23 +441,18 @@ impl Canvas for CanvasWindow
     let image = match std::mem::replace(&mut self.current_image, None)
     {
       Some(image) => image,
-      None => return Err(EndFrameError {}),
+      None => return Err(EndFrameError::ImageAcquisitionFailed),
     };
+    let _framebuffer = std::mem::replace(&mut self.current_framebuffer, None);
+    self.current_frame_idx = (self.current_frame_idx + 1) % Self::FRAME_COUNT;
     let submission = hal::queue::Submission {
       command_buffers: std::iter::once(&*cmd_buf),
       wait_semaphores: None,
       signal_semaphores: std::iter::once(semaphore),
     };
-    let result = unsafe {
+    unsafe {
       queue.submit(submission, Some(fence));
-      queue.present_surface(&mut self.surface, image, Some(semaphore))
-    };
-
-    self.current_framebuffer = None;
-    self.current_frame_idx = (self.current_frame_idx + 1) % Self::FRAME_COUNT;
-    if result.is_err()
-    {
-      return Err(EndFrameError {});
+      queue.present_surface(&mut self.surface, image, Some(semaphore))?;
     }
 
     Ok(())
