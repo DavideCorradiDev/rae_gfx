@@ -26,11 +26,11 @@ jobs:
       matrix:
         platform:
           - {os: windows-latest, options: "--features vulkan", test: true, doc: true}
-          - {os: windows-latest, options: "--features dx11", test: false, doc: false}
-          - {os: windows-latest, options: "--features dx12", test: false, doc: false}
-          - {os: ubuntu-latest, options: "--features opengl", test: false, doc: false}
-          - {os: ubuntu-latest, options: "--features vulkan", test: false, doc: false}
-          - {os: macos-latest, options: "--features metal", test: false, doc: false}
+          # - {os: windows-latest, options: "--features dx11", test: false, doc: false}
+          # - {os: windows-latest, options: "--features dx12", test: false, doc: false}
+          # - {os: ubuntu-latest, options: "--features opengl", test: false, doc: false}
+          # - {os: ubuntu-latest, options: "--features vulkan", test: false, doc: false}
+          # - {os: macos-latest, options: "--features metal", test: false, doc: false}
 
     env:
       RUST_BACKTRACE: 1
@@ -40,11 +40,15 @@ jobs:
 
     steps:
     - uses: actions/checkout@v2
+    - name: Echo
+      run: echo Options $OPTIONS Other Env $OTHER_ENV
+      env:
+        OTHER_ENV: foobar
     - name: Build
       run: cargo build --verbose $OPTIONS
-    - name: Run tests
-      if: matrix.platform.test
-      run: cargo test --verbose $OPTIONS -- --nocapture
-    - name: Generate doc
-      if: matrix.platform.doc
-      run: cargo doc --no-deps $OPTIONS
+    # - name: Run tests
+    #   if: matrix.platform.test
+    #   run: cargo test --verbose $OPTIONS -- --nocapture
+    # - name: Generate doc
+    #   if: matrix.platform.doc
+    #   run: cargo doc --no-deps $OPTIONS
