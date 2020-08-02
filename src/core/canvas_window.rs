@@ -4,7 +4,7 @@ use std::{borrow::Borrow, cell::RefCell, ops::DerefMut, rc::Rc};
 
 use hal::{
   command::CommandBuffer as HalCommandBuffer,
-  queue::{CommandQueue as HalCommandQueue, QueueFamily as HalQueueFamily},
+  queue::CommandQueue as HalCommandQueue,
   window::PresentationSurface as HalPresentatationSurface,
 };
 
@@ -236,6 +236,7 @@ impl CanvasWindow
     let render_pass = Self::create_render_pass(instance)?;
     let surface = halw::Surface::create(
       Rc::clone(&instance.instance_rc()),
+      Rc::clone(&instance.adapter_rc()),
       Rc::clone(&instance.gpu_rc()),
       &window,
     )?;
@@ -298,7 +299,7 @@ impl CanvasWindow
   {
     let cmd_pool = halw::CommandPool::create(
       Rc::clone(&instance.gpu_rc()),
-      instance.queue_family().id(),
+      instance.gpu().queue_groups[0].family,
       hal::pool::CommandPoolCreateFlags::empty(),
     )?;
     Ok(halw::CommandBuffer::allocate(
@@ -356,6 +357,11 @@ impl CanvasWindow
 
 impl Canvas for CanvasWindow
 {
+  fn image_count(&self) -> u32
+  {
+    2
+  }
+
   fn is_processing_frame(&self) -> bool
   {
     self.current_framebuffer.is_some()
@@ -770,6 +776,14 @@ mod tests
   {
     let tf = TestFixture::setup();
     let _window = tf.new_window();
+  }
+
+  #[test]
+  fn image_count()
+  {
+    let tf = TestFixture::setup();
+    let window = tf.new_window();
+    assert_that!(&window.image_count(), eq(3));
   }
 
   #[test]

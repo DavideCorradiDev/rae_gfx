@@ -18,7 +18,7 @@ use crate::{halw, window, window::EventLoopExt};
 pub struct Instance
 {
   instance: Rc<RefCell<halw::Instance>>,
-  adapter: halw::Adapter,
+  adapter: Rc<RefCell<halw::Adapter>>,
   gpu: Rc<RefCell<halw::Gpu>>,
   canvas_color_format: TextureFormat,
 }
@@ -33,15 +33,14 @@ impl Instance
     let instance = Self::create_instance()?;
     let adapter = Self::select_adapter(&instance)?;
     let (_, _, mut dummy_surface) = Self::create_dummy_surface(&instance)?;
-    let gpu =
-      Rc::new(RefCell::new(Self::open_device(&adapter, &dummy_surface)?));
+    let gpu = Self::open_device(&adapter, &dummy_surface)?;
     let canvas_color_format =
       Self::select_canvas_color_format(&adapter, &dummy_surface);
     Self::destroy_dummy_surface(&instance, &mut dummy_surface);
     Ok(Self {
       instance: Rc::new(RefCell::new(instance)),
-      adapter,
-      gpu,
+      adapter: Rc::new(RefCell::new(adapter)),
+      gpu: Rc::new(RefCell::new(gpu)),
       canvas_color_format,
     })
   }
@@ -61,14 +60,19 @@ impl Instance
     &self.instance
   }
 
-  pub fn adapter(&self) -> &halw::Adapter
+  pub fn adapter(&self) -> Ref<halw::Adapter>
   {
-    &self.adapter
+    self.adapter.borrow()
   }
 
-  pub fn adapter_mut(&mut self) -> &mut halw::Adapter
+  pub fn adapter_mut(&mut self) -> RefMut<halw::Adapter>
   {
-    &mut self.adapter
+    self.adapter.borrow_mut()
+  }
+
+  pub fn adapter_rc(&self) -> &Rc<RefCell<halw::Adapter>>
+  {
+    &self.adapter
   }
 
   pub fn gpu(&self) -> Ref<halw::Gpu>
@@ -89,17 +93,6 @@ impl Instance
   pub fn canvas_color_format(&self) -> TextureFormat
   {
     self.canvas_color_format
-  }
-
-  pub fn queue_family(&self) -> &halw::QueueFamily
-  {
-    // The find method is guaranteed to find something, excluding programming errors.
-    self
-      .adapter
-      .queue_families
-      .iter()
-      .find(|a| a.id() == self.gpu.borrow().queue_groups[0].family)
-      .unwrap()
   }
 
   fn create_instance() -> Result<halw::Instance, InstanceCreationError>
