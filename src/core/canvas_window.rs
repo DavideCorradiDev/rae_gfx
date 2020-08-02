@@ -429,28 +429,25 @@ impl Canvas for CanvasWindow
       return Err(EndFrameError {});
     }
 
+    let cmd_buf = &mut self.cmd_buffers[self.current_frame_idx].deref_mut();
+    unsafe {
+      cmd_buf.end_render_pass();
+      cmd_buf.finish();
+    }
+
     let fence = &self.fences[self.current_frame_idx];
     let semaphore = &*self.semaphores[self.current_frame_idx];
-    let cmd_buf = &mut self.cmd_buffers[self.current_frame_idx].deref_mut();
-
     let queue = &mut self.gpu.borrow_mut().queue_groups[0].queues[0];
     let image = match std::mem::replace(&mut self.current_image, None)
     {
       Some(image) => image,
       None => return Err(EndFrameError {}),
     };
-
-    unsafe {
-      cmd_buf.end_render_pass();
-      cmd_buf.finish();
-    }
-
     let submission = hal::queue::Submission {
       command_buffers: std::iter::once(&*cmd_buf),
       wait_semaphores: None,
       signal_semaphores: std::iter::once(semaphore),
     };
-
     let result = unsafe {
       queue.submit(submission, Some(fence));
       queue.present_surface(&mut self.surface, image, Some(semaphore))
