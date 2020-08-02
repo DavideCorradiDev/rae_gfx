@@ -3,13 +3,10 @@ extern crate winit;
 pub use winit::{
   dpi::*,
   error::*,
-  event::*,
-  event_loop::{ControlFlow, EventLoopWindowTarget},
+  event::{Event, *},
+  event_loop::{ControlFlow, EventLoop, EventLoopWindowTarget},
   window::*,
 };
-
-pub type EventLoop = winit::event_loop::EventLoop<()>;
-pub type Event<'a> = winit::event::Event<'a, ()>;
 
 pub mod keyboard
 {

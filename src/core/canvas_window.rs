@@ -35,9 +35,9 @@ impl CanvasWindow
 {
   const IMAGE_COUNT: usize = 3;
 
-  pub fn new(
+  pub fn new<T: 'static>(
     instance: &Instance,
-    event_loop: &window::EventLoop,
+    event_loop: &window::EventLoop<T>,
   ) -> Result<Self, CanvasWindowCreationError>
   {
     let window = window::Window::new(event_loop)?;
@@ -742,7 +742,7 @@ mod tests
   struct TestFixture
   {
     pub instance: Instance,
-    pub event_loop: window::EventLoop,
+    pub event_loop: window::EventLoop<()>,
   }
 
   impl TestFixture

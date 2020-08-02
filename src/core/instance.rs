@@ -163,7 +163,7 @@ impl Instance
     instance: &halw::Instance,
   ) -> Result<
     (
-      window::EventLoop,
+      window::EventLoop<()>,
       window::Window,
       ManuallyDrop<<halw::Backend as HalBackend>::Surface>,
     ),
