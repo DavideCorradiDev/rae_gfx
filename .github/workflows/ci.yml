@@ -44,7 +44,7 @@ jobs:
       run: cargo build --verbose $OPTIONS
     - name: Run tests
       if: matrix.platform.test
-      run: cargo test --verbose $OPTIONS
+      run: cargo test --verbose $OPTIONS -- --nocapture
     - name: Generate doc
       if: matrix.platform.doc
       run: cargo doc --no-deps $OPTIONS
