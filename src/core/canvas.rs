@@ -23,23 +23,19 @@ impl std::fmt::Display for BeginFrameError
   {
     match self
     {
-      BeginFrameError::AlreadyProcessingFrame => write!(
-        f,
-        "Failed to begin frame: a frame is already being processed"
-      ),
+      BeginFrameError::AlreadyProcessingFrame =>
+      {
+        write!(f, "A frame is already being processed")
+      }
       BeginFrameError::ImageAcquisitionFailed(e) =>
       {
-        write!(f, "Failed to begin frame: failed to acquire image ({})", e)
+        write!(f, "Failed to acquire image ({})", e)
       }
-      BeginFrameError::FrameSynchronizationFailed(e) => write!(
-        f,
-        "Failed to begin frame: failed to synchronize frame ({})",
-        e
-      ),
-      BeginFrameError::OutOfMemory(e) =>
+      BeginFrameError::FrameSynchronizationFailed(e) =>
       {
-        write!(f, "Failed to begin frame: out of memory ({})", e)
+        write!(f, "Failed to synchronize frame ({})", e)
       }
+      BeginFrameError::OutOfMemory(e) => write!(f, "Out of memory ({})", e),
     }
   }
 }
@@ -147,12 +143,9 @@ impl std::fmt::Display for SynchronizeFrameError
     {
       SynchronizeFrameError::OutOfMemory(e) =>
       {
-        write!(f, "Falied to synchronize frame: out of memory ({})", e)
+        write!(f, "Out of memory ({})", e)
       }
-      SynchronizeFrameError::DeviceLost(e) =>
-      {
-        write!(f, "Failed to synchronize frame: device lost ({})", e)
-      }
+      SynchronizeFrameError::DeviceLost(e) => write!(f, "Device lost ({})", e),
     }
   }
 }
