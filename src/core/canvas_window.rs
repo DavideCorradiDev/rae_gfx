@@ -441,25 +441,26 @@ impl Canvas for CanvasWindow
       cmd_buf.finish();
     }
 
-    let fence = &self.fences[self.current_frame_idx];
+    let fence = &*self.fences[self.current_frame_idx];
     let semaphore = &*self.semaphores[self.current_frame_idx];
-    let queue = &mut self.gpu.borrow_mut().queue_groups[0].queues[0];
     let image = match std::mem::replace(&mut self.current_image, None)
     {
       Some(image) => image,
       None => return Err(EndFrameError::ImageAcquisitionFailed),
     };
-    let _framebuffer = std::mem::replace(&mut self.current_framebuffer, None);
-    self.current_frame_idx = (self.current_frame_idx + 1) % Self::IMAGE_COUNT;
     let submission = hal::queue::Submission {
       command_buffers: std::iter::once(&*cmd_buf),
       wait_semaphores: None,
       signal_semaphores: std::iter::once(semaphore),
     };
     unsafe {
+      let queue = &mut self.gpu.borrow_mut().queue_groups[0].queues[0];
       queue.submit(submission, Some(fence));
       queue.present_surface(&mut self.surface, image, Some(semaphore))?;
     }
+
+    self.current_framebuffer = None;
+    self.current_frame_idx = (self.current_frame_idx + 1) % Self::IMAGE_COUNT;
 
     Ok(())
   }
@@ -779,27 +780,43 @@ mod tests
   }
 
   #[test]
-  fn image_count()
-  {
-    let tf = TestFixture::setup();
-    let window = tf.new_window();
-    assert_that!(&window.image_count(), eq(3));
-  }
-
-  #[test]
   fn id()
   {
     let tf = TestFixture::setup();
     let window1 = tf.new_window();
     let window2 = tf.new_window();
-    assert_that!(&window1.id(), not(eq(window2.id())));
+    expect_that!(&window1.id(), not(eq(window2.id())));
   }
 
   #[test]
-  fn scale_factor()
+  fn image_count()
   {
     let tf = TestFixture::setup();
     let window = tf.new_window();
-    assert_that!(&window.scale_factor(), not(eq(0.)));
+    expect_that!(&window.image_count(), eq(3));
+  }
+
+  #[test]
+  fn frame_processing()
+  {
+    let tf = TestFixture::setup();
+    let mut window = tf.new_window();
+    expect_that!(!window.is_processing_frame());
+    window.begin_frame().unwrap();
+    expect_that!(window.is_processing_frame());
+    window.end_frame().unwrap();
+    expect_that!(!window.is_processing_frame());
+  }
+
+  #[test]
+  fn double_frame_begin_error()
+  {
+    let tf = TestFixture::setup();
+    let mut window = tf.new_window();
+    expect_that!(window.begin_frame().is_ok());
+    expect_that!(
+      &window.begin_frame(),
+      eq(Err(BeginFrameError::AlreadyProcessingFrame))
+    );
   }
 }

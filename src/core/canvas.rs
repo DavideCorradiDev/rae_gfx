@@ -9,7 +9,7 @@ pub trait Canvas
   fn synchronize(&self) -> Result<(), SynchronizeFrameError>;
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone, PartialEq)]
 pub enum BeginFrameError
 {
   AlreadyProcessingFrame,
@@ -79,7 +79,7 @@ impl From<hal::device::OutOfMemory> for BeginFrameError
   }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone, PartialEq)]
 pub enum EndFrameError
 {
   NotProcessingFrame,
@@ -129,7 +129,7 @@ impl From<hal::window::PresentError> for EndFrameError
   }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone, PartialEq)]
 pub enum SynchronizeFrameError
 {
   OutOfMemory(hal::device::OutOfMemory),

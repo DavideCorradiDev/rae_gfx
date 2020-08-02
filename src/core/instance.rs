@@ -237,7 +237,7 @@ impl Instance
   }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone, PartialEq)]
 pub enum InstanceCreationError
 {
   UnsupportedBackend,
