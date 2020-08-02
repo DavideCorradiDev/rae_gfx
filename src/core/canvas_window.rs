@@ -33,7 +33,7 @@ pub struct CanvasWindow
 
 impl CanvasWindow
 {
-  const FRAME_COUNT: usize = 3;
+  const IMAGE_COUNT: usize = 3;
 
   pub fn new(
     instance: &Instance,
@@ -305,7 +305,7 @@ impl CanvasWindow
     Ok(halw::CommandBuffer::allocate(
       Rc::new(RefCell::new(cmd_pool)),
       hal::command::Level::Primary,
-      Self::FRAME_COUNT,
+      Self::IMAGE_COUNT,
     ))
   }
 
@@ -313,8 +313,8 @@ impl CanvasWindow
     instance: &Instance,
   ) -> Result<Vec<halw::Semaphore>, hal::device::OutOfMemory>
   {
-    let mut semaphores = Vec::with_capacity(Self::FRAME_COUNT);
-    for _ in 0..Self::FRAME_COUNT
+    let mut semaphores = Vec::with_capacity(Self::IMAGE_COUNT);
+    for _ in 0..Self::IMAGE_COUNT
     {
       semaphores.push(halw::Semaphore::create(Rc::clone(&instance.gpu_rc()))?);
     }
@@ -325,8 +325,8 @@ impl CanvasWindow
     instance: &Instance,
   ) -> Result<Vec<halw::Fence>, hal::device::OutOfMemory>
   {
-    let mut fences = Vec::with_capacity(Self::FRAME_COUNT);
-    for _ in 0..Self::FRAME_COUNT
+    let mut fences = Vec::with_capacity(Self::IMAGE_COUNT);
+    for _ in 0..Self::IMAGE_COUNT
     {
       fences.push(halw::Fence::create(Rc::clone(&instance.gpu_rc()), true)?);
     }
@@ -345,7 +345,7 @@ impl CanvasWindow
       composite_alpha_mode: hal::window::CompositeAlphaMode::POSTMULTIPLIED,
       format: self.surface_color_format,
       extent: extent,
-      image_count: Self::FRAME_COUNT as u32,
+      image_count: Self::IMAGE_COUNT as u32,
       image_layers: 1,
       image_usage: hal::window::DEFAULT_USAGE,
     };
@@ -359,7 +359,7 @@ impl Canvas for CanvasWindow
 {
   fn image_count(&self) -> usize
   {
-    CanvasWindow::FRAME_COUNT
+    CanvasWindow::IMAGE_COUNT
   }
 
   fn is_processing_frame(&self) -> bool
@@ -450,7 +450,7 @@ impl Canvas for CanvasWindow
       None => return Err(EndFrameError::ImageAcquisitionFailed),
     };
     let _framebuffer = std::mem::replace(&mut self.current_framebuffer, None);
-    self.current_frame_idx = (self.current_frame_idx + 1) % Self::FRAME_COUNT;
+    self.current_frame_idx = (self.current_frame_idx + 1) % Self::IMAGE_COUNT;
     let submission = hal::queue::Submission {
       command_buffers: std::iter::once(&*cmd_buf),
       wait_semaphores: None,
