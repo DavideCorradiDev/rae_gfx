@@ -41,10 +41,12 @@ jobs:
     steps:
     - uses: actions/checkout@v2
     - name: Echo
+      shell: bash
       run: echo Options ${OPTIONS} OtherEnv ${OTHER_ENV} Workflow ${GITHUB_WORKFLOW}
       env:
         OTHER_ENV: foobar
     - name: Build
+      shell: bash
       run: cargo build --verbose $OPTIONS
     # - name: Run tests
     #   if: matrix.platform.test
