@@ -374,13 +374,16 @@ impl Canvas for CanvasWindow
 
   fn begin_frame(&mut self) -> Result<(), BeginFrameError>
   {
+    // Make sure that a frame isn't currently being processed.
     if self.is_processing_frame()
     {
       return Err(BeginFrameError::AlreadyProcessingFrame);
     }
 
+    // Make sure the current image isn't still under process in the GPU.
     self.synchronize()?;
 
+    // Create framebuffer.
     let (image, _) = unsafe { self.surface.acquire_image(!0) }?;
     let framebuffer = halw::Framebuffer::create(
       Rc::clone(&self.gpu),
@@ -392,6 +395,8 @@ impl Canvas for CanvasWindow
         depth: 1,
       },
     )?;
+
+    // Define viewport.
     let viewport_rect = hal::pso::Rect {
       x: 0,
       y: 0,
@@ -402,8 +407,9 @@ impl Canvas for CanvasWindow
       rect: viewport_rect,
       depth: 0.0..1.0,
     };
-    let cmd_buf = &mut self.cmd_buffers[self.current_frame_idx];
 
+    // Start command buffer.
+    let cmd_buf = &mut self.cmd_buffers[self.current_frame_idx];
     unsafe {
       cmd_buf.reset(true);
       cmd_buf.begin_primary(hal::command::CommandBufferFlags::ONE_TIME_SUBMIT);
@@ -428,24 +434,29 @@ impl Canvas for CanvasWindow
       )
     }
 
+    // Store current image and framebuffer.
     self.current_image = Some(image);
     self.current_framebuffer = Some(framebuffer);
+
     Ok(())
   }
 
   fn end_frame(&mut self) -> Result<(), EndFrameError>
   {
+    // Check that a frame was started.
     if !self.is_processing_frame()
     {
       return Err(EndFrameError::NotProcessingFrame);
     }
 
+    // Complete buffer.
     let cmd_buf = &mut self.cmd_buffers[self.current_frame_idx].deref_mut();
     unsafe {
       cmd_buf.end_render_pass();
       cmd_buf.finish();
     }
 
+    // Retrieve objects associated to the current frame.
     let fence = &self.fences[self.current_frame_idx];
     let semaphore = &self.semaphores[self.current_frame_idx];
     let image = match std::mem::replace(&mut self.current_image, None)
@@ -453,12 +464,19 @@ impl Canvas for CanvasWindow
       Some(image) => image,
       None => return Err(EndFrameError::ImageAcquisitionFailed),
     };
+    let _framebuffer = std::mem::replace(&mut self.current_framebuffer, None);
+
+    // Increase frame index.
+    self.current_frame_idx = (self.current_frame_idx + 1) % Self::IMAGE_COUNT;
+
+    // Create submission.
     let submission = hal::queue::Submission {
       command_buffers: std::iter::once(&*cmd_buf),
       wait_semaphores: None,
       signal_semaphores: std::iter::once(semaphore.deref()),
     };
 
+    // Reset the fence and submit the commands to the queue.
     fence.reset()?;
     unsafe {
       let queue = &mut self.gpu.borrow_mut().queue_groups[0].queues[0];
@@ -469,9 +487,6 @@ impl Canvas for CanvasWindow
         Some(semaphore.deref()),
       )?;
     }
-
-    self.current_framebuffer = None;
-    self.current_frame_idx = (self.current_frame_idx + 1) % Self::IMAGE_COUNT;
 
     Ok(())
   }
