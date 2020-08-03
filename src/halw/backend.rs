@@ -1,11 +1,11 @@
 extern crate gfx_hal as hal;
 
 #[cfg(not(any(
-  feature = "dx11",
-  feature = "dx12",
-  feature = "metal",
-  feature = "opengl",
-  feature = "vulkan"
+    feature = "dx11",
+    feature = "dx12",
+    feature = "metal",
+    feature = "opengl",
+    feature = "vulkan"
 )))]
 extern crate gfx_backend_empty as hal_backend;
 

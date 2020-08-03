@@ -2,8 +2,8 @@
 
 mod backend;
 pub use backend::{
-  Adapter, Backend, CommandQueue, Device, GraphicsPipelineDesc, PhysicalDevice,
-  QueueFamily, QueueGroup, SwapchainImage,
+    Adapter, Backend, CommandQueue, Device, GraphicsPipelineDesc, PhysicalDevice, QueueFamily,
+    QueueGroup, SwapchainImage,
 };
 
 mod instance;
