@@ -6,8 +6,6 @@ edition = "2018"
 
 [features]
 default = ["gfx-backend-empty"]
-metal = ["gfx-backend-metal"]
-opengl = ["gfx-backend-gl"]
 dx11 = ["gfx-backend-dx11"]
 dx12 = ["gfx-backend-dx12"]
 vulkan = ["gfx-backend-vulkan"]
@@ -17,8 +15,6 @@ winit = "0.22.2"
 raw-window-handle = "0.3.3"
 gfx-hal = "0.5.0"
 gfx-backend-empty = { version = "0.5.0", optional = true }
-gfx-backend-metal = { version = "0.5.0", optional = true }
-gfx-backend-gl = { version = "0.5.0", optional = true }
 gfx-backend-dx11 = { version = "0.5.0", optional = true }
 gfx-backend-dx12 = { version = "0.5.5", optional = true }
 gfx-backend-vulkan = { version = "0.5.0", optional = true }
