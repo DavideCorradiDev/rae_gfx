@@ -1,7 +1,7 @@
 extern crate gfx_hal as hal;
 extern crate raw_window_handle;
 
-use hal::{window::Surface as HalSurface, Instance as HalInstance};
+use hal::Instance as HalInstance;
 use std::{
     cell::RefCell,
     fmt::{Debug, Formatter},
@@ -10,19 +10,17 @@ use std::{
     rc::Rc,
 };
 
-use super::{Adapter, Backend, Gpu, Instance};
+use super::{Backend, Gpu, Instance};
 
 pub struct Surface {
     value: ManuallyDrop<<Backend as hal::Backend>::Surface>,
     instance: Rc<RefCell<Instance>>,
-    adapter: Rc<RefCell<Adapter>>,
     gpu: Rc<RefCell<Gpu>>,
 }
 
 impl Surface {
     pub fn create(
         instance: Rc<RefCell<Instance>>,
-        adapter: Rc<RefCell<Adapter>>,
         gpu: Rc<RefCell<Gpu>>,
         handle: &impl raw_window_handle::HasRawWindowHandle,
     ) -> Result<Self, hal::window::InitError> {
@@ -30,14 +28,8 @@ impl Surface {
         Ok(Self {
             value: ManuallyDrop::new(surface),
             instance,
-            adapter,
             gpu,
         })
-    }
-
-    pub fn capabilities(&self) -> hal::window::SurfaceCapabilities {
-        self.value
-            .capabilities(&self.adapter.borrow().physical_device)
     }
 
     pub fn configure_swapchain(
