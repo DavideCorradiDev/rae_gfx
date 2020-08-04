@@ -265,7 +265,7 @@ impl CanvasWindow {
         let cmd_pool = halw::CommandPool::create(
             Rc::clone(&instance.gpu_rc()),
             instance.gpu().queue_groups[0].family,
-            hal::pool::CommandPoolCreateFlags::empty(),
+            hal::pool::CommandPoolCreateFlags::RESET_INDIVIDUAL,
         )?;
         Ok(halw::CommandBuffer::allocate(
             Rc::new(RefCell::new(cmd_pool)),
