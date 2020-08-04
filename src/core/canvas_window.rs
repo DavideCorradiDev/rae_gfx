@@ -683,61 +683,62 @@ mod tests {
         let tf = TestFixture::setup();
         let _window = tf.new_window();
     }
-    //    #[test]
-    //    fn id() {
-    //        let tf = TestFixture::setup();
-    //        let window1 = tf.new_window();
-    //        let window2 = tf.new_window();
-    //        expect_that!(&window1.id(), not(eq(window2.id())));
-    //    }
-    //
-    // #[test]
-    // fn image_count() {
-    //     let tf = TestFixture::setup();
-    //     let window = tf.new_window();
-    //     expect_that!(&window.image_count(), eq(3));
-    // }
 
-    // #[test]
-    // fn frame_processing() {
-    //     let tf = TestFixture::setup();
-    //     let mut window = tf.new_window();
-    //     expect_that!(!window.is_processing_frame());
-    //     window.begin_frame().unwrap();
-    //     expect_that!(window.is_processing_frame());
-    //     window.end_frame().unwrap();
-    //     expect_that!(!window.is_processing_frame());
-    // }
+    #[test]
+    fn id() {
+        let tf = TestFixture::setup();
+        let window1 = tf.new_window();
+        let window2 = tf.new_window();
+        expect_that!(&window1.id(), not(eq(window2.id())));
+    }
 
-    // #[test]
-    // fn double_frame_begin_error() {
-    //     let tf = TestFixture::setup();
-    //     let mut window = tf.new_window();
-    //     expect_that!(window.begin_frame().is_ok());
-    //     expect_that!(
-    //         &window.begin_frame(),
-    //         eq(Err(BeginFrameError::AlreadyProcessingFrame))
-    //     );
-    // }
+    #[test]
+    fn image_count() {
+        let tf = TestFixture::setup();
+        let window = tf.new_window();
+        expect_that!(&window.image_count(), eq(3));
+    }
 
-    // #[test]
-    // fn double_frame_end_error() {
-    //     let tf = TestFixture::setup();
-    //     let mut window = tf.new_window();
-    //     expect_that!(
-    //         &window.end_frame(),
-    //         eq(Err(EndFrameError::NotProcessingFrame))
-    //     );
-    // }
+    #[test]
+    fn frame_processing() {
+        let tf = TestFixture::setup();
+        let mut window = tf.new_window();
+        expect_that!(!window.is_processing_frame());
+        window.begin_frame().unwrap();
+        expect_that!(window.is_processing_frame());
+        window.end_frame().unwrap();
+        expect_that!(!window.is_processing_frame());
+    }
 
-    // #[test]
-    // fn synchronization() {
-    //     let tf = TestFixture::setup();
-    //     let mut window = tf.new_window();
-    //     window.synchronize().unwrap();
-    //     window.begin_frame().unwrap();
-    //     window.synchronize().unwrap();
-    //     window.end_frame().unwrap();
-    //     window.synchronize().unwrap();
-    // }
+    #[test]
+    fn double_frame_begin_error() {
+        let tf = TestFixture::setup();
+        let mut window = tf.new_window();
+        expect_that!(window.begin_frame().is_ok());
+        expect_that!(
+            &window.begin_frame(),
+            eq(Err(BeginFrameError::AlreadyProcessingFrame))
+        );
+    }
+
+    #[test]
+    fn double_frame_end_error() {
+        let tf = TestFixture::setup();
+        let mut window = tf.new_window();
+        expect_that!(
+            &window.end_frame(),
+            eq(Err(EndFrameError::NotProcessingFrame))
+        );
+    }
+
+    #[test]
+    fn synchronization() {
+        let tf = TestFixture::setup();
+        let mut window = tf.new_window();
+        window.synchronize().unwrap();
+        window.begin_frame().unwrap();
+        window.synchronize().unwrap();
+        window.end_frame().unwrap();
+        window.synchronize().unwrap();
+    }
 }

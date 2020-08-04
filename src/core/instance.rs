@@ -30,14 +30,10 @@ impl Instance {
         let adapter = Rc::new(RefCell::new(Self::select_adapter(
             instance.borrow().deref(),
         )?));
-        let (_a, _b, mut dummy_surface) = Self::create_dummy_surface(instance.borrow().deref())?;
-        let gpu = Rc::new(RefCell::new(Self::open_device(
-            adapter.borrow().deref(),
-            &dummy_surface,
-        )?));
-        let canvas_color_format =
-            Self::select_canvas_color_format(adapter.borrow().deref(), &dummy_surface);
-        Self::destroy_dummy_surface(instance.borrow().deref(), &mut dummy_surface);
+        // let (_a, _b, mut dummy_surface) = Self::create_dummy_surface(instance.borrow().deref())?;
+        let gpu = Rc::new(RefCell::new(Self::open_device(adapter.borrow().deref())?));
+        let canvas_color_format = Self::select_canvas_color_format(adapter.borrow().deref());
+        // Self::destroy_dummy_surface(instance.borrow().deref(), &mut dummy_surface);
         Ok(Self {
             instance,
             adapter,
@@ -146,26 +142,29 @@ impl Instance {
 
     fn select_canvas_color_format(
         adapter: &halw::Adapter,
-        surface: &<halw::Backend as HalBackend>::Surface,
+        // surface: &<halw::Backend as HalBackend>::Surface,
     ) -> hal::format::Format {
-        let formats = surface.supported_formats(&adapter.physical_device);
-        formats.map_or(hal::format::Format::Rgba8Srgb, |formats| {
-            formats
-                .iter()
-                .find(|a| a.base_format().1 == hal::format::ChannelType::Srgb)
-                .map(|a| *a)
-                .unwrap_or(formats[0])
-        })
+        hal::format::Format::Rgba8Srgb
+        // let formats = surface.supported_formats(&adapter.physical_device);
+        // formats.map_or(hal::format::Format::Rgba8Srgb, |formats| {
+        //     formats
+        //         .iter()
+        //         .find(|a| a.base_format().1 == hal::format::ChannelType::Srgb)
+        //         .map(|a| *a)
+        //         .unwrap_or(formats[0])
+        // })
     }
 
     fn select_queue_family<'a>(
         adapter: &'a halw::Adapter,
-        surface: &<halw::Backend as HalBackend>::Surface,
+        // surface: &<halw::Backend as HalBackend>::Surface,
     ) -> Result<&'a halw::QueueFamily, InstanceCreationError> {
         // Eventually add required constraints here.
-        match adapter.queue_families.iter().find(|family| {
-            surface.supports_queue_family(family) && family.queue_type().supports_graphics()
-        }) {
+        match adapter
+            .queue_families
+            .iter()
+            .find(|family| family.queue_type().supports_graphics())
+        {
             Some(family) => Ok(family),
             None => Err(InstanceCreationError::NoSuitableQueueFamily),
         }
@@ -173,10 +172,10 @@ impl Instance {
 
     fn open_device(
         adapter: &halw::Adapter,
-        surface: &<halw::Backend as HalBackend>::Surface,
+        // surface: &<halw::Backend as HalBackend>::Surface,
     ) -> Result<halw::Gpu, InstanceCreationError> {
         // Eventually add required GPU features here.
-        let queue_family = Self::select_queue_family(adapter, surface)?;
+        let queue_family = Self::select_queue_family(adapter)?;
         let gpu = halw::Gpu::open(adapter, &[(queue_family, &[1.0])], hal::Features::empty())?;
         Ok(gpu)
     }
