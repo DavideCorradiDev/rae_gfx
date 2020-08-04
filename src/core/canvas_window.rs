@@ -5,6 +5,7 @@ use std::{
     cell::RefCell,
     ops::{Deref, DerefMut},
     rc::Rc,
+    sync::Arc,
 };
 
 use hal::{
@@ -22,7 +23,7 @@ pub struct CanvasWindow {
     window: window::Window,
     gpu: Rc<RefCell<halw::Gpu>>,
     render_pass: halw::RenderPass,
-    surface: halw::Surface<'static>,
+    surface: halw::Surface,
     surface_color_format: TextureFormat,
     surface_extent: hal::window::Extent2D,
     cmd_buffers: Vec<halw::CommandBuffer>,
@@ -37,7 +38,7 @@ impl CanvasWindow {
     const IMAGE_COUNT: usize = 3;
 
     pub fn new<T: 'static>(
-        instance: &'static Instance,
+        instance: &Instance,
         event_loop: &window::EventLoop<T>,
     ) -> Result<Self, CanvasWindowCreationError> {
         let window = window::Window::new(event_loop)?;
@@ -197,14 +198,14 @@ impl CanvasWindow {
     }
 
     fn with_window(
-        instance: &'static Instance,
+        instance: &Instance,
         window: window::Window,
     ) -> Result<Self, CanvasWindowCreationError> {
         let render_pass = Self::create_render_pass(instance)?;
         let surface = halw::Surface::create(
-            instance.instance(),
-            Rc::clone(&instance.adapter_rc()),
-            Rc::clone(&instance.gpu_rc()),
+            Arc::clone(instance.instance_arc()),
+            Rc::clone(instance.adapter_rc()),
+            Rc::clone(instance.gpu_rc()),
             &window,
         )?;
         let cmd_buffers = Self::create_command_buffers(instance)?;
@@ -524,7 +525,7 @@ impl CanvasWindowBuilder {
 
     pub fn build<T>(
         self,
-        instance: &'static Instance,
+        instance: &Instance,
         window_target: &window::EventLoopWindowTarget<T>,
     ) -> Result<CanvasWindow, CanvasWindowCreationError>
     where

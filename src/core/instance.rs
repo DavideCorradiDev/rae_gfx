@@ -7,6 +7,7 @@ use std::{
     mem::ManuallyDrop,
     ops::Deref,
     rc::Rc,
+    sync::{Arc, RwLock},
 };
 
 use hal::{
@@ -18,7 +19,8 @@ use super::TextureFormat;
 use crate::{halw, window, window::EventLoopExt};
 
 lazy_static::lazy_static! {
-    static ref INSTANCE: halw::Instance = halw::Instance::create("Red Ape Engine", 1).unwrap();
+    static ref INSTANCE: Arc<RwLock<halw::Instance>>
+        = Arc::new(RwLock::new(halw::Instance::create("Red Ape Engine", 1).unwrap()));
 }
 
 pub struct Instance {
@@ -29,15 +31,18 @@ pub struct Instance {
 
 impl Instance {
     pub fn create() -> Result<Self, InstanceCreationError> {
-        let adapter = Rc::new(RefCell::new(Self::select_adapter(&INSTANCE)?));
-        let (_a, _b, mut dummy_surface) = Self::create_dummy_surface(&INSTANCE)?;
+        let adapter = Rc::new(RefCell::new(Self::select_adapter(
+            INSTANCE.read().unwrap().deref(),
+        )?));
+        let (_a, _b, mut dummy_surface) =
+            Self::create_dummy_surface(INSTANCE.read().unwrap().deref())?;
         let gpu = Rc::new(RefCell::new(Self::open_device(
             adapter.borrow().deref(),
             &dummy_surface,
         )?));
         let canvas_color_format =
             Self::select_canvas_color_format(adapter.borrow().deref(), &dummy_surface);
-        Self::destroy_dummy_surface(&INSTANCE, &mut dummy_surface);
+        Self::destroy_dummy_surface(INSTANCE.read().unwrap().deref(), &mut dummy_surface);
         Ok(Self {
             adapter,
             gpu,
@@ -45,12 +50,8 @@ impl Instance {
         })
     }
 
-    pub fn instance(&self) -> &halw::Instance {
+    pub fn instance_arc(&self) -> &Arc<RwLock<halw::Instance>> {
         &INSTANCE
-    }
-
-    pub fn instance_mut(&mut self) -> &mut halw::Instance {
-        &mut INSTANCE
     }
 
     pub fn adapter(&self) -> Ref<halw::Adapter> {
