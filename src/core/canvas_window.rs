@@ -5,7 +5,6 @@ use std::{
     cell::RefCell,
     ops::{Deref, DerefMut},
     rc::Rc,
-    sync::Arc,
 };
 
 use hal::{
@@ -203,7 +202,7 @@ impl CanvasWindow {
     ) -> Result<Self, CanvasWindowCreationError> {
         let render_pass = Self::create_render_pass(instance)?;
         let surface = halw::Surface::create(
-            Arc::clone(instance.instance_arc()),
+            Rc::clone(instance.instance_rc()),
             Rc::clone(instance.adapter_rc()),
             Rc::clone(instance.gpu_rc()),
             &window,

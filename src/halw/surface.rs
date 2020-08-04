@@ -8,26 +8,25 @@ use std::{
     mem::ManuallyDrop,
     ops::{Deref, DerefMut},
     rc::Rc,
-    sync::{Arc, RwLock},
 };
 
 use super::{Adapter, Backend, Gpu, Instance};
 
 pub struct Surface {
     value: ManuallyDrop<<Backend as hal::Backend>::Surface>,
-    instance: Arc<RwLock<Instance>>,
+    instance: Rc<RefCell<Instance>>,
     adapter: Rc<RefCell<Adapter>>,
     gpu: Rc<RefCell<Gpu>>,
 }
 
 impl Surface {
     pub fn create(
-        instance: Arc<RwLock<Instance>>,
+        instance: Rc<RefCell<Instance>>,
         adapter: Rc<RefCell<Adapter>>,
         gpu: Rc<RefCell<Gpu>>,
         handle: &impl raw_window_handle::HasRawWindowHandle,
     ) -> Result<Self, hal::window::InitError> {
-        let surface = unsafe { instance.read().unwrap().create_surface(handle) }?;
+        let surface = unsafe { instance.borrow().create_surface(handle) }?;
         Ok(Self {
             value: ManuallyDrop::new(surface),
             instance,
@@ -57,8 +56,7 @@ impl Drop for Surface {
     fn drop(&mut self) {
         unsafe {
             self.instance
-                .read()
-                .unwrap()
+                .borrow()
                 .destroy_surface(ManuallyDrop::take(&mut self.value));
         }
     }
