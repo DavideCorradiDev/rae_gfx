@@ -14,7 +14,6 @@ metal = ["gfx-backend-metal"]
 vulkan = ["gfx-backend-vulkan"]
 
 [dependencies]
-lazy_static = "1.4"
 winit = "0.22.2"
 raw-window-handle = "0.3.3"
 gfx-hal = "0.5"

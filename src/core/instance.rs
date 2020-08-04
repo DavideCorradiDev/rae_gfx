@@ -1,5 +1,4 @@
 extern crate gfx_hal as hal;
-extern crate lazy_static;
 extern crate winit;
 
 use std::{
