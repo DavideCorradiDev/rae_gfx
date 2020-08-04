@@ -678,12 +678,11 @@ mod tests {
         }
     }
 
-    //    #[test]
-    //    fn window_creation() {
-    //        let tf = TestFixture::setup();
-    //        let _window = tf.new_window();
-    //    }
-    //
+    #[test]
+    fn window_creation() {
+        let tf = TestFixture::setup();
+        let _window = tf.new_window();
+    }
     //    #[test]
     //    fn id() {
     //        let tf = TestFixture::setup();

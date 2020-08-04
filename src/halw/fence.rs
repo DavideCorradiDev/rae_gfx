@@ -19,6 +19,7 @@ pub struct Fence {
 impl Fence {
     pub fn create(gpu: Rc<RefCell<Gpu>>, signaled: bool) -> Result<Self, hal::device::OutOfMemory> {
         let fence = gpu.borrow().device.create_fence(signaled)?;
+        println!("Creating {:?}", fence);
         Ok(Self {
             value: ManuallyDrop::new(fence),
             gpu,
@@ -41,6 +42,7 @@ impl Fence {
 
 impl Drop for Fence {
     fn drop(&mut self) {
+        println!("Dropping {:?}", self);
         unsafe {
             self.gpu
                 .borrow()
