@@ -1,4 +1,5 @@
 extern crate gfx_hal as hal;
+extern crate lazy_static;
 extern crate winit;
 
 use std::{
@@ -6,6 +7,8 @@ use std::{
     mem::ManuallyDrop,
     ops::Deref,
     rc::Rc,
+    sync::Arc,
+    sync::RwLock,
 };
 
 use hal::{
@@ -15,6 +18,12 @@ use hal::{
 
 use super::TextureFormat;
 use crate::{halw, window, window::EventLoopExt};
+
+lazy_static::lazy_static! {
+static ref halw_instance: Arc<RwLock<halw::Instance>> = Arc::new(RwLock::new(
+    halw::Instance::create("Engine name", 0).unwrap(),
+));
+}
 
 pub struct Instance {
     instance: Rc<RefCell<halw::Instance>>,

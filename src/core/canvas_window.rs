@@ -688,13 +688,13 @@ mod tests {
         let _window = tf.new_window();
     }
 
-    // #[test]
-    // fn id() {
-    //     let tf = TestFixture::setup();
-    //     let window1 = tf.new_window();
-    //     let window2 = tf.new_window();
-    //     expect_that!(&window1.id(), not(eq(window2.id())));
-    // }
+    #[test]
+    fn id() {
+        let tf = TestFixture::setup();
+        let window1 = tf.new_window();
+        let window2 = tf.new_window();
+        expect_that!(&window1.id(), not(eq(window2.id())));
+    }
 
     // #[test]
     // fn image_count() {
