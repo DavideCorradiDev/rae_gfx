@@ -17,3 +17,6 @@ pub use winit::platform::windows::EventLoopExtWindows as EventLoopExt;
 
 #[cfg(target_os = "linux")]
 pub use winit::platform::unix::EventLoopExtUnix as EventLoopExt;
+
+#[cfg(not(any(target_os = "linux", target_os = "windows")))]
+pub use EventLoop as EventLoopExt;
