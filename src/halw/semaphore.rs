@@ -19,7 +19,6 @@ pub struct Semaphore {
 impl Semaphore {
     pub fn create(gpu: Rc<RefCell<Gpu>>) -> Result<Self, hal::device::OutOfMemory> {
         let semaphore = gpu.borrow().device.create_semaphore()?;
-        println!("Creating {:?}", semaphore);
         Ok(Self {
             value: ManuallyDrop::new(semaphore),
             gpu,
@@ -29,7 +28,6 @@ impl Semaphore {
 
 impl Drop for Semaphore {
     fn drop(&mut self) {
-        println!("Dropping {:?}", self);
         unsafe {
             self.gpu
                 .borrow()

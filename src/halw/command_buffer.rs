@@ -19,7 +19,6 @@ pub struct CommandBuffer {
 impl CommandBuffer {
     pub fn allocate_one(pool: Rc<RefCell<CommandPool>>, level: hal::command::Level) -> Self {
         let buffer = unsafe { pool.borrow_mut().allocate_one(level) };
-        println!("Creating {:?}", buffer);
         Self {
             value: ManuallyDrop::new(buffer),
             pool,
@@ -44,7 +43,6 @@ impl CommandBuffer {
 
 impl Drop for CommandBuffer {
     fn drop(&mut self) {
-        println!("Dropping {:?}", self);
         unsafe {
             self.pool
                 .borrow_mut()

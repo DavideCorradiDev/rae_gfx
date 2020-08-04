@@ -28,7 +28,6 @@ impl RenderPass {
                 .device
                 .create_render_pass(attachments, subpasses, subpass_dependencies)
         }?;
-        println!("Creating {:?}", render_pass);
         Ok(Self {
             value: ManuallyDrop::new(render_pass),
             gpu,
@@ -38,7 +37,6 @@ impl RenderPass {
 
 impl Drop for RenderPass {
     fn drop(&mut self) {
-        println!("Dropping {:?}", self);
         unsafe {
             self.gpu
                 .borrow()

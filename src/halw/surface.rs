@@ -28,7 +28,6 @@ impl Surface {
         handle: &impl raw_window_handle::HasRawWindowHandle,
     ) -> Result<Self, hal::window::InitError> {
         let surface = unsafe { instance.borrow().create_surface(handle) }?;
-        println!("Creating {:?}", surface);
         Ok(Self {
             value: ManuallyDrop::new(surface),
             instance,
@@ -61,7 +60,6 @@ impl Surface {
 
 impl Drop for Surface {
     fn drop(&mut self) {
-        println!("Dropping {:?}", self);
         unsafe {
             self.instance
                 .borrow()
