@@ -24,9 +24,7 @@ impl Instance {
         let adapter = Rc::new(RefCell::new(Self::select_adapter(
             instance.borrow().deref(),
         )?));
-        // let (_a, _b, mut dummy_surface) = Self::create_dummy_surface(instance.borrow().deref())?;
         let gpu = Rc::new(RefCell::new(Self::open_device(adapter.borrow().deref())?));
-        // Self::destroy_dummy_surface(instance.borrow().deref(), &mut dummy_surface);
         Ok(Self {
             instance,
             adapter,
@@ -182,15 +180,5 @@ mod tests {
     fn double_instance_creation() {
         let _instance1 = Instance::create().unwrap();
         let _instance2 = Instance::create().unwrap();
-    }
-
-    #[test]
-    fn instance_creation_2() {
-        let _instance = Instance::create().unwrap();
-    }
-
-    #[test]
-    fn instance_creation_3() {
-        let _instance = Instance::create().unwrap();
     }
 }
