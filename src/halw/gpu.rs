@@ -19,7 +19,14 @@ impl Gpu {
         requested_features: hal::Features,
     ) -> Result<Self, hal::device::CreationError> {
         let gpu = unsafe { adapter.physical_device.open(families, requested_features) }?;
+        println!("Creating {:?}", gpu);
         Ok(Self { value: gpu })
+    }
+}
+
+impl Drop for Gpu {
+    fn drop(&mut self) {
+        println!("Dropping {:?}", self);
     }
 }
 

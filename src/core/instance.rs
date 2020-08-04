@@ -239,6 +239,12 @@ mod tests {
     }
 
     #[test]
+    fn double_instance_creation() {
+        let _instance1 = Instance::create().unwrap();
+        let _instance2 = Instance::create().unwrap();
+    }
+
+    #[test]
     fn instance_creation_2() {
         let _instance = Instance::create().unwrap();
     }

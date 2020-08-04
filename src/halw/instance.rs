@@ -15,7 +15,14 @@ pub struct Instance {
 impl Instance {
     pub fn create(name: &str, version: u32) -> Result<Self, hal::UnsupportedBackend> {
         let instance = <Backend as hal::Backend>::Instance::create(name, version)?;
+        println!("Creating: {:?}", instance);
         Ok(Self { value: instance })
+    }
+}
+
+impl Drop for Instance {
+    fn drop(&mut self) {
+        println!("Dropping: {:?}", self)
     }
 }
 

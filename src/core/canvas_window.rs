@@ -678,20 +678,20 @@ mod tests {
         }
     }
 
-    #[test]
-    fn window_creation() {
-        let tf = TestFixture::setup();
-        let _window = tf.new_window();
-    }
-
-    #[test]
-    fn id() {
-        let tf = TestFixture::setup();
-        let window1 = tf.new_window();
-        let window2 = tf.new_window();
-        expect_that!(&window1.id(), not(eq(window2.id())));
-    }
-
+    //    #[test]
+    //    fn window_creation() {
+    //        let tf = TestFixture::setup();
+    //        let _window = tf.new_window();
+    //    }
+    //
+    //    #[test]
+    //    fn id() {
+    //        let tf = TestFixture::setup();
+    //        let window1 = tf.new_window();
+    //        let window2 = tf.new_window();
+    //        expect_that!(&window1.id(), not(eq(window2.id())));
+    //    }
+    //
     // #[test]
     // fn image_count() {
     //     let tf = TestFixture::setup();
