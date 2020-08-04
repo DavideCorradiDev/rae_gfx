@@ -7,7 +7,7 @@ extern crate gfx_hal as hal;
     feature = "dx11",
     feature = "dx12",
     feature = "gl",
-    feature = "vulkan",
+    feature = "metal",
     feature = "vulkan"
   ))
 ))]
@@ -20,7 +20,7 @@ extern crate gfx_backend_vulkan as hal_backend;
     feature = "dx11",
     feature = "dx12",
     feature = "gl",
-    feature = "vulkan",
+    feature = "metal",
     feature = "vulkan"
   ))
 ))]
