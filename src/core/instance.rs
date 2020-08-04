@@ -122,16 +122,12 @@ impl Instance {
         ),
         InstanceCreationError,
     > {
-        println!("Creating dummy event loop");
         let dummy_event_loop = window::EventLoop::new_any_thread();
-        println!("Creating dummy window");
         let dummy_window = window::WindowBuilder::new()
             .with_visible(false)
             .build(&dummy_event_loop)
             .unwrap();
-        println!("Creating dummy surface");
         let dummy_surface = ManuallyDrop::new(unsafe { instance.create_surface(&dummy_window) }?);
-        println!("Done");
         Ok((dummy_event_loop, dummy_window, dummy_surface))
     }
 
@@ -235,6 +231,16 @@ mod tests {
 
     #[test]
     fn instance_creation() {
+        let _instance = Instance::create().unwrap();
+    }
+
+    #[test]
+    fn instance_creation_2() {
+        let _instance = Instance::create().unwrap();
+    }
+
+    #[test]
+    fn instance_creation_3() {
         let _instance = Instance::create().unwrap();
     }
 }

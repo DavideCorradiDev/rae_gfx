@@ -643,107 +643,104 @@ impl From<hal::window::CreationError> for CanvasWindowOperationError {
     }
 }
 
-#[cfg(test)]
-mod tests {
-    extern crate galvanic_assert;
-
-    use galvanic_assert::{matchers::*, *};
-
-    use super::*;
-    use crate::window::EventLoopExt;
-
-    struct TestFixture {
-        pub instance: Instance,
-        pub event_loop: window::EventLoop<()>,
-    }
-
-    impl TestFixture {
-        pub fn setup() -> Self {
-            println!("Creating instance");
-            let instance = Instance::create().unwrap();
-            println!("Event loop");
-            let event_loop = window::EventLoop::new_any_thread();
-            println!("Done");
-            Self {
-                instance,
-                event_loop,
-            }
-        }
-
-        pub fn new_window(&self) -> CanvasWindow {
-            let b = CanvasWindowBuilder::new();
-            b.with_title("Test")
-                .with_inner_size(window::Size::Physical(window::PhysicalSize {
-                    width: 640,
-                    height: 480,
-                }))
-                .with_visible(false)
-                .build(&self.instance, &self.event_loop)
-                .unwrap()
-        }
-    }
-
-    #[test]
-    fn window_creation() {
-        let tf = TestFixture::setup();
-        let _window = tf.new_window();
-    }
-
-    #[test]
-    fn id() {
-        let tf = TestFixture::setup();
-        let window1 = tf.new_window();
-        let window2 = tf.new_window();
-        expect_that!(&window1.id(), not(eq(window2.id())));
-    }
-
-    // #[test]
-    // fn image_count() {
-    //     let tf = TestFixture::setup();
-    //     let window = tf.new_window();
-    //     expect_that!(&window.image_count(), eq(3));
-    // }
-    //
-    //     #[test]
-    //     fn frame_processing() {
-    //         let tf = TestFixture::setup();
-    //         let mut window = tf.new_window();
-    //         expect_that!(!window.is_processing_frame());
-    //         window.begin_frame().unwrap();
-    //         expect_that!(window.is_processing_frame());
-    //         window.end_frame().unwrap();
-    //         expect_that!(!window.is_processing_frame());
-    //     }
-    //
-    //     #[test]
-    //     fn double_frame_begin_error() {
-    //         let tf = TestFixture::setup();
-    //         let mut window = tf.new_window();
-    //         expect_that!(window.begin_frame().is_ok());
-    //         expect_that!(
-    //             &window.begin_frame(),
-    //             eq(Err(BeginFrameError::AlreadyProcessingFrame))
-    //         );
-    //     }
-    //
-    //     #[test]
-    //     fn double_frame_end_error() {
-    //         let tf = TestFixture::setup();
-    //         let mut window = tf.new_window();
-    //         expect_that!(
-    //             &window.end_frame(),
-    //             eq(Err(EndFrameError::NotProcessingFrame))
-    //         );
-    //     }
-    //
-    //     #[test]
-    //     fn synchronization() {
-    //         let tf = TestFixture::setup();
-    //         let mut window = tf.new_window();
-    //         window.synchronize().unwrap();
-    //         window.begin_frame().unwrap();
-    //         window.synchronize().unwrap();
-    //         window.end_frame().unwrap();
-    //         window.synchronize().unwrap();
-    //     }
-}
+// #[cfg(test)]
+// mod tests {
+//     extern crate galvanic_assert;
+//
+//     use galvanic_assert::{matchers::*, *};
+//
+//     use super::*;
+//     use crate::window::EventLoopExt;
+//
+//     struct TestFixture {
+//         pub instance: Instance,
+//         pub event_loop: window::EventLoop<()>,
+//     }
+//
+//     impl TestFixture {
+//         pub fn setup() -> Self {
+//             let instance = Instance::create().unwrap();
+//             let event_loop = window::EventLoop::new_any_thread();
+//             Self {
+//                 instance,
+//                 event_loop,
+//             }
+//         }
+//
+//         pub fn new_window(&self) -> CanvasWindow {
+//             let b = CanvasWindowBuilder::new();
+//             b.with_title("Test")
+//                 .with_inner_size(window::Size::Physical(window::PhysicalSize {
+//                     width: 640,
+//                     height: 480,
+//                 }))
+//                 .with_visible(false)
+//                 .build(&self.instance, &self.event_loop)
+//                 .unwrap()
+//         }
+//     }
+//
+//     #[test]
+//     fn window_creation() {
+//         let tf = TestFixture::setup();
+//         let _window = tf.new_window();
+//     }
+//
+//     #[test]
+//     fn id() {
+//         let tf = TestFixture::setup();
+//         let window1 = tf.new_window();
+//         let window2 = tf.new_window();
+//         expect_that!(&window1.id(), not(eq(window2.id())));
+//     }
+//
+//     #[test]
+//     fn image_count() {
+//         let tf = TestFixture::setup();
+//         let window = tf.new_window();
+//         expect_that!(&window.image_count(), eq(3));
+//     }
+//
+//     #[test]
+//     fn frame_processing() {
+//         let tf = TestFixture::setup();
+//         let mut window = tf.new_window();
+//         expect_that!(!window.is_processing_frame());
+//         window.begin_frame().unwrap();
+//         expect_that!(window.is_processing_frame());
+//         window.end_frame().unwrap();
+//         expect_that!(!window.is_processing_frame());
+//     }
+//
+//     #[test]
+//     fn double_frame_begin_error() {
+//         let tf = TestFixture::setup();
+//         let mut window = tf.new_window();
+//         expect_that!(window.begin_frame().is_ok());
+//         expect_that!(
+//             &window.begin_frame(),
+//             eq(Err(BeginFrameError::AlreadyProcessingFrame))
+//         );
+//     }
+//
+//     #[test]
+//     fn double_frame_end_error() {
+//         let tf = TestFixture::setup();
+//         let mut window = tf.new_window();
+//         expect_that!(
+//             &window.end_frame(),
+//             eq(Err(EndFrameError::NotProcessingFrame))
+//         );
+//     }
+//
+//     #[test]
+//     fn synchronization() {
+//         let tf = TestFixture::setup();
+//         let mut window = tf.new_window();
+//         window.synchronize().unwrap();
+//         window.begin_frame().unwrap();
+//         window.synchronize().unwrap();
+//         window.end_frame().unwrap();
+//         window.synchronize().unwrap();
+//     }
+// }
