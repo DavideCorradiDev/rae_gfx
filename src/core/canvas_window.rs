@@ -649,7 +649,6 @@ mod tests {
     use galvanic_assert::{matchers::*, *};
 
     use super::*;
-    use crate::window::EventLoopExt;
 
     struct TestFixture {
         pub instance: Instance,
@@ -659,7 +658,7 @@ mod tests {
     impl TestFixture {
         pub fn setup() -> Self {
             let instance = Instance::create().unwrap();
-            let event_loop = window::EventLoop::new_any_thread();
+            let event_loop = window::EventLoop::new();
             Self {
                 instance,
                 event_loop,
