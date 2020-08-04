@@ -27,7 +27,7 @@ jobs:
       matrix:
         platform:
           - {os: windows-latest, options: "--features dx11", run_tests: true, gen_doc: false}
-          - {os: windows-latest, options: "--features dx12", run_tests: true, gen_doc: false}
+          - {os: windows-latest, options: "--features dx12", test_options: "--test-threads=1", run_tests: true, gen_doc: false}
           - {os: windows-latest, options: "--features vulkan", run_tests: true, gen_doc: false}
           - {os: ubuntu-latest, options: "--features empty", run_tests: true, gen_doc: true}
           - {os: ubuntu-latest, options: "--features gl", run_tests: true, gen_doc: false}
@@ -37,6 +37,7 @@ jobs:
     env:
       RUST_BACKTRACE: 1
       OPTIONS: ${{ matrix.platform.options }}
+      TEST_OPTIONS: ${{ matrix.platform.test_options }}
 
     runs-on: ${{ matrix.platform.os }}
     steps:
@@ -50,7 +51,7 @@ jobs:
     - name: Run tests
       shell: bash
       if: matrix.platform.run_tests
-      run: cargo test --verbose $OPTIONS -- --nocapture --test-threads=1
+      run: cargo test --verbose $OPTIONS -- --nocapture $TEST_OPTIONS
     - name: Generate doc
       shell: bash
       if: matrix.platform.gen_doc
