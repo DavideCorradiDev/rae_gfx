@@ -1,6 +1,32 @@
 extern crate gfx_hal as hal;
 
-#[cfg(not(any(feature = "dx11", feature = "dx12", feature = "vulkan")))]
+#[cfg(all(
+  target_os = "windows",
+  not(any(
+    feature = "empty",
+    feature = "dx11",
+    feature = "dx12",
+    feature = "gl",
+    feature = "vulkan",
+    feature = "vulkan"
+  ))
+))]
+extern crate gfx_backend_vulkan as hal_backend;
+
+#[cfg(all(
+  any(target_os = "macos", all(target_os = "ios", target_arch = "aarch64")),
+  not(any(
+    feature = "empty",
+    feature = "dx11",
+    feature = "dx12",
+    feature = "gl",
+    feature = "vulkan",
+    feature = "vulkan"
+  ))
+))]
+extern crate gfx_backend_vulkan as hal_backend;
+
+#[cfg(feature = "empty")]
 extern crate gfx_backend_empty as hal_backend;
 
 #[cfg(feature = "dx11")]
@@ -8,6 +34,12 @@ extern crate gfx_backend_dx11 as hal_backend;
 
 #[cfg(feature = "dx12")]
 extern crate gfx_backend_dx12 as hal_backend;
+
+#[cfg(feature = "gl")]
+extern crate gfx_backend_gl as hal_backend;
+
+#[cfg(feature = "metal")]
+extern crate gfx_backend_metal as hal_backend;
 
 #[cfg(feature = "vulkan")]
 extern crate gfx_backend_vulkan as hal_backend;

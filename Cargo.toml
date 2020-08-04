@@ -5,7 +5,7 @@ authors = ["Davide Corradi <davide.corradi.dev@gmail.com>"]
 edition = "2018"
 
 [features]
-default = ["gfx-backend-empty"]
+default = ["gfx-backend-vulkan", "gfx-backend-metal"]
 empty = ["gfx-backend-empty"]
 dx11 = ["gfx-backend-dx11"]
 dx12 = ["gfx-backend-dx12"]
