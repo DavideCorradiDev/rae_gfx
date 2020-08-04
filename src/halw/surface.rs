@@ -1,7 +1,8 @@
 extern crate gfx_hal as hal;
 extern crate raw_window_handle;
 
-use hal::{window::Surface as HalSurface, Instance as HalInstance};
+use hal::window::Surface as HalSurface;
+use hal::Instance as HalInstance;
 use std::{
     cell::RefCell,
     fmt::{Debug, Formatter},
@@ -38,6 +39,11 @@ impl Surface {
     pub fn capabilities(&self) -> hal::window::SurfaceCapabilities {
         self.value
             .capabilities(&self.adapter.borrow().physical_device)
+    }
+
+    pub fn supported_formats(&self) -> Option<Vec<hal::format::Format>> {
+        self.value
+            .supported_formats(&self.adapter.borrow().physical_device)
     }
 
     pub fn configure_swapchain(

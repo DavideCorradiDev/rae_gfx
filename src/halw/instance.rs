@@ -33,7 +33,13 @@ impl DerefMut for Instance {
 }
 
 impl Debug for Instance {
+    #[cfg(not(feature = "gl"))]
     fn fmt(&self, f: &mut Formatter) -> std::fmt::Result {
         write!(f, "Instance {{ value: {:?} }}", self.value)
+    }
+
+    #[cfg(feature = "gl")]
+    fn fmt(&self, f: &mut Formatter) -> std::fmt::Result {
+        write!(f, "Instance {{}}")
     }
 }

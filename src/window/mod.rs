@@ -18,11 +18,5 @@ pub use winit::platform::windows::EventLoopExtWindows as EventLoopExt;
 #[cfg(target_os = "linux")]
 pub use winit::platform::unix::EventLoopExtUnix as EventLoopExt;
 
-#[cfg(target_os = "macos")]
-pub use winit::platform::macos::EventLoopExtMacos as EventLoopExt;
-
-#[cfg(target_os = "ios")]
-pub use winit::platform::ios::EventLoopExtIos as EventLoopExt;
-
-#[cfg(target_os = "android")]
-pub use winit::platform::android::EventLoopExtAndroid as EventLoopExt;
+#[cfg(not(any(target_os = "linux", target_os = "windows")))]
+pub use EventLoop as EventLoopExt;

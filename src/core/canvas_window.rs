@@ -21,10 +21,10 @@ use crate::{halw, window};
 pub struct CanvasWindow {
     window: window::Window,
     gpu: Rc<RefCell<halw::Gpu>>,
-    render_pass: halw::RenderPass,
     surface: halw::Surface,
     surface_color_format: TextureFormat,
     surface_extent: hal::window::Extent2D,
+    render_pass: halw::RenderPass,
     cmd_buffers: Vec<halw::CommandBuffer>,
     semaphores: Vec<halw::Semaphore>,
     fences: Vec<halw::Fence>,
@@ -200,26 +200,27 @@ impl CanvasWindow {
         instance: &Instance,
         window: window::Window,
     ) -> Result<Self, CanvasWindowCreationError> {
-        let render_pass = Self::create_render_pass(instance)?;
         let surface = halw::Surface::create(
-            Rc::clone(&instance.instance_rc()),
-            Rc::clone(&instance.adapter_rc()),
-            Rc::clone(&instance.gpu_rc()),
+            Rc::clone(instance.instance_rc()),
+            Rc::clone(instance.adapter_rc()),
+            Rc::clone(instance.gpu_rc()),
             &window,
         )?;
+        let surface_color_format = Self::select_surface_color_format(&surface);
+        let render_pass = Self::create_render_pass(instance, surface_color_format)?;
         let cmd_buffers = Self::create_command_buffers(instance)?;
         let semaphores = Self::create_semaphores(instance)?;
         let fences = Self::create_fences(instance)?;
         let mut canvas_window = Self {
             window,
             gpu: Rc::clone(&instance.gpu_rc()),
-            render_pass,
             surface,
-            surface_color_format: instance.canvas_color_format(),
+            surface_color_format,
             surface_extent: hal::window::Extent2D {
                 width: 0,
                 height: 0,
             },
+            render_pass,
             cmd_buffers,
             semaphores,
             fences,
@@ -233,9 +234,10 @@ impl CanvasWindow {
 
     fn create_render_pass(
         instance: &Instance,
+        color_format: hal::format::Format,
     ) -> Result<halw::RenderPass, hal::device::OutOfMemory> {
         let color_attachment = hal::pass::Attachment {
-            format: Some(instance.canvas_color_format()),
+            format: Some(color_format),
             samples: 1,
             ops: hal::pass::AttachmentOps::new(
                 hal::pass::AttachmentLoadOp::Clear,
@@ -259,13 +261,24 @@ impl CanvasWindow {
         )
     }
 
+    fn select_surface_color_format(surface: &halw::Surface) -> hal::format::Format {
+        let formats = surface.supported_formats();
+        formats.map_or(hal::format::Format::Rgba8Srgb, |formats| {
+            formats
+                .iter()
+                .find(|a| a.base_format().1 == hal::format::ChannelType::Srgb)
+                .map(|a| *a)
+                .unwrap_or(formats[0])
+        })
+    }
+
     fn create_command_buffers(
         instance: &Instance,
     ) -> Result<Vec<halw::CommandBuffer>, hal::device::OutOfMemory> {
         let cmd_pool = halw::CommandPool::create(
             Rc::clone(&instance.gpu_rc()),
             instance.gpu().queue_groups[0].family,
-            hal::pool::CommandPoolCreateFlags::empty(),
+            hal::pool::CommandPoolCreateFlags::RESET_INDIVIDUAL,
         )?;
         Ok(halw::CommandBuffer::allocate(
             Rc::new(RefCell::new(cmd_pool)),
@@ -659,7 +672,10 @@ mod tests {
     impl TestFixture {
         pub fn setup() -> Self {
             let instance = Instance::create().unwrap();
+            #[cfg(any(target_os = "windows", target_os = "linux"))]
             let event_loop = window::EventLoop::new_any_thread();
+            #[cfg(not(any(target_os = "windows", target_os = "linux")))]
+            let event_loop = window::EventLoop::new();
             Self {
                 instance,
                 event_loop,
