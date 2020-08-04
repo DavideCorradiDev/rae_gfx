@@ -21,7 +21,6 @@ pub struct Instance {
     instance: Rc<RefCell<halw::Instance>>,
     adapter: Rc<RefCell<halw::Adapter>>,
     gpu: Rc<RefCell<halw::Gpu>>,
-    canvas_color_format: TextureFormat,
 }
 
 impl Instance {
@@ -32,13 +31,11 @@ impl Instance {
         )?));
         // let (_a, _b, mut dummy_surface) = Self::create_dummy_surface(instance.borrow().deref())?;
         let gpu = Rc::new(RefCell::new(Self::open_device(adapter.borrow().deref())?));
-        let canvas_color_format = Self::select_canvas_color_format(adapter.borrow().deref());
         // Self::destroy_dummy_surface(instance.borrow().deref(), &mut dummy_surface);
         Ok(Self {
             instance,
             adapter,
             gpu,
-            canvas_color_format,
         })
     }
 
@@ -76,10 +73,6 @@ impl Instance {
 
     pub fn gpu_rc(&self) -> &Rc<RefCell<halw::Gpu>> {
         &self.gpu
-    }
-
-    pub fn canvas_color_format(&self) -> TextureFormat {
-        self.canvas_color_format
     }
 
     #[cfg(feature = "empty")]
@@ -138,21 +131,6 @@ impl Instance {
         unsafe {
             instance.destroy_surface(ManuallyDrop::take(dummy_surface));
         }
-    }
-
-    fn select_canvas_color_format(
-        adapter: &halw::Adapter,
-        // surface: &<halw::Backend as HalBackend>::Surface,
-    ) -> hal::format::Format {
-        hal::format::Format::Rgba8Srgb
-        // let formats = surface.supported_formats(&adapter.physical_device);
-        // formats.map_or(hal::format::Format::Rgba8Srgb, |formats| {
-        //     formats
-        //         .iter()
-        //         .find(|a| a.base_format().1 == hal::format::ChannelType::Srgb)
-        //         .map(|a| *a)
-        //         .unwrap_or(formats[0])
-        // })
     }
 
     fn select_queue_family<'a>(
