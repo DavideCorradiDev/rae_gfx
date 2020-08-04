@@ -12,21 +12,21 @@ use std::{
 
 use super::{Adapter, Backend, Gpu, Instance};
 
-pub struct Surface {
+pub struct Surface<'a> {
     value: ManuallyDrop<<Backend as hal::Backend>::Surface>,
-    instance: Rc<RefCell<Instance>>,
+    instance: &'a Instance,
     adapter: Rc<RefCell<Adapter>>,
     gpu: Rc<RefCell<Gpu>>,
 }
 
-impl Surface {
+impl<'a> Surface<'a> {
     pub fn create(
-        instance: Rc<RefCell<Instance>>,
+        instance: &'a Instance,
         adapter: Rc<RefCell<Adapter>>,
         gpu: Rc<RefCell<Gpu>>,
         handle: &impl raw_window_handle::HasRawWindowHandle,
     ) -> Result<Self, hal::window::InitError> {
-        let surface = unsafe { instance.borrow().create_surface(handle) }?;
+        let surface = unsafe { instance.create_surface(handle) }?;
         Ok(Self {
             value: ManuallyDrop::new(surface),
             instance,
@@ -52,30 +52,29 @@ impl Surface {
     }
 }
 
-impl Drop for Surface {
+impl<'a> Drop for Surface<'a> {
     fn drop(&mut self) {
         unsafe {
             self.instance
-                .borrow()
                 .destroy_surface(ManuallyDrop::take(&mut self.value));
         }
     }
 }
 
-impl Deref for Surface {
+impl<'a> Deref for Surface<'a> {
     type Target = <Backend as hal::Backend>::Surface;
     fn deref(&self) -> &Self::Target {
         &self.value
     }
 }
 
-impl DerefMut for Surface {
+impl<'a> DerefMut for Surface<'a> {
     fn deref_mut(&mut self) -> &mut Self::Target {
         &mut self.value
     }
 }
 
-impl Debug for Surface {
+impl<'a> Debug for Surface<'a> {
     fn fmt(&self, f: &mut Formatter) -> std::fmt::Result {
         write!(f, "Surface {{ value: {:?} }}", self.value)
     }

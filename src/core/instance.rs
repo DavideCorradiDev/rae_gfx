@@ -7,8 +7,6 @@ use std::{
     mem::ManuallyDrop,
     ops::Deref,
     rc::Rc,
-    sync::Arc,
-    sync::RwLock,
 };
 
 use hal::{
@@ -20,53 +18,39 @@ use super::TextureFormat;
 use crate::{halw, window, window::EventLoopExt};
 
 lazy_static::lazy_static! {
-static ref halw_instance: Arc<RwLock<halw::Instance>> = Arc::new(RwLock::new(
-    halw::Instance::create("Engine name", 0).unwrap(),
-));
+    static ref INSTANCE: halw::Instance = halw::Instance::create("Red Ape Engine", 1).unwrap();
 }
 
 pub struct Instance {
-    instance: Rc<RefCell<halw::Instance>>,
     adapter: Rc<RefCell<halw::Adapter>>,
     gpu: Rc<RefCell<halw::Gpu>>,
     canvas_color_format: TextureFormat,
 }
 
 impl Instance {
-    pub const ENGINE_NAME: &'static str = "Red Ape Engine";
-    pub const ENGINE_VERSION: u32 = 1;
-
     pub fn create() -> Result<Self, InstanceCreationError> {
-        let instance = Rc::new(RefCell::new(Self::create_instance()?));
-        let adapter = Rc::new(RefCell::new(Self::select_adapter(
-            instance.borrow().deref(),
-        )?));
-        let (_a, _b, mut dummy_surface) = Self::create_dummy_surface(instance.borrow().deref())?;
+        let adapter = Rc::new(RefCell::new(Self::select_adapter(&INSTANCE)?));
+        let (_a, _b, mut dummy_surface) = Self::create_dummy_surface(&INSTANCE)?;
         let gpu = Rc::new(RefCell::new(Self::open_device(
             adapter.borrow().deref(),
             &dummy_surface,
         )?));
         let canvas_color_format =
             Self::select_canvas_color_format(adapter.borrow().deref(), &dummy_surface);
-        Self::destroy_dummy_surface(instance.borrow().deref(), &mut dummy_surface);
+        Self::destroy_dummy_surface(&INSTANCE, &mut dummy_surface);
         Ok(Self {
-            instance,
             adapter,
             gpu,
             canvas_color_format,
         })
     }
 
-    pub fn instance(&self) -> Ref<halw::Instance> {
-        self.instance.borrow()
+    pub fn instance(&self) -> &halw::Instance {
+        &INSTANCE
     }
 
-    pub fn instance_mut(&mut self) -> RefMut<halw::Instance> {
-        self.instance.borrow_mut()
-    }
-
-    pub fn instance_rc(&self) -> &Rc<RefCell<halw::Instance>> {
-        &self.instance
+    pub fn instance_mut(&mut self) -> &mut halw::Instance {
+        &mut INSTANCE
     }
 
     pub fn adapter(&self) -> Ref<halw::Adapter> {
@@ -95,11 +79,6 @@ impl Instance {
 
     pub fn canvas_color_format(&self) -> TextureFormat {
         self.canvas_color_format
-    }
-
-    fn create_instance() -> Result<halw::Instance, InstanceCreationError> {
-        let instance = halw::Instance::create(Self::ENGINE_NAME, Self::ENGINE_VERSION)?;
-        Ok(instance)
     }
 
     #[cfg(feature = "empty")]
