@@ -9,7 +9,7 @@ use std::{
 
 use hal::{
     command::CommandBuffer as HalCommandBuffer, queue::CommandQueue as HalCommandQueue,
-    window::PresentationSurface as HalPresentatationSurface, window::Surface as HalSurface,
+    window::PresentationSurface as HalPresentatationSurface,
 };
 
 use super::{

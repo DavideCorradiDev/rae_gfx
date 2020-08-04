@@ -4,18 +4,13 @@ extern crate winit;
 
 use std::{
     cell::{Ref, RefCell, RefMut},
-    mem::ManuallyDrop,
     ops::Deref,
     rc::Rc,
 };
 
-use hal::{
-    queue::QueueFamily as HalQueueFamily, window::Surface as HalSurface, Backend as HalBackend,
-    Instance as HalInstance,
-};
+use hal::{queue::QueueFamily as HalQueueFamily, Instance as HalInstance};
 
-use super::TextureFormat;
-use crate::{halw, window, window::EventLoopExt};
+use crate::halw;
 
 pub struct Instance {
     instance: Rc<RefCell<halw::Instance>>,
@@ -105,37 +100,8 @@ impl Instance {
         Ok(adapters.remove(0))
     }
 
-    fn create_dummy_surface(
-        instance: &halw::Instance,
-    ) -> Result<
-        (
-            window::EventLoop<()>,
-            window::Window,
-            ManuallyDrop<<halw::Backend as HalBackend>::Surface>,
-        ),
-        InstanceCreationError,
-    > {
-        let dummy_event_loop = window::EventLoop::new_any_thread();
-        let dummy_window = window::WindowBuilder::new()
-            .with_visible(false)
-            .build(&dummy_event_loop)
-            .unwrap();
-        let dummy_surface = ManuallyDrop::new(unsafe { instance.create_surface(&dummy_window) }?);
-        Ok((dummy_event_loop, dummy_window, dummy_surface))
-    }
-
-    fn destroy_dummy_surface(
-        instance: &halw::Instance,
-        dummy_surface: &mut ManuallyDrop<<halw::Backend as HalBackend>::Surface>,
-    ) {
-        unsafe {
-            instance.destroy_surface(ManuallyDrop::take(dummy_surface));
-        }
-    }
-
     fn select_queue_family<'a>(
         adapter: &'a halw::Adapter,
-        // surface: &<halw::Backend as HalBackend>::Surface,
     ) -> Result<&'a halw::QueueFamily, InstanceCreationError> {
         // Eventually add required constraints here.
         match adapter
@@ -148,10 +114,7 @@ impl Instance {
         }
     }
 
-    fn open_device(
-        adapter: &halw::Adapter,
-        // surface: &<halw::Backend as HalBackend>::Surface,
-    ) -> Result<halw::Gpu, InstanceCreationError> {
+    fn open_device(adapter: &halw::Adapter) -> Result<halw::Gpu, InstanceCreationError> {
         // Eventually add required GPU features here.
         let queue_family = Self::select_queue_family(adapter)?;
         let gpu = halw::Gpu::open(adapter, &[(queue_family, &[1.0])], hal::Features::empty())?;
