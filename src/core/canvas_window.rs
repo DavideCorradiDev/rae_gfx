@@ -649,6 +649,7 @@ mod tests {
     use galvanic_assert::{matchers::*, *};
 
     use super::*;
+    use crate::window::EventLoopExt;
 
     struct TestFixture {
         pub instance: Instance,
@@ -657,8 +658,11 @@ mod tests {
 
     impl TestFixture {
         pub fn setup() -> Self {
+            println!("Creating instance");
             let instance = Instance::create().unwrap();
-            let event_loop = window::EventLoop::new();
+            println!("Event loop");
+            let event_loop = window::EventLoop::new_any_thread();
+            println!("Done");
             Self {
                 instance,
                 event_loop,
@@ -686,9 +690,13 @@ mod tests {
 
     #[test]
     fn id() {
+        println!("Creating fixture");
         let tf = TestFixture::setup();
+        println!("Creating window 1");
         let window1 = tf.new_window();
+        println!("Creating window 2");
         let window2 = tf.new_window();
+        println!("Assertion");
         expect_that!(&window1.id(), not(eq(window2.id())));
     }
 
