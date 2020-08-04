@@ -696,12 +696,12 @@ mod tests {
     //     expect_that!(&window1.id(), not(eq(window2.id())));
     // }
 
-    #[test]
-    fn image_count() {
-        let tf = TestFixture::setup();
-        let window = tf.new_window();
-        expect_that!(&window.image_count(), eq(3));
-    }
+    // #[test]
+    // fn image_count() {
+    //     let tf = TestFixture::setup();
+    //     let window = tf.new_window();
+    //     expect_that!(&window.image_count(), eq(3));
+    // }
     //
     //     #[test]
     //     fn frame_processing() {

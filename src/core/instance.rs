@@ -28,25 +28,18 @@ impl Instance {
     pub const ENGINE_VERSION: u32 = 1;
 
     pub fn create() -> Result<Self, InstanceCreationError> {
-        println!("Creating hal instance");
         let instance = Rc::new(RefCell::new(Self::create_instance()?));
-        println!("Selecting adapter");
         let adapter = Rc::new(RefCell::new(Self::select_adapter(
             instance.borrow().deref(),
         )?));
-        println!("Creating dummy surface");
         let (_a, _b, mut dummy_surface) = Self::create_dummy_surface(instance.borrow().deref())?;
-        println!("Opening device");
         let gpu = Rc::new(RefCell::new(Self::open_device(
             adapter.borrow().deref(),
             &dummy_surface,
         )?));
-        println!("Selecting color format");
         let canvas_color_format =
             Self::select_canvas_color_format(adapter.borrow().deref(), &dummy_surface);
-        println!("Destroying dummy surface");
         Self::destroy_dummy_surface(instance.borrow().deref(), &mut dummy_surface);
-        println!("Done creating hal instance");
         Ok(Self {
             instance,
             adapter,
@@ -247,12 +240,12 @@ impl From<hal::device::CreationError> for InstanceCreationError {
     }
 }
 
-// #[cfg(test)]
-// mod tests {
-//     use super::*;
-//
-//     #[test]
-//     fn instance_creation() {
-//         let _instance = Instance::create().unwrap();
-//     }
-// }
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn instance_creation() {
+        let _instance = Instance::create().unwrap();
+    }
+}
