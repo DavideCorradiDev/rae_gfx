@@ -1,4 +1,5 @@
 extern crate gfx_hal as hal;
+extern crate rae_app;
 
 use std::{
     borrow::Borrow,
@@ -12,10 +13,12 @@ use hal::{
     window::PresentationSurface as HalPresentatationSurface,
 };
 
+use rae_app::{event, window};
+
 use super::{
     BeginFrameError, Canvas, EndFrameError, Instance, SynchronizeFrameError, TextureFormat,
 };
-use crate::{halw, window};
+use crate::halw;
 
 #[derive(Debug)]
 pub struct CanvasWindow {
@@ -38,7 +41,7 @@ impl CanvasWindow {
 
     pub fn new<T: 'static>(
         instance: &Instance,
-        event_loop: &window::EventLoop<T>,
+        event_loop: &event::EventLoop<T>,
     ) -> Result<Self, CanvasWindowCreationError> {
         let window = window::Window::new(event_loop)?;
         Self::with_window(instance, window)
@@ -186,7 +189,7 @@ impl CanvasWindow {
         self.window.set_cursor_visible(visible)
     }
 
-    pub fn resize_canvas_if_necessary(&mut self) -> Result<(), hal::window::CreationError> {
+    pub fn resize_canvas_if_necessary(&mut self) -> Result<(), CanvasWindowOperationError> {
         let current_size = self.inner_size();
         if self.surface_extent.width != current_size.width
             || self.surface_extent.height != current_size.height
@@ -538,7 +541,7 @@ impl CanvasWindowBuilder {
     pub fn build<T>(
         self,
         instance: &Instance,
-        window_target: &window::EventLoopWindowTarget<T>,
+        window_target: &event::EventLoopWindowTarget<T>,
     ) -> Result<CanvasWindow, CanvasWindowCreationError>
     where
         T: 'static,
@@ -661,21 +664,19 @@ mod tests {
 
     use galvanic_assert::{matchers::*, *};
 
+    use event::EventLoopAnyThread;
+
     use super::*;
-    use crate::window::EventLoopExt;
 
     struct TestFixture {
         pub instance: Instance,
-        pub event_loop: window::EventLoop<()>,
+        pub event_loop: event::EventLoop<()>,
     }
 
     impl TestFixture {
         pub fn setup() -> Self {
             let instance = Instance::create().unwrap();
-            #[cfg(any(target_os = "windows", target_os = "linux"))]
-            let event_loop = window::EventLoop::new_any_thread();
-            #[cfg(not(any(target_os = "windows", target_os = "linux")))]
-            let event_loop = window::EventLoop::new();
+            let event_loop = event::EventLoop::new_any_thread();
             Self {
                 instance,
                 event_loop,
