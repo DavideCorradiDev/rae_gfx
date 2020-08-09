@@ -34,3 +34,7 @@ gfx-backend-metal = { version = "0.5", optional = true }
 
 [dev-dependencies]
 galvanic-assert = "0.8.7"
+
+[[example]]
+name = "triangle"
+path = "examples/triangle.rs"
