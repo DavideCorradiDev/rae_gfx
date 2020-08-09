@@ -9,7 +9,7 @@ use rae_app::{
 
 use rae_gfx::core::{
     BeginFrameError, Canvas, CanvasWindow, CanvasWindowBuilder, CanvasWindowCreationError,
-    EndFrameError, Instance, InstanceCreationError,
+    CanvasWindowOperationError, EndFrameError, Instance, InstanceCreationError,
 };
 
 type ApplicationEvent = ();
@@ -18,6 +18,7 @@ type ApplicationEvent = ();
 enum ApplicationError {
     InstanceCreationFailed(InstanceCreationError),
     WindowCreationFailed(CanvasWindowCreationError),
+    WindowOperationFailed(CanvasWindowOperationError),
     BeginFrameFailed(BeginFrameError),
     EndFrameFailed(EndFrameError),
 }
@@ -31,6 +32,9 @@ impl std::fmt::Display for ApplicationError {
             ApplicationError::WindowCreationFailed(e) => {
                 write!(f, "Window creation failed ({})", e)
             }
+            ApplicationError::WindowOperationFailed(e) => {
+                write!(f, "Render frame start failed ({})", e)
+            }
             ApplicationError::BeginFrameFailed(e) => write!(f, "Render frame start failed ({})", e),
             ApplicationError::EndFrameFailed(e) => write!(f, "Render frame end failed ({})", e),
         }
@@ -42,6 +46,7 @@ impl std::error::Error for ApplicationError {
         match self {
             ApplicationError::InstanceCreationFailed(e) => Some(e),
             ApplicationError::WindowCreationFailed(e) => Some(e),
+            ApplicationError::WindowOperationFailed(e) => Some(e),
             ApplicationError::BeginFrameFailed(e) => Some(e),
             ApplicationError::EndFrameFailed(e) => Some(e),
         }
@@ -57,6 +62,12 @@ impl From<InstanceCreationError> for ApplicationError {
 impl From<CanvasWindowCreationError> for ApplicationError {
     fn from(e: CanvasWindowCreationError) -> Self {
         ApplicationError::WindowCreationFailed(e)
+    }
+}
+
+impl From<CanvasWindowOperationError> for ApplicationError {
+    fn from(e: CanvasWindowOperationError) -> Self {
+        ApplicationError::WindowOperationFailed(e)
     }
 }
 
@@ -100,7 +111,7 @@ impl EventHandler<ApplicationError, ApplicationEvent> for ApplicationImpl {
         _size: window::PhysicalSize<u32>,
     ) -> Result<ControlFlow, Self::Error> {
         if wid == self.window.id() {
-            self.window.resize_canvas_if_necessary().unwrap();
+            self.window.resize_canvas_if_necessary()?;
         }
         Ok(ControlFlow::Continue)
     }

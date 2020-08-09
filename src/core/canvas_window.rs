@@ -13,8 +13,7 @@ use hal::{
     window::PresentationSurface as HalPresentatationSurface,
 };
 
-use rae_app::event;
-use rae_app::window;
+use rae_app::{event, window};
 
 use super::{
     BeginFrameError, Canvas, EndFrameError, Instance, SynchronizeFrameError, TextureFormat,
@@ -190,7 +189,7 @@ impl CanvasWindow {
         self.window.set_cursor_visible(visible)
     }
 
-    pub fn resize_canvas_if_necessary(&mut self) -> Result<(), hal::window::CreationError> {
+    pub fn resize_canvas_if_necessary(&mut self) -> Result<(), CanvasWindowOperationError> {
         let current_size = self.inner_size();
         if self.surface_extent.width != current_size.width
             || self.surface_extent.height != current_size.height
