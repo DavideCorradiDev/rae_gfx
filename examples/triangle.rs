@@ -4,6 +4,7 @@ use rae_app::{
     application::Application,
     event::{ControlFlow, EventHandler, EventLoop},
     window,
+    window::WindowId,
 };
 
 use rae_gfx::core::{
@@ -91,6 +92,17 @@ impl EventHandler<ApplicationError, ApplicationEvent> for ApplicationImpl {
             }))
             .build(&instance, event_loop)?;
         Ok(Self { instance, window })
+    }
+
+    fn on_resized(
+        &mut self,
+        wid: WindowId,
+        _size: window::PhysicalSize<u32>,
+    ) -> Result<ControlFlow, Self::Error> {
+        if wid == self.window.id() {
+            self.window.resize_canvas_if_necessary().unwrap();
+        }
+        Ok(ControlFlow::Continue)
     }
 
     fn on_variable_update(&mut self, _: std::time::Duration) -> Result<ControlFlow, Self::Error> {
