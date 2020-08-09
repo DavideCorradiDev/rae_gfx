@@ -1,8 +1,7 @@
 extern crate gfx_hal as hal;
 extern crate raw_window_handle;
 
-use hal::window::Surface as HalSurface;
-use hal::Instance as HalInstance;
+use hal::{window::Surface as HalSurface, Instance as HalInstance};
 use std::{
     cell::RefCell,
     fmt::{Debug, Formatter},
