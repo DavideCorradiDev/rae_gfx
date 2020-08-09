@@ -80,5 +80,7 @@ impl EventHandler<ApplicationError, ApplicationEvent> for ApplicationImpl {
 }
 
 fn main() {
-    println!("Hello world!");
+    const FIXED_FRAMERATE: u64 = 30;
+    const VARIABLE_FRAMERATE_CAP: u64 = 60;
+    Application::<ApplicationImpl, _, _>::new(FIXED_FRAMERATE, Some(VARIABLE_FRAMERATE_CAP)).run();
 }
