@@ -1,4 +1,5 @@
 extern crate gfx_hal as hal;
+extern crate rae_app;
 
 use std::{
     borrow::Borrow,
@@ -12,10 +13,13 @@ use hal::{
     window::PresentationSurface as HalPresentatationSurface,
 };
 
+use rae_app::event;
+use rae_app::window;
+
 use super::{
     BeginFrameError, Canvas, EndFrameError, Instance, SynchronizeFrameError, TextureFormat,
 };
-use crate::{halw, window};
+use crate::halw;
 
 #[derive(Debug)]
 pub struct CanvasWindow {
@@ -38,7 +42,7 @@ impl CanvasWindow {
 
     pub fn new<T: 'static>(
         instance: &Instance,
-        event_loop: &window::EventLoop<T>,
+        event_loop: &event::EventLoop<T>,
     ) -> Result<Self, CanvasWindowCreationError> {
         let window = window::Window::new(event_loop)?;
         Self::with_window(instance, window)
@@ -538,7 +542,7 @@ impl CanvasWindowBuilder {
     pub fn build<T>(
         self,
         instance: &Instance,
-        window_target: &window::EventLoopWindowTarget<T>,
+        window_target: &event::EventLoopWindowTarget<T>,
     ) -> Result<CanvasWindow, CanvasWindowCreationError>
     where
         T: 'static,
@@ -661,19 +665,20 @@ mod tests {
 
     use galvanic_assert::{matchers::*, *};
 
+    use event::EventLoopAnyThread;
+
     use super::*;
-    use crate::window::EventLoopExt;
 
     struct TestFixture {
         pub instance: Instance,
-        pub event_loop: window::EventLoop<()>,
+        pub event_loop: event::EventLoop<()>,
     }
 
     impl TestFixture {
         pub fn setup() -> Self {
             let instance = Instance::create().unwrap();
             #[cfg(any(target_os = "windows", target_os = "linux"))]
-            let event_loop = window::EventLoop::new_any_thread();
+            let event_loop = event::EventLoop::new_any_thread();
             #[cfg(not(any(target_os = "windows", target_os = "linux")))]
             let event_loop = window::EventLoop::new();
             Self {

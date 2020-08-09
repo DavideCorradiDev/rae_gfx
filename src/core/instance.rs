@@ -1,5 +1,4 @@
 extern crate gfx_hal as hal;
-extern crate winit;
 
 use std::{
     cell::{Ref, RefCell, RefMut},
