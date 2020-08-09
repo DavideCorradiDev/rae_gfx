@@ -2,16 +2,13 @@ extern crate rae_app;
 
 use rae_app::{
     application::Application,
-    event::{
-        controller, keyboard, mouse, touch, ControlFlow, DeviceId, EventHandler, EventLoop,
-        EventLoopClosed, EventLoopProxy, EventLoopStartCause, ScrollDelta,
-    },
+    event::{ControlFlow, EventHandler, EventLoop},
     window,
-    window::{PhysicalPosition, PhysicalSize, Size, Window, WindowBuilder, WindowId},
 };
 
 use rae_gfx::core::{
-    CanvasWindow, CanvasWindowBuilder, CanvasWindowCreationError, Instance, InstanceCreationError,
+    BeginFrameError, Canvas, CanvasWindow, CanvasWindowBuilder, CanvasWindowCreationError,
+    EndFrameError, Instance, InstanceCreationError,
 };
 
 type ApplicationEvent = ();
@@ -20,6 +17,8 @@ type ApplicationEvent = ();
 enum ApplicationError {
     InstanceCreationFailed(InstanceCreationError),
     WindowCreationFailed(CanvasWindowCreationError),
+    BeginFrameFailed(BeginFrameError),
+    EndFrameFailed(EndFrameError),
 }
 
 impl std::fmt::Display for ApplicationError {
@@ -31,6 +30,8 @@ impl std::fmt::Display for ApplicationError {
             ApplicationError::WindowCreationFailed(e) => {
                 write!(f, "Window creation failed ({})", e)
             }
+            ApplicationError::BeginFrameFailed(e) => write!(f, "Render frame start failed ({})", e),
+            ApplicationError::EndFrameFailed(e) => write!(f, "Render frame end failed ({})", e),
         }
     }
 }
@@ -40,6 +41,8 @@ impl std::error::Error for ApplicationError {
         match self {
             ApplicationError::InstanceCreationFailed(e) => Some(e),
             ApplicationError::WindowCreationFailed(e) => Some(e),
+            ApplicationError::BeginFrameFailed(e) => Some(e),
+            ApplicationError::EndFrameFailed(e) => Some(e),
         }
     }
 }
@@ -53,6 +56,18 @@ impl From<InstanceCreationError> for ApplicationError {
 impl From<CanvasWindowCreationError> for ApplicationError {
     fn from(e: CanvasWindowCreationError) -> Self {
         ApplicationError::WindowCreationFailed(e)
+    }
+}
+
+impl From<BeginFrameError> for ApplicationError {
+    fn from(e: BeginFrameError) -> Self {
+        ApplicationError::BeginFrameFailed(e)
+    }
+}
+
+impl From<EndFrameError> for ApplicationError {
+    fn from(e: EndFrameError) -> Self {
+        ApplicationError::EndFrameFailed(e)
     }
 }
 
@@ -76,6 +91,12 @@ impl EventHandler<ApplicationError, ApplicationEvent> for ApplicationImpl {
             }))
             .build(&instance, event_loop)?;
         Ok(Self { instance, window })
+    }
+
+    fn on_variable_update(&mut self, _: std::time::Duration) -> Result<ControlFlow, Self::Error> {
+        self.window.begin_frame()?;
+        self.window.end_frame()?;
+        Ok(ControlFlow::Continue)
     }
 }
 
