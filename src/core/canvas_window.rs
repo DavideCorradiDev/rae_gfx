@@ -676,10 +676,7 @@ mod tests {
     impl TestFixture {
         pub fn setup() -> Self {
             let instance = Instance::create().unwrap();
-            #[cfg(any(target_os = "windows", target_os = "linux"))]
             let event_loop = event::EventLoop::new_any_thread();
-            #[cfg(not(any(target_os = "windows", target_os = "linux")))]
-            let event_loop = window::EventLoop::new();
             Self {
                 instance,
                 event_loop,
