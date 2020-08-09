@@ -96,7 +96,7 @@ impl EventHandler<ApplicationError, ApplicationEvent> for ApplicationImpl {
     fn new(event_loop: &EventLoop<Self::CustomEvent>) -> Result<Self, Self::Error> {
         let instance = Instance::create()?;
         let window = CanvasWindowBuilder::new()
-            .with_title("Triangle")
+            .with_title("Triangle Example")
             .with_inner_size(window::Size::Physical(window::PhysicalSize {
                 width: 800,
                 height: 600,
