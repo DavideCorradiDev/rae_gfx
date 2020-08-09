@@ -10,6 +10,7 @@ use hal::{queue::QueueFamily as HalQueueFamily, Instance as HalInstance};
 
 use crate::halw;
 
+#[derive(Debug)]
 pub struct Instance {
     instance: Rc<RefCell<halw::Instance>>,
     adapter: Rc<RefCell<halw::Adapter>>,
