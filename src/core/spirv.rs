@@ -8,6 +8,29 @@ pub enum ShaderCompilationError {
     CompilationFailed(shaderc::Error),
 }
 
+impl std::fmt::Display for ShaderCompilationError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            ShaderCompilationError::InvalidShaderExtension => write!(f, "Invalid shader extension"),
+            ShaderCompilationError::IoError(e) => write!(f, "I/O error ({})", e),
+            ShaderCompilationError::CompilerInitializationFailed => {
+                write!(f, "Compiler initialization failed")
+            }
+            ShaderCompilationError::CompilationFailed(e) => write!(f, "Compilation failed ({})", e),
+        }
+    }
+}
+
+impl std::error::Error for ShaderCompilationError {
+    fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
+        match self {
+            ShaderCompilationError::IoError(e) => Some(e),
+            ShaderCompilationError::CompilationFailed(e) => Some(e),
+            _ => None,
+        }
+    }
+}
+
 impl From<std::io::Error> for ShaderCompilationError {
     fn from(e: std::io::Error) -> Self {
         ShaderCompilationError::IoError(e)
