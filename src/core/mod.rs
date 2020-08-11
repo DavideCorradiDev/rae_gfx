@@ -15,5 +15,4 @@ pub use canvas_window::{
 mod texture_format;
 pub use texture_format::TextureFormat;
 
-mod spirv;
-pub use spirv::*;
+pub mod spirv;
