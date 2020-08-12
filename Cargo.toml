@@ -35,6 +35,9 @@ gfx-backend-metal = { version = "0.5", optional = true }
 [dev-dependencies]
 galvanic-assert = "0.8.7"
 
+[build-dependencies]
+rae_shader = { git = "https://github.com/DavideCorradiDev/rae_shader.git", tag = "v0.1.1" }
+
 [[example]]
 name = "triangle"
 path = "examples/triangle.rs"
