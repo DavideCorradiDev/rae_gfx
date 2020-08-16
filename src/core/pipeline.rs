@@ -35,11 +35,6 @@ pub enum PipelineCreationError {
     PipelineCreationFailed(hal::pso::CreationError),
 }
 
-#[derive(Debug, PartialEq, Clone)]
-pub enum RenderingError {
-    NotProcessingFrame,
-}
-
 impl std::fmt::Display for PipelineCreationError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
@@ -76,6 +71,25 @@ impl From<hal::device::ShaderError> for PipelineCreationError {
     }
 }
 
+#[derive(Debug, PartialEq, Clone)]
+pub enum RenderingError {
+    NotProcessingFrame,
+}
+
+impl std::fmt::Display for RenderingError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            RenderingError::NotProcessingFrame => write!(f, "No frame is being processed"),
+        }
+    }
+}
+
+impl std::error::Error for RenderingError {
+    fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
+        None
+    }
+}
+
 impl From<hal::pso::CreationError> for PipelineCreationError {
     fn from(e: hal::pso::CreationError) -> Self {
         PipelineCreationError::PipelineCreationFailed(e)
@@ -84,7 +98,7 @@ impl From<hal::pso::CreationError> for PipelineCreationError {
 
 pub struct Pipeline<Config: PipelineConfig> {
     canvas: Rc<RefCell<dyn Canvas>>,
-    layout: halw::PipelineLayout,
+    _layout: halw::PipelineLayout,
     pipeline: halw::GraphicsPipeline,
     _p: std::marker::PhantomData<Config>,
 }
@@ -105,7 +119,7 @@ where
         )?;
         Ok(Self {
             canvas,
-            layout,
+            _layout: layout,
             pipeline,
             _p: std::marker::PhantomData,
         })
@@ -126,6 +140,7 @@ where
         unsafe {
             cmd_buf.bind_graphics_pipeline(&self.pipeline);
             for mesh in meshes {
+                // Add push constant handling here.
                 cmd_buf.bind_vertex_buffers(
                     0,
                     std::iter::once((
