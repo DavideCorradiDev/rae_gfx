@@ -457,6 +457,14 @@ impl Canvas for CanvasWindow {
     fn render_pass(&self) -> &halw::RenderPass {
         &self.render_pass
     }
+
+    fn current_command_buffer(&self) -> Option<&halw::CommandBuffer> {
+        if self.is_processing_frame() {
+            Some(&self.cmd_buffers[self.current_frame_idx])
+        } else {
+            None
+        }
+    }
 }
 
 pub struct CanvasWindowBuilder {

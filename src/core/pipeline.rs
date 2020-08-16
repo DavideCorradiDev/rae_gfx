@@ -11,10 +11,13 @@ pub struct ShaderConfig {
     push_constant_range: Option<std::ops::Range<u32>>,
 }
 
-pub trait PipelineConfig {
+pub trait Mesh {
     type Vertex;
+}
+
+pub trait PipelineConfig {
+    type Mesh: Mesh;
     type Constants;
-    type Uniforms;
     fn vertex_shader_config() -> &'static ShaderConfig;
     fn fragment_shader_config() -> &'static ShaderConfig;
 }
@@ -24,6 +27,11 @@ pub enum PipelineCreationError {
     OutOfMemory(hal::device::OutOfMemory),
     ShaderCreationFailed(hal::device::ShaderError),
     PipelineCreationFailed(hal::pso::CreationError),
+}
+
+#[derive(Debug, PartialEq, Clone)]
+pub enum RenderingError {
+    Placeholder,
 }
 
 impl std::fmt::Display for PipelineCreationError {
@@ -95,6 +103,13 @@ where
             pipeline,
             _p: std::marker::PhantomData,
         })
+    }
+
+    pub fn render(
+        &self,
+        meshes: &[(Config::Mesh, Config::Constants)],
+    ) -> Result<(), RenderingError> {
+        Ok(())
     }
 
     fn create_layout(
@@ -172,7 +187,7 @@ where
             .vertex_buffers
             .push(hal::pso::VertexBufferDesc {
                 binding: 0,
-                stride: std::mem::size_of::<Config::Vertex>() as u32,
+                stride: std::mem::size_of::<<Config::Mesh as Mesh>::Vertex>() as u32,
                 rate: hal::pso::VertexInputRate::Vertex,
             });
         let pipeline = halw::GraphicsPipeline::create(gpu, &pipeline_desc, None)?;
