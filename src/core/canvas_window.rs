@@ -458,9 +458,9 @@ impl Canvas for CanvasWindow {
         &self.render_pass
     }
 
-    fn current_command_buffer(&self) -> Option<&halw::CommandBuffer> {
+    fn current_command_buffer(&mut self) -> Option<&mut halw::CommandBuffer> {
         if self.is_processing_frame() {
-            Some(&self.cmd_buffers[self.current_frame_idx])
+            Some(&mut self.cmd_buffers[self.current_frame_idx])
         } else {
             None
         }

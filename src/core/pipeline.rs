@@ -2,7 +2,7 @@ extern crate gfx_hal as hal;
 
 use crate::halw;
 
-use std::{cell::RefCell, rc::Rc};
+use std::{cell::RefCell, ops::Deref, rc::Rc};
 
 use super::{Canvas, Instance};
 
@@ -11,8 +11,14 @@ pub struct ShaderConfig {
     push_constant_range: Option<std::ops::Range<u32>>,
 }
 
+pub type BufferLength = u64;
+pub type VertexCount = hal::VertexCount;
+
 pub trait Mesh {
     type Vertex;
+    fn buffer(&self) -> &halw::Buffer;
+    fn buffer_len(&self) -> BufferLength;
+    fn vertex_count(&self) -> VertexCount;
 }
 
 pub trait PipelineConfig {
@@ -31,7 +37,7 @@ pub enum PipelineCreationError {
 
 #[derive(Debug, PartialEq, Clone)]
 pub enum RenderingError {
-    Placeholder,
+    NotProcessingFrame,
 }
 
 impl std::fmt::Display for PipelineCreationError {
@@ -106,9 +112,34 @@ where
     }
 
     pub fn render(
-        &self,
+        &mut self,
         meshes: &[(Config::Mesh, Config::Constants)],
     ) -> Result<(), RenderingError> {
+        use hal::command::CommandBuffer as HalCommandBuffer;
+
+        let mut canvas = self.canvas.borrow_mut();
+        let cmd_buf = match canvas.current_command_buffer() {
+            Some(cmd_buf) => cmd_buf,
+            None => return Err(RenderingError::NotProcessingFrame),
+        };
+
+        unsafe {
+            cmd_buf.bind_graphics_pipeline(&self.pipeline);
+            for mesh in meshes {
+                cmd_buf.bind_vertex_buffers(
+                    0,
+                    std::iter::once((
+                        mesh.0.buffer().deref(),
+                        hal::buffer::SubRange {
+                            offset: 0,
+                            size: Some(mesh.0.buffer_len()),
+                        },
+                    )),
+                );
+                cmd_buf.draw(0..mesh.0.vertex_count(), 0..1);
+            }
+        }
+
         Ok(())
     }
 
