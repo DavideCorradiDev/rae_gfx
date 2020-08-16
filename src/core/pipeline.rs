@@ -6,12 +6,17 @@ use std::{cell::RefCell, rc::Rc};
 
 use super::{Canvas, Instance};
 
+pub struct ShaderConfig {
+    source: Vec<u32>,
+    push_constant_range: Option<std::ops::Range<u32>>,
+}
+
 pub trait PipelineConfig {
     type Vertex;
     type Constants;
     type Uniforms;
-    fn vertex_shader() -> &'static [u32];
-    fn fragment_shader() -> &'static [u32];
+    fn vertex_shader_config() -> &'static ShaderConfig;
+    fn fragment_shader_config() -> &'static ShaderConfig;
 }
 
 #[derive(Debug, PartialEq, Clone)]
@@ -95,7 +100,19 @@ where
     fn create_layout(
         gpu: Rc<RefCell<halw::Gpu>>,
     ) -> Result<halw::PipelineLayout, hal::device::OutOfMemory> {
-        let pipeline = halw::PipelineLayout::create(gpu, &[], &[])?;
+        let push_constants_config = {
+            let mut push_constants_config = Vec::new();
+            if let Some(push_constant_range) =
+                Config::vertex_shader_config().push_constant_range.clone()
+            {
+                push_constants_config
+                    .push((hal::pso::ShaderStageFlags::VERTEX, push_constant_range));
+            }
+            push_constants_config
+        };
+
+        let pipeline = halw::PipelineLayout::create(gpu, &[], push_constants_config.iter())?;
+
         Ok(pipeline)
     }
 
@@ -104,14 +121,20 @@ where
         render_pass: &halw::RenderPass,
         layout: &halw::PipelineLayout,
     ) -> Result<halw::GraphicsPipeline, PipelineCreationError> {
-        let vs_module = halw::ShaderModule::from_spirv(Rc::clone(&gpu), Config::vertex_shader())?;
+        let vs_module = halw::ShaderModule::from_spirv(
+            Rc::clone(&gpu),
+            Config::vertex_shader_config().source.as_slice(),
+        )?;
         let vs_entry = halw::EntryPoint {
             entry: "main",
             module: &vs_module,
             specialization: hal::pso::Specialization::default(),
         };
 
-        let fs_module = halw::ShaderModule::from_spirv(Rc::clone(&gpu), Config::fragment_shader())?;
+        let fs_module = halw::ShaderModule::from_spirv(
+            Rc::clone(&gpu),
+            Config::fragment_shader_config().source.as_slice(),
+        )?;
         let fs_entry = halw::EntryPoint {
             entry: "main",
             module: &fs_module,
