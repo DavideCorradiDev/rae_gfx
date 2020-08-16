@@ -70,3 +70,9 @@ pub use shader_module::ShaderModule;
 
 mod graphics_pipeline_desc;
 pub use graphics_pipeline_desc::{GraphicsPipelineDesc, Primitive, Rasterizer};
+
+mod entry_point;
+pub use entry_point::EntryPoint;
+
+mod subpass;
+pub use subpass::Subpass;
