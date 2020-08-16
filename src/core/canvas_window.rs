@@ -453,6 +453,10 @@ impl Canvas for CanvasWindow {
         fence.wait(!0)?;
         Ok(())
     }
+
+    fn render_pass(&self) -> &halw::RenderPass {
+        &self.render_pass
+    }
 }
 
 pub struct CanvasWindowBuilder {

@@ -1,11 +1,14 @@
 extern crate gfx_hal as hal;
 
+use crate::halw;
+
 pub trait Canvas {
     fn image_count(&self) -> usize;
     fn is_processing_frame(&self) -> bool;
     fn begin_frame(&mut self) -> Result<(), BeginFrameError>;
     fn end_frame(&mut self) -> Result<(), EndFrameError>;
     fn synchronize(&self) -> Result<(), SynchronizeFrameError>;
+    fn render_pass(&self) -> &halw::RenderPass;
 }
 
 #[derive(Debug, Clone, PartialEq)]
