@@ -4,44 +4,10 @@ use std::{cell::RefCell, ops::Deref, rc::Rc};
 
 use hal::command::CommandBuffer as HalCommandBuffer;
 
-use super::{BufferCreationError, BufferLength, Canvas, ImmutableBuffer, Instance};
+use super::{Canvas, Instance, Mesh};
 use crate::halw;
 
-pub type VertexCount = hal::VertexCount;
-
-pub struct Mesh<Vertex> {
-    buffer: ImmutableBuffer,
-    vertex_count: VertexCount,
-    _p: std::marker::PhantomData<Vertex>,
-}
-
-impl<Vertex> Mesh<Vertex> {
-    pub fn from_vertices(
-        instance: &Instance,
-        vertices: &[Vertex],
-    ) -> Result<Self, BufferCreationError> {
-        let (_, bytes, _) = unsafe { vertices.align_to::<u8>() };
-        let buffer = ImmutableBuffer::from_data(instance, bytes)?;
-        Ok(Self {
-            buffer,
-            vertex_count: vertices.len() as VertexCount,
-            _p: std::marker::PhantomData,
-        })
-    }
-
-    pub fn buffer(&self) -> &ImmutableBuffer {
-        &self.buffer
-    }
-
-    pub fn vertex_byte_count(&self) -> BufferLength {
-        std::mem::size_of::<Vertex>() as BufferLength
-    }
-
-    pub fn vertex_count(&self) -> VertexCount {
-        self.vertex_count
-    }
-}
-
+#[derive(Debug, PartialEq, Clone)]
 pub struct ShaderConfig {
     source: Vec<u32>,
     push_constant_range: Option<std::ops::Range<u32>>,

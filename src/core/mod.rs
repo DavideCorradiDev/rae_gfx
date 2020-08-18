@@ -18,5 +18,8 @@ pub use texture_format::TextureFormat;
 mod buffer;
 pub use buffer::{BufferCreationError, BufferLength, ImmutableBuffer};
 
+mod mesh;
+pub use mesh::{Mesh, VertexCount};
+
 mod pipeline;
-pub use pipeline::{Mesh, Pipeline, PipelineConfig};
+pub use pipeline::{Pipeline, PipelineConfig, PipelineCreationError, ShaderConfig};
