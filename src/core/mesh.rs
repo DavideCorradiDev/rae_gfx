@@ -1,6 +1,6 @@
 extern crate gfx_hal as hal;
 
-use super::{BufferCreationError, BufferLength, ImmutableBuffer, Instance};
+use super::{BufferCreationError, ImmutableBuffer, Instance};
 
 pub type VertexCount = hal::VertexCount;
 
@@ -27,10 +27,6 @@ impl<Vertex> Mesh<Vertex> {
 
     pub fn buffer(&self) -> &ImmutableBuffer {
         &self.buffer
-    }
-
-    pub fn vertex_byte_count(&self) -> BufferLength {
-        std::mem::size_of::<Vertex>() as BufferLength
     }
 
     pub fn vertex_count(&self) -> VertexCount {
