@@ -15,5 +15,8 @@ pub use canvas_window::{
 mod texture_format;
 pub use texture_format::TextureFormat;
 
+mod buffer;
+pub use buffer::{BufferCreationError, ImmutableBuffer};
+
 mod pipeline;
 pub use pipeline::{Mesh, Pipeline, PipelineConfig};
