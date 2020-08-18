@@ -10,10 +10,13 @@ use hal::{
 use super::Instance;
 use crate::halw;
 
+pub type BufferLength = u64;
+
 #[derive(Debug)]
 pub struct ImmutableBuffer {
     memory: halw::Memory,
     buffer: halw::Buffer,
+    buffer_len: BufferLength,
 }
 
 impl ImmutableBuffer {
@@ -42,7 +45,15 @@ impl ImmutableBuffer {
             &mut buffer,
             buffer_len,
         )?;
-        Ok(Self { memory, buffer })
+        Ok(Self {
+            memory,
+            buffer,
+            buffer_len,
+        })
+    }
+
+    pub fn len(&self) -> BufferLength {
+        self.buffer_len
     }
 
     pub fn memory(&self) -> &halw::Memory {

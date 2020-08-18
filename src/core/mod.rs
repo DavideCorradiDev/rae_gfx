@@ -16,7 +16,7 @@ mod texture_format;
 pub use texture_format::TextureFormat;
 
 mod buffer;
-pub use buffer::{BufferCreationError, ImmutableBuffer};
+pub use buffer::{BufferCreationError, BufferLength, ImmutableBuffer};
 
 mod pipeline;
 pub use pipeline::{Mesh, Pipeline, PipelineConfig};

@@ -4,15 +4,13 @@ use std::{cell::RefCell, ops::Deref, rc::Rc};
 
 use hal::command::CommandBuffer as HalCommandBuffer;
 
-use super::{BufferCreationError, Canvas, ImmutableBuffer, Instance};
+use super::{BufferCreationError, BufferLength, Canvas, ImmutableBuffer, Instance};
 use crate::halw;
 
-pub type BufferLength = u64;
 pub type VertexCount = hal::VertexCount;
 
 pub struct Mesh<Vertex> {
     buffer: ImmutableBuffer,
-    buffer_len: BufferLength,
     vertex_count: VertexCount,
     _p: std::marker::PhantomData<Vertex>,
 }
@@ -26,18 +24,13 @@ impl<Vertex> Mesh<Vertex> {
         let buffer = ImmutableBuffer::from_data(instance, bytes)?;
         Ok(Self {
             buffer,
-            buffer_len: bytes.len() as BufferLength,
             vertex_count: vertices.len() as VertexCount,
             _p: std::marker::PhantomData,
         })
     }
 
-    pub fn buffer(&self) -> &halw::Buffer {
-        self.buffer.buffer()
-    }
-
-    pub fn buffer_len(&self) -> BufferLength {
-        self.buffer_len
+    pub fn buffer(&self) -> &ImmutableBuffer {
+        &self.buffer
     }
 
     pub fn vertex_byte_count(&self) -> BufferLength {
@@ -175,10 +168,10 @@ where
                 cmd_buf.bind_vertex_buffers(
                     0,
                     std::iter::once((
-                        mesh.0.buffer().deref(),
+                        mesh.0.buffer().buffer().deref(),
                         hal::buffer::SubRange {
                             offset: 0,
-                            size: Some(mesh.0.buffer_len()),
+                            size: Some(mesh.0.buffer().len()),
                         },
                     )),
                 );
