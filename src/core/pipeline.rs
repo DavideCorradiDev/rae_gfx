@@ -13,7 +13,46 @@ use crate::halw;
 pub type BufferLength = u64;
 pub type VertexCount = hal::VertexCount;
 
-pub trait Mesh {
+pub struct Mesh<Vertex> {
+    buffer: ImmutableBuffer,
+    buffer_len: BufferLength,
+    vertex_count: VertexCount,
+    _p: std::marker::PhantomData<Vertex>,
+}
+
+impl<Vertex> Mesh<Vertex> {
+    pub fn from_vertices(
+        instance: &Instance,
+        vertices: &[Vertex],
+    ) -> Result<Self, BufferCreationError> {
+        let (_, bytes, _) = unsafe { vertices.align_to::<u8>() };
+        let buffer = ImmutableBuffer::from_data(instance, bytes)?;
+        Ok(Self {
+            buffer,
+            buffer_len: bytes.len() as BufferLength,
+            vertex_count: vertices.len() as VertexCount,
+            _p: std::marker::PhantomData,
+        })
+    }
+
+    pub fn buffer(&self) -> &halw::Buffer {
+        &self.buffer.buffer
+    }
+
+    pub fn buffer_len(&self) -> BufferLength {
+        self.buffer_len
+    }
+
+    pub fn vertex_byte_count(&self) -> BufferLength {
+        std::mem::size_of::<Vertex>() as BufferLength
+    }
+
+    pub fn vertex_count(&self) -> VertexCount {
+        self.vertex_count
+    }
+}
+
+pub trait MeshTrait {
     type Vertex;
     fn buffer(&self) -> &halw::Buffer;
     fn buffer_len(&self) -> BufferLength;
@@ -97,7 +136,8 @@ impl From<hal::device::OutOfMemory> for BufferCreationError {
     }
 }
 
-pub struct ImmutableBuffer {
+#[derive(Debug)]
+struct ImmutableBuffer {
     memory: halw::Memory,
     buffer: halw::Buffer,
 }
@@ -236,7 +276,7 @@ pub struct ShaderConfig {
 }
 
 pub trait PipelineConfig {
-    type Mesh: Mesh;
+    type MeshTrait: MeshTrait;
     type Constants;
     fn vertex_shader_config() -> &'static ShaderConfig;
     fn fragment_shader_config() -> &'static ShaderConfig;
@@ -341,10 +381,8 @@ where
 
     pub fn render(
         &mut self,
-        meshes: &[(Config::Mesh, Config::Constants)],
+        meshes: &[(Config::MeshTrait, Config::Constants)],
     ) -> Result<(), RenderingError> {
-        use hal::command::CommandBuffer as HalCommandBuffer;
-
         let mut canvas = self.canvas.borrow_mut();
         let cmd_buf = match canvas.current_command_buffer() {
             Some(cmd_buf) => cmd_buf,
@@ -447,7 +485,7 @@ where
             .vertex_buffers
             .push(hal::pso::VertexBufferDesc {
                 binding: 0,
-                stride: std::mem::size_of::<<Config::Mesh as Mesh>::Vertex>() as u32,
+                stride: std::mem::size_of::<<Config::MeshTrait as MeshTrait>::Vertex>() as u32,
                 rate: hal::pso::VertexInputRate::Vertex,
             });
         let pipeline = halw::GraphicsPipeline::create(gpu, &pipeline_desc, None)?;
@@ -465,19 +503,19 @@ where
 //         color: [f32; 4],
 //     }
 //
-//     #[derive(Debug, PartialEq, Copy, Clone)]
+//     #[derive(Debug)]
 //     struct MyMesh {
-//         vertices: Vec<MyVertex>,
-//
+//         buffer: ImmutableBuffer,
 //     }
 //
-//     impl Mesh for MyMesh {
+//     impl MyMesh {
+//         fn from_vertices()
+//     }
+//
+//     impl MeshTrait for MyMesh {
 //         type Vertex = MyVertex;
 //
-//         fn buffer(&self) -> &halw::Buffer
-//         {
-//
-//         }
+//         fn buffer(&self) -> &halw::Buffer {}
 //
 //         fn buffer_len(&self) -> BufferLength {
 //             self.vertex_count() as u64 * self.vertex_byte_count()
@@ -492,4 +530,3 @@ where
 //         }
 //     }
 // }
-//

@@ -16,4 +16,4 @@ mod texture_format;
 pub use texture_format::TextureFormat;
 
 mod pipeline;
-pub use pipeline::{Pipeline, PipelineConfig};
+pub use pipeline::{Mesh, Pipeline, PipelineConfig};
