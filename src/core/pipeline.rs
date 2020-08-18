@@ -20,74 +20,6 @@ pub trait PipelineConfig {
     fn fragment_shader_config() -> &'static ShaderConfig;
 }
 
-#[derive(Debug, PartialEq, Clone)]
-pub enum PipelineCreationError {
-    OutOfMemory(hal::device::OutOfMemory),
-    ShaderCreationFailed(hal::device::ShaderError),
-    PipelineCreationFailed(hal::pso::CreationError),
-}
-
-impl std::fmt::Display for PipelineCreationError {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match self {
-            PipelineCreationError::OutOfMemory(e) => write!(f, "Out of memory ({})", e),
-            PipelineCreationError::ShaderCreationFailed(e) => {
-                write!(f, "Shader creation failed({})", e)
-            }
-            PipelineCreationError::PipelineCreationFailed(e) => {
-                write!(f, "Pipeline creation failed ({})", e)
-            }
-        }
-    }
-}
-
-impl std::error::Error for PipelineCreationError {
-    fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
-        match self {
-            PipelineCreationError::OutOfMemory(e) => Some(e),
-            PipelineCreationError::ShaderCreationFailed(e) => Some(e),
-            PipelineCreationError::PipelineCreationFailed(e) => Some(e),
-        }
-    }
-}
-
-impl From<hal::device::OutOfMemory> for PipelineCreationError {
-    fn from(e: hal::device::OutOfMemory) -> Self {
-        PipelineCreationError::OutOfMemory(e)
-    }
-}
-
-impl From<hal::device::ShaderError> for PipelineCreationError {
-    fn from(e: hal::device::ShaderError) -> Self {
-        PipelineCreationError::ShaderCreationFailed(e)
-    }
-}
-
-#[derive(Debug, PartialEq, Clone)]
-pub enum RenderingError {
-    NotProcessingFrame,
-}
-
-impl std::fmt::Display for RenderingError {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match self {
-            RenderingError::NotProcessingFrame => write!(f, "No frame is being processed"),
-        }
-    }
-}
-
-impl std::error::Error for RenderingError {
-    fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
-        None
-    }
-}
-
-impl From<hal::pso::CreationError> for PipelineCreationError {
-    fn from(e: hal::pso::CreationError) -> Self {
-        PipelineCreationError::PipelineCreationFailed(e)
-    }
-}
-
 pub struct Pipeline<Config: PipelineConfig> {
     canvas: Rc<RefCell<dyn Canvas>>,
     _layout: halw::PipelineLayout,
@@ -228,6 +160,74 @@ where
             });
         let pipeline = halw::GraphicsPipeline::create(gpu, &pipeline_desc, None)?;
         Ok(pipeline)
+    }
+}
+
+#[derive(Debug, PartialEq, Clone)]
+pub enum PipelineCreationError {
+    OutOfMemory(hal::device::OutOfMemory),
+    ShaderCreationFailed(hal::device::ShaderError),
+    PipelineCreationFailed(hal::pso::CreationError),
+}
+
+impl std::fmt::Display for PipelineCreationError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            PipelineCreationError::OutOfMemory(e) => write!(f, "Out of memory ({})", e),
+            PipelineCreationError::ShaderCreationFailed(e) => {
+                write!(f, "Shader creation failed({})", e)
+            }
+            PipelineCreationError::PipelineCreationFailed(e) => {
+                write!(f, "Pipeline creation failed ({})", e)
+            }
+        }
+    }
+}
+
+impl std::error::Error for PipelineCreationError {
+    fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
+        match self {
+            PipelineCreationError::OutOfMemory(e) => Some(e),
+            PipelineCreationError::ShaderCreationFailed(e) => Some(e),
+            PipelineCreationError::PipelineCreationFailed(e) => Some(e),
+        }
+    }
+}
+
+impl From<hal::device::OutOfMemory> for PipelineCreationError {
+    fn from(e: hal::device::OutOfMemory) -> Self {
+        PipelineCreationError::OutOfMemory(e)
+    }
+}
+
+impl From<hal::device::ShaderError> for PipelineCreationError {
+    fn from(e: hal::device::ShaderError) -> Self {
+        PipelineCreationError::ShaderCreationFailed(e)
+    }
+}
+
+#[derive(Debug, PartialEq, Clone)]
+pub enum RenderingError {
+    NotProcessingFrame,
+}
+
+impl std::fmt::Display for RenderingError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            RenderingError::NotProcessingFrame => write!(f, "No frame is being processed"),
+        }
+    }
+}
+
+impl std::error::Error for RenderingError {
+    fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
+        None
+    }
+}
+
+impl From<hal::pso::CreationError> for PipelineCreationError {
+    fn from(e: hal::pso::CreationError) -> Self {
+        PipelineCreationError::PipelineCreationFailed(e)
     }
 }
 
