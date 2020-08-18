@@ -26,6 +26,8 @@ pub enum BufferCreationError {
     CreationFailed(hal::buffer::CreationError),
     MemoryAllocationFailed(hal::device::AllocationError),
     MemoryBindingFailed(hal::device::BindError),
+    MemoryMappingFailed(hal::device::MapError),
+    OutOfMemory(hal::device::OutOfMemory),
     NoValidMemoryType,
 }
 
@@ -41,6 +43,10 @@ impl std::fmt::Display for BufferCreationError {
             BufferCreationError::MemoryBindingFailed(e) => {
                 write!(f, "Failed to bind memory to the buffer ({})", e)
             }
+            BufferCreationError::MemoryMappingFailed(e) => {
+                write!(f, "Failed to bind CPU to GPU memory ({})", e)
+            }
+            BufferCreationError::OutOfMemory(e) => write!(f, "Out of memory ({})", e),
             BufferCreationError::NoValidMemoryType => {
                 write!(f, "Failed to select a suitable memory type")
             }
@@ -54,6 +60,8 @@ impl std::error::Error for BufferCreationError {
             BufferCreationError::CreationFailed(e) => Some(e),
             BufferCreationError::MemoryAllocationFailed(e) => Some(e),
             BufferCreationError::MemoryBindingFailed(e) => Some(e),
+            BufferCreationError::MemoryMappingFailed(e) => Some(e),
+            BufferCreationError::OutOfMemory(e) => Some(e),
             BufferCreationError::NoValidMemoryType => None,
         }
     }
@@ -74,6 +82,18 @@ impl From<hal::device::AllocationError> for BufferCreationError {
 impl From<hal::device::BindError> for BufferCreationError {
     fn from(e: hal::device::BindError) -> Self {
         BufferCreationError::MemoryBindingFailed(e)
+    }
+}
+
+impl From<hal::device::MapError> for BufferCreationError {
+    fn from(e: hal::device::MapError) -> Self {
+        BufferCreationError::MemoryMappingFailed(e)
+    }
+}
+
+impl From<hal::device::OutOfMemory> for BufferCreationError {
+    fn from(e: hal::device::OutOfMemory) -> Self {
+        BufferCreationError::OutOfMemory(e)
     }
 }
 
@@ -117,12 +137,40 @@ impl ImmutableBuffer {
         Ok((memory, buffer))
     }
 
-    fn copy_buffer(
+    fn copy_memory_into_buffer(
+        gpu: Rc<RefCell<halw::Gpu>>,
+        data: &[u8],
+        mem: &mut halw::Memory,
+    ) -> Result<(), BufferCreationError> {
+        unsafe {
+            let mapping = gpu.borrow().device.map_memory(
+                &mem,
+                hal::memory::Segment {
+                    offset: 0,
+                    size: Some(data.len() as u64),
+                },
+            )?;
+            std::ptr::copy_nonoverlapping(data.as_ptr(), mapping, data.len());
+            gpu.borrow()
+                .device
+                .flush_mapped_memory_ranges(std::iter::once((
+                    (*mem).deref(),
+                    hal::memory::Segment {
+                        offset: 0,
+                        size: Some(data.len() as u64),
+                    },
+                )))?;
+            gpu.borrow().device.unmap_memory(&mem);
+        }
+        Ok(())
+    }
+
+    fn copy_buffer_into_buffer(
         gpu: Rc<RefCell<halw::Gpu>>,
         src: &halw::Buffer,
         dst: &mut halw::Buffer,
         size: u64,
-    ) -> Result<(), hal::device::OutOfMemory> {
+    ) -> Result<(), BufferCreationError> {
         let cmd_pool = Rc::new(RefCell::new(halw::CommandPool::create(
             Rc::clone(&gpu),
             gpu.borrow().queue_groups[0].family,
