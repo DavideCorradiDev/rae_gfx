@@ -103,9 +103,33 @@ pub struct ImmutableBuffer {
 }
 
 impl ImmutableBuffer {
-    // pub fn from_data(data: &[u8]) -> Result<Self, BufferCreationError> {
+    pub fn from_data(instance: &Instance, data: &[u8]) -> Result<Self, BufferCreationError> {
+        use hal::{buffer::Usage, memory::Properties};
 
-    // }
+        let buffer_len = data.len() as u64;
+        let (mut staging_memory, staging_buffer) = Self::create_buffer(
+            Rc::clone(&instance.adapter_rc()),
+            Rc::clone(&instance.gpu_rc()),
+            buffer_len,
+            Usage::TRANSFER_SRC,
+            Properties::CPU_VISIBLE | Properties::COHERENT,
+        )?;
+        Self::copy_memory_into_buffer(Rc::clone(&instance.gpu_rc()), data, &mut staging_memory)?;
+        let (memory, mut buffer) = Self::create_buffer(
+            Rc::clone(&instance.adapter_rc()),
+            Rc::clone(&instance.gpu_rc()),
+            buffer_len,
+            Usage::TRANSFER_DST | Usage::VERTEX,
+            Properties::DEVICE_LOCAL,
+        )?;
+        Self::copy_buffer_into_buffer(
+            Rc::clone(&instance.gpu_rc()),
+            &staging_buffer,
+            &mut buffer,
+            buffer_len,
+        )?;
+        Ok(Self { memory, buffer })
+    }
 
     fn create_buffer(
         adapter: Rc<RefCell<halw::Adapter>>,
