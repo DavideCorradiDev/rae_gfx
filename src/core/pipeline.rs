@@ -18,6 +18,7 @@ pub trait Mesh {
     type Vertex;
     fn buffer(&self) -> &halw::Buffer;
     fn buffer_len(&self) -> BufferLength;
+    fn vertex_byte_count(&self) -> BufferLength;
     fn vertex_count(&self) -> VertexCount;
 }
 
@@ -240,3 +241,42 @@ where
         Ok(pipeline)
     }
 }
+
+// #[cfg(test)]
+// mod test {
+//     use super::*;
+//
+//     #[derive(Debug, PartialEq, Copy, Clone)]
+//     struct MyVertex {
+//         pos: [f32; 3],
+//         color: [f32; 4],
+//     }
+//
+//     #[derive(Debug, PartialEq, Copy, Clone)]
+//     struct MyMesh {
+//         vertices: Vec<MyVertex>,
+//
+//     }
+//
+//     impl Mesh for MyMesh {
+//         type Vertex = MyVertex;
+//
+//         fn buffer(&self) -> &halw::Buffer
+//         {
+//
+//         }
+//
+//         fn buffer_len(&self) -> BufferLength {
+//             self.vertex_count() as u64 * self.vertex_byte_count()
+//         }
+//
+//         fn vertex_byte_count(&self) -> BufferLength {
+//             std::mem::size_of::<Self::Vertex>() as BufferLength
+//         }
+//
+//         fn vertex_count(&self) -> VertexCount {
+//             self.vertices.len() as VertexCount
+//         }
+//     }
+// }
+//
