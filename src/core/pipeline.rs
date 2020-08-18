@@ -52,14 +52,6 @@ impl<Vertex> Mesh<Vertex> {
     }
 }
 
-pub trait MeshTrait {
-    type Vertex;
-    fn buffer(&self) -> &halw::Buffer;
-    fn buffer_len(&self) -> BufferLength;
-    fn vertex_byte_count(&self) -> BufferLength;
-    fn vertex_count(&self) -> VertexCount;
-}
-
 #[derive(Debug, PartialEq, Clone)]
 pub enum BufferCreationError {
     CreationFailed(hal::buffer::CreationError),
@@ -276,7 +268,7 @@ pub struct ShaderConfig {
 }
 
 pub trait PipelineConfig {
-    type MeshTrait: MeshTrait;
+    type Vertex;
     type Constants;
     fn vertex_shader_config() -> &'static ShaderConfig;
     fn fragment_shader_config() -> &'static ShaderConfig;
@@ -381,7 +373,7 @@ where
 
     pub fn render(
         &mut self,
-        meshes: &[(Config::MeshTrait, Config::Constants)],
+        meshes: &[(Mesh<Config::Vertex>, Config::Constants)],
     ) -> Result<(), RenderingError> {
         let mut canvas = self.canvas.borrow_mut();
         let cmd_buf = match canvas.current_command_buffer() {
@@ -485,7 +477,7 @@ where
             .vertex_buffers
             .push(hal::pso::VertexBufferDesc {
                 binding: 0,
-                stride: std::mem::size_of::<<Config::MeshTrait as MeshTrait>::Vertex>() as u32,
+                stride: std::mem::size_of::<Config::Vertex>() as u32,
                 rate: hal::pso::VertexInputRate::Vertex,
             });
         let pipeline = halw::GraphicsPipeline::create(gpu, &pipeline_desc, None)?;
