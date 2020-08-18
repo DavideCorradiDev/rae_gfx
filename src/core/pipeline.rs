@@ -2,7 +2,10 @@ extern crate gfx_hal as hal;
 
 use std::{cell::RefCell, ops::Deref, rc::Rc};
 
-use hal::{adapter::PhysicalDevice as HalPhysicalDevice, device::Device as HalDevice};
+use hal::{
+    adapter::PhysicalDevice as HalPhysicalDevice, command::CommandBuffer as HalCommandBuffer,
+    device::Device as HalDevice, queue::CommandQueue as HalCommandQueue,
+};
 
 use super::{Canvas, Instance};
 use crate::halw;
@@ -112,6 +115,46 @@ impl ImmutableBuffer {
                 .bind_buffer_memory(&memory, 0, &mut buffer)?;
         }
         Ok((memory, buffer))
+    }
+
+    fn copy_buffer(
+        gpu: Rc<RefCell<halw::Gpu>>,
+        src: &halw::Buffer,
+        dst: &mut halw::Buffer,
+        size: u64,
+    ) -> Result<(), hal::device::OutOfMemory> {
+        let cmd_pool = Rc::new(RefCell::new(halw::CommandPool::create(
+            Rc::clone(&gpu),
+            gpu.borrow().queue_groups[0].family,
+            hal::pool::CommandPoolCreateFlags::empty(),
+        )?));
+        let mut cmd_buf = halw::CommandBuffer::allocate_one(cmd_pool, hal::command::Level::Primary);
+        let semaphore = halw::Semaphore::create(Rc::clone(&gpu))?;
+
+        unsafe {
+            cmd_buf.begin_primary(hal::command::CommandBufferFlags::ONE_TIME_SUBMIT);
+            cmd_buf.copy_buffer(
+                src,
+                dst,
+                std::iter::once(hal::command::BufferCopy {
+                    src: 0,
+                    dst: 0,
+                    size,
+                }),
+            );
+            cmd_buf.finish();
+
+            let submission = hal::queue::Submission {
+                command_buffers: std::iter::once(&*cmd_buf),
+                wait_semaphores: None,
+                signal_semaphores: std::iter::once(&*semaphore),
+            };
+
+            let queue = &mut gpu.borrow_mut().queue_groups[0].queues[0];
+            queue.submit(submission, None);
+            queue.wait_idle()?;
+        }
+        Ok(())
     }
 }
 
