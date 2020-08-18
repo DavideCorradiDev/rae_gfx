@@ -1,15 +1,11 @@
 extern crate gfx_hal as hal;
 
-use crate::halw;
-
 use std::{cell::RefCell, ops::Deref, rc::Rc};
 
-use super::{Canvas, Instance};
+use hal::{adapter::PhysicalDevice as HalPhysicalDevice, device::Device as HalDevice};
 
-pub struct ShaderConfig {
-    source: Vec<u32>,
-    push_constant_range: Option<std::ops::Range<u32>>,
-}
+use super::{Canvas, Instance};
+use crate::halw;
 
 pub type BufferLength = u64;
 pub type VertexCount = hal::VertexCount;
@@ -20,6 +16,108 @@ pub trait Mesh {
     fn buffer_len(&self) -> BufferLength;
     fn vertex_byte_count(&self) -> BufferLength;
     fn vertex_count(&self) -> VertexCount;
+}
+
+#[derive(Debug, PartialEq, Clone)]
+pub enum BufferCreationError {
+    CreationFailed(hal::buffer::CreationError),
+    MemoryAllocationFailed(hal::device::AllocationError),
+    MemoryBindingFailed(hal::device::BindError),
+    NoValidMemoryType,
+}
+
+impl std::fmt::Display for BufferCreationError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            BufferCreationError::CreationFailed(e) => {
+                write!(f, "Failed to create the buffer ({})", e)
+            }
+            BufferCreationError::MemoryAllocationFailed(e) => {
+                write!(f, "Failed to allocate memory ({})", e)
+            }
+            BufferCreationError::MemoryBindingFailed(e) => {
+                write!(f, "Failed to bind memory to the buffer ({})", e)
+            }
+            BufferCreationError::NoValidMemoryType => {
+                write!(f, "Failed to select a suitable memory type")
+            }
+        }
+    }
+}
+
+impl std::error::Error for BufferCreationError {
+    fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
+        match self {
+            BufferCreationError::CreationFailed(e) => Some(e),
+            BufferCreationError::MemoryAllocationFailed(e) => Some(e),
+            BufferCreationError::MemoryBindingFailed(e) => Some(e),
+            BufferCreationError::NoValidMemoryType => None,
+        }
+    }
+}
+
+impl From<hal::buffer::CreationError> for BufferCreationError {
+    fn from(e: hal::buffer::CreationError) -> Self {
+        BufferCreationError::CreationFailed(e)
+    }
+}
+
+impl From<hal::device::AllocationError> for BufferCreationError {
+    fn from(e: hal::device::AllocationError) -> Self {
+        BufferCreationError::MemoryAllocationFailed(e)
+    }
+}
+
+impl From<hal::device::BindError> for BufferCreationError {
+    fn from(e: hal::device::BindError) -> Self {
+        BufferCreationError::MemoryBindingFailed(e)
+    }
+}
+
+pub struct ImmutableBuffer {
+    memory: halw::Memory,
+    buffer: halw::Buffer,
+}
+
+impl ImmutableBuffer {
+    // pub fn from_data(data: &[u8]) -> Result<Self, BufferCreationError> {
+
+    // }
+
+    fn create_buffer(
+        adapter: Rc<RefCell<halw::Adapter>>,
+        gpu: Rc<RefCell<halw::Gpu>>,
+        size: u64,
+        usage: hal::buffer::Usage,
+        mem_properties: hal::memory::Properties,
+    ) -> Result<(halw::Memory, halw::Buffer), BufferCreationError> {
+        let mem_types = adapter
+            .borrow()
+            .physical_device
+            .memory_properties()
+            .memory_types;
+        let mut buffer = halw::Buffer::create(Rc::clone(&gpu), size, usage)?;
+        let upload_type = match mem_types.iter().enumerate().position(|(id, mem_type)| {
+            (buffer.requirements().type_mask & (1 << id)) != 0
+                && (mem_type.properties & mem_properties) == mem_properties
+        }) {
+            Some(v) => v.into(),
+            None => return Err(BufferCreationError::NoValidMemoryType),
+        };
+        let memory =
+            halw::Memory::allocate(Rc::clone(&gpu), upload_type, buffer.requirements().size)?;
+        unsafe {
+            gpu.borrow()
+                .device
+                .bind_buffer_memory(&memory, 0, &mut buffer)?;
+        }
+        Ok((memory, buffer))
+    }
+}
+
+pub struct ShaderConfig {
+    source: Vec<u32>,
+    push_constant_range: Option<std::ops::Range<u32>>,
 }
 
 pub trait PipelineConfig {
