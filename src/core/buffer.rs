@@ -246,3 +246,14 @@ impl From<hal::device::OutOfMemory> for BufferCreationError {
         BufferCreationError::OutOfMemory(e)
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn immutable_buffer_creation() {
+        let instance = Instance::create().unwrap();
+        let _buffer = ImmutableBuffer::from_data(&instance, &[1, 2, 3, 4, 5, 6, 7]).unwrap();
+    }
+}
