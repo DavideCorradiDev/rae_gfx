@@ -249,11 +249,16 @@ impl From<hal::device::OutOfMemory> for BufferCreationError {
 
 #[cfg(test)]
 mod tests {
+    extern crate galvanic_assert;
+
+    use galvanic_assert::{matchers::*, *};
+
     use super::*;
 
     #[test]
     fn immutable_buffer_creation() {
         let instance = Instance::create().unwrap();
-        let _buffer = ImmutableBuffer::from_data(&instance, &[1, 2, 3, 4, 5, 6, 7]).unwrap();
+        let buffer = ImmutableBuffer::from_data(&instance, &[1, 2, 3, 4, 5, 6, 7]).unwrap();
+        expect_that!(&buffer.len(), eq(7));
     }
 }
