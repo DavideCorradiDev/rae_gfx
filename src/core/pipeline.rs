@@ -3,6 +3,8 @@ extern crate gfx_hal as hal;
 use core::ops::Range;
 use std::{cell::RefCell, rc::Rc};
 
+use hal::command::CommandBuffer as HalCommandBuffer;
+
 use super::{Canvas, Instance};
 use crate::halw;
 
@@ -43,9 +45,9 @@ where
     VA: VertexArray,
     PC: PushConstant,
 {
-    _canvas: Rc<RefCell<dyn Canvas>>,
+    canvas: Rc<RefCell<dyn Canvas>>,
     _layout: halw::PipelineLayout,
-    _pipeline: halw::GraphicsPipeline,
+    pipeline: halw::GraphicsPipeline,
     _p1: std::marker::PhantomData<Config>,
     _p2: std::marker::PhantomData<VA>,
     _p3: std::marker::PhantomData<PC>,
@@ -68,13 +70,31 @@ where
             &layout,
         )?;
         Ok(Self {
-            _canvas: canvas,
+            canvas,
             _layout: layout,
-            _pipeline: pipeline,
+            pipeline,
             _p1: std::marker::PhantomData,
             _p2: std::marker::PhantomData,
             _p3: std::marker::PhantomData,
         })
+    }
+
+    pub fn render(&mut self, elements: &[(PC, VA)]) -> Result<(), RenderingError> {
+        let mut canvas = self.canvas.borrow_mut();
+        let cmd_buf = match canvas.current_command_buffer() {
+            Some(v) => v,
+            None => return Err(RenderingError::NotProcessingFrame),
+        };
+
+        unsafe {
+            cmd_buf.bind_graphics_pipeline(&self.pipeline);
+            for element in elements {
+                element.0.bind(cmd_buf);
+                element.1.render(cmd_buf);
+            }
+        }
+
+        Ok(())
     }
 
     fn create_layout(
