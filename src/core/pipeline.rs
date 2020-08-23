@@ -206,15 +206,20 @@ mod test {
                 .unwrap(),
         ));
         let config = PipelineConfig {
-            push_constant_layout_bindings: vec![],
+            push_constant_layout_bindings: vec![PushConstantLayoutBinding {
+                stages: ShaderStageFlags::VERTEX,
+                range: 0..16,
+            }],
             vertex_buffer_descriptions: vec![VertexBufferDesc {
                 binding: 0,
-                stride: 12,
+                stride: 8,
                 rate: VertexInputRate::Vertex,
             }],
             vertex_shader_source: include_bytes!("../shaders/gen/spirv/mesh2d.vert.vert.spv")
                 .to_vec(),
-            fragment_shader_source: None,
+            fragment_shader_source: Some(
+                include_bytes!("../shaders/gen/spirv/mesh2d.frag.frag.spv").to_vec(),
+            ),
         };
         let _pipeline = Pipeline::create(&instance, canvas, &config).unwrap();
     }
