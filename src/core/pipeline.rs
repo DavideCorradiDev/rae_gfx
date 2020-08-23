@@ -79,7 +79,7 @@ where
         })
     }
 
-    pub fn render(&mut self, elements: &[(PC, VA)]) -> Result<(), RenderingError> {
+    pub fn render(&mut self, elements: &[(&PC, &VA)]) -> Result<(), RenderingError> {
         let mut canvas = self.canvas.borrow_mut();
         let cmd_buf = match canvas.current_command_buffer() {
             Some(v) => v,
