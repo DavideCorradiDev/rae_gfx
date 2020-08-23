@@ -8,9 +8,12 @@ use hal::command::CommandBuffer as HalCommandBuffer;
 use super::{Canvas, Instance};
 use crate::halw;
 
-pub use hal::pso::{
-    DescriptorArrayIndex, DescriptorBinding, DescriptorSetLayoutBinding, InstanceRate,
-    ShaderStageFlags, VertexBufferDesc, VertexInputRate,
+pub use hal::{
+    pso::{
+        DescriptorArrayIndex, DescriptorBinding, DescriptorSetLayoutBinding, InstanceRate,
+        ShaderStageFlags, VertexBufferDesc, VertexInputRate,
+    },
+    VertexCount,
 };
 
 #[derive(Debug, PartialEq, Clone)]
@@ -25,7 +28,7 @@ pub trait VertexArray {
 }
 
 pub trait PushConstant {
-    fn bind(&self, command_buffer: &mut halw::CommandBuffer);
+    fn bind(&self, pipeline_layout: &halw::PipelineLayout, cmd_buf: &mut halw::CommandBuffer);
 }
 
 pub trait PipelineConfig<VA, PC>
@@ -39,29 +42,31 @@ where
     fn fragment_shader_source() -> Option<Vec<u8>>;
 }
 
-pub struct Pipeline<Config, VA, PC>
+pub struct Pipeline<C, Config, VA, PC>
 where
+    C: Canvas,
     Config: PipelineConfig<VA, PC>,
     VA: VertexArray,
     PC: PushConstant,
 {
-    canvas: Rc<RefCell<dyn Canvas>>,
-    _layout: halw::PipelineLayout,
+    canvas: Rc<RefCell<C>>,
+    layout: halw::PipelineLayout,
     pipeline: halw::GraphicsPipeline,
     _p1: std::marker::PhantomData<Config>,
     _p2: std::marker::PhantomData<VA>,
     _p3: std::marker::PhantomData<PC>,
 }
 
-impl<Config, VA, PC> Pipeline<Config, VA, PC>
+impl<C, Config, VA, PC> Pipeline<C, Config, VA, PC>
 where
+    C: Canvas,
     Config: PipelineConfig<VA, PC>,
     VA: VertexArray,
     PC: PushConstant,
 {
     pub fn create(
         instance: &Instance,
-        canvas: Rc<RefCell<dyn Canvas>>,
+        canvas: Rc<RefCell<C>>,
     ) -> Result<Self, PipelineCreationError> {
         let layout = Self::create_layout(Rc::clone(&instance.gpu_rc()))?;
         let pipeline = Self::create_pipeline(
@@ -71,7 +76,7 @@ where
         )?;
         Ok(Self {
             canvas,
-            _layout: layout,
+            layout: layout,
             pipeline,
             _p1: std::marker::PhantomData,
             _p2: std::marker::PhantomData,
@@ -89,7 +94,7 @@ where
         unsafe {
             cmd_buf.bind_graphics_pipeline(&self.pipeline);
             for element in elements {
-                element.0.bind(cmd_buf);
+                element.0.bind(&self.layout, cmd_buf);
                 element.1.render(cmd_buf);
             }
         }
@@ -252,25 +257,71 @@ impl std::error::Error for RenderingError {
 mod test {
     extern crate rae_app;
 
+    use std::ops::Deref;
+
     use rae_app::{event, event::EventLoopAnyThread};
 
     use super::*;
-    use crate::core::CanvasWindowBuilder;
+    use crate::core::{BufferCreationError, CanvasWindow, CanvasWindowBuilder, ImmutableBuffer};
 
-    struct TestVertexArray {}
+    struct TestVertex {
+        _pos: [f32; 2],
+    }
+
+    struct TestVertexArray {
+        buffer: ImmutableBuffer,
+        vertex_count: VertexCount,
+    }
+
+    impl TestVertexArray {
+        pub fn new(instance: &Instance, data: &[TestVertex]) -> Result<Self, BufferCreationError> {
+            let buffer = ImmutableBuffer::from_data(instance, data)?;
+            Ok(Self {
+                buffer,
+                vertex_count: data.len() as VertexCount,
+            })
+        }
+    }
 
     impl VertexArray for TestVertexArray {
         fn stride() -> u32 {
-            8u32
+            std::mem::size_of::<TestVertex>() as u32
         }
 
-        fn render(&self, _: &mut halw::CommandBuffer) {}
+        fn render(&self, cmd_buf: &mut halw::CommandBuffer) {
+            unsafe {
+                cmd_buf.bind_vertex_buffers(
+                    0,
+                    std::iter::once((
+                        self.buffer.buffer().deref(),
+                        hal::buffer::SubRange {
+                            offset: 0,
+                            size: Some(self.buffer.len()),
+                        },
+                    )),
+                );
+                cmd_buf.draw(0..self.vertex_count, 0..1);
+            }
+        }
     }
 
-    struct TestPushConstant {}
+    struct TestPushConstant {
+        color: [f32; 4],
+    }
 
     impl PushConstant for TestPushConstant {
-        fn bind(&self, _: &mut halw::CommandBuffer) {}
+        fn bind(&self, pipeline_layout: &halw::PipelineLayout, cmd_buf: &mut halw::CommandBuffer) {
+            unsafe {
+                let (prefix, aligned_data, suffix) = self.color.align_to::<u32>();
+                assert!(prefix.len() != 0 && suffix.len() != 0);
+                cmd_buf.push_graphics_constants(
+                    pipeline_layout,
+                    hal::pso::ShaderStageFlags::VERTEX,
+                    0,
+                    &aligned_data,
+                );
+            }
+        }
     }
 
     struct TestPipelineConfig {}
@@ -310,6 +361,59 @@ mod test {
                 .build(&instance, &event_loop)
                 .unwrap(),
         ));
-        let _pipeline = Pipeline::<TestPipelineConfig, _, _>::create(&instance, canvas).unwrap();
+        let _pipeline =
+            Pipeline::<CanvasWindow, TestPipelineConfig, _, _>::create(&instance, canvas).unwrap();
+    }
+
+    #[test]
+    fn render() {
+        let instance = Instance::create().unwrap();
+        let event_loop = event::EventLoop::<()>::new_any_thread();
+        let canvas = Rc::new(RefCell::new(
+            CanvasWindowBuilder::new()
+                .with_visible(false)
+                .build(&instance, &event_loop)
+                .unwrap(),
+        ));
+        let mut pipeline = Pipeline::<CanvasWindow, TestPipelineConfig, _, _>::create(
+            &instance,
+            Rc::clone(&canvas),
+        )
+        .unwrap();
+
+        let va1 = TestVertexArray::new(
+            &instance,
+            &[
+                TestVertex { _pos: [0., 1.] },
+                TestVertex { _pos: [1., 0.] },
+                TestVertex { _pos: [0., 0.] },
+            ],
+        )
+        .unwrap();
+
+        let va2 = TestVertexArray::new(
+            &instance,
+            &[
+                TestVertex { _pos: [0., 1.] },
+                TestVertex { _pos: [1., 0.] },
+                TestVertex { _pos: [0., 0.] },
+            ],
+        )
+        .unwrap();
+
+        let white = TestPushConstant {
+            color: [1., 1., 1., 1.],
+        };
+
+        let red = TestPushConstant {
+            color: [1., 0., 0., 1.],
+        };
+
+        canvas.borrow_mut().begin_frame().unwrap();
+        pipeline
+            .render(&[(&white, &va1), (&red, &va1), (&red, &va2)])
+            .unwrap();
+        pipeline.render(&[(&white, &va1)]).unwrap();
+        canvas.borrow_mut().end_frame().unwrap();
     }
 }
