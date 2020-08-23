@@ -7,8 +7,8 @@ use super::{Canvas, Instance};
 use crate::halw;
 
 pub use hal::pso::{
-    DescriptorArrayIndex, DescriptorBinding, DescriptorSetLayoutBinding, ShaderStageFlags,
-    VertexBufferDesc,
+    DescriptorArrayIndex, DescriptorBinding, DescriptorSetLayoutBinding, InstanceRate,
+    ShaderStageFlags, VertexBufferDesc, VertexInputRate,
 };
 
 #[derive(Debug, PartialEq, Clone)]
@@ -17,12 +17,13 @@ pub struct PushConstantLayoutBinding {
     range: Range<u32>,
 }
 
+#[derive(Debug, PartialEq, Clone)]
 pub struct PipelineConfig {
     // descriptor_set_bindings: Vec<DescriptorSetLayoutBinding>,
     push_constant_layout_bindings: Vec<PushConstantLayoutBinding>,
     vertex_buffer_descriptions: Vec<VertexBufferDesc>,
-    vertex_shader_source: Vec<u32>,
-    fragment_shader_source: Option<Vec<u32>>,
+    vertex_shader_source: Vec<u8>,
+    fragment_shader_source: Option<Vec<u8>>,
 }
 
 pub struct Pipeline {
@@ -185,40 +186,36 @@ impl From<hal::pso::CreationError> for PipelineCreationError {
     }
 }
 
-// #[cfg(test)]
-// mod test {
-//     use super::*;
-//
-//     #[derive(Debug, PartialEq, Copy, Clone)]
-//     struct MyVertex {
-//         pos: [f32; 3],
-//         color: [f32; 4],
-//     }
-//
-//     #[derive(Debug)]
-//     struct MyMesh {
-//         buffer: ImmutableBuffer,
-//     }
-//
-//     impl MyMesh {
-//         fn from_vertices()
-//     }
-//
-//     impl MeshTrait for MyMesh {
-//         type Vertex = MyVertex;
-//
-//         fn buffer(&self) -> &halw::Buffer {}
-//
-//         fn buffer_len(&self) -> BufferLength {
-//             self.vertex_count() as u64 * self.vertex_byte_count()
-//         }
-//
-//         fn vertex_byte_count(&self) -> BufferLength {
-//             std::mem::size_of::<Self::Vertex>() as BufferLength
-//         }
-//
-//         fn vertex_count(&self) -> VertexCount {
-//             self.vertices.len() as VertexCount
-//         }
-//     }
-// }
+#[cfg(test)]
+mod test {
+    extern crate rae_app;
+
+    use rae_app::{event, event::EventLoopAnyThread};
+
+    use super::*;
+    use crate::core::CanvasWindowBuilder;
+
+    #[test]
+    fn create_pipeline() {
+        let instance = Instance::create().unwrap();
+        let event_loop = event::EventLoop::<()>::new_any_thread();
+        let canvas = Rc::new(RefCell::new(
+            CanvasWindowBuilder::new()
+                .with_visible(false)
+                .build(&instance, &event_loop)
+                .unwrap(),
+        ));
+        let config = PipelineConfig {
+            push_constant_layout_bindings: vec![],
+            vertex_buffer_descriptions: vec![VertexBufferDesc {
+                binding: 0,
+                stride: 12,
+                rate: VertexInputRate::Vertex,
+            }],
+            vertex_shader_source: include_bytes!("../shaders/gen/spirv/mesh2d.vert.vert.spv")
+                .to_vec(),
+            fragment_shader_source: None,
+        };
+        let _pipeline = Pipeline::create(&instance, canvas, &config).unwrap();
+    }
+}
