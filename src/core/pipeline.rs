@@ -1,11 +1,16 @@
 extern crate gfx_hal as hal;
 
-use std::{cell::RefCell, ops::Deref, rc::Rc};
+use std::{cell::RefCell, rc::Rc};
 
 use hal::command::CommandBuffer as HalCommandBuffer;
 
-use super::{Canvas, Instance, Mesh};
+use super::{Canvas, Instance};
 use crate::halw;
+
+pub trait Renderable {
+    fn stride() -> u32;
+    fn render(&self, command_buffer: &mut halw::CommandBuffer);
+}
 
 #[derive(Debug, PartialEq, Clone)]
 pub struct ShaderConfig {
@@ -14,22 +19,23 @@ pub struct ShaderConfig {
 }
 
 pub trait PipelineConfig {
-    type Vertex;
     type Constants;
     fn vertex_shader_config() -> &'static ShaderConfig;
     fn fragment_shader_config() -> &'static ShaderConfig;
 }
 
-pub struct Pipeline<Config: PipelineConfig> {
+pub struct Pipeline<Config: PipelineConfig, Mesh: Renderable> {
     canvas: Rc<RefCell<dyn Canvas>>,
     _layout: halw::PipelineLayout,
     pipeline: halw::GraphicsPipeline,
-    _p: std::marker::PhantomData<Config>,
+    _p1: std::marker::PhantomData<Config>,
+    _p2: std::marker::PhantomData<Mesh>,
 }
 
-impl<Config> Pipeline<Config>
+impl<Config, Mesh> Pipeline<Config, Mesh>
 where
     Config: PipelineConfig,
+    Mesh: Renderable,
 {
     pub fn create(
         instance: &Instance,
@@ -45,14 +51,12 @@ where
             canvas,
             _layout: layout,
             pipeline,
-            _p: std::marker::PhantomData,
+            _p1: std::marker::PhantomData,
+            _p2: std::marker::PhantomData,
         })
     }
 
-    pub fn render(
-        &mut self,
-        meshes: &[(Mesh<Config::Vertex>, Config::Constants)],
-    ) -> Result<(), RenderingError> {
+    pub fn render(&mut self, meshes: &[(Mesh, Config::Constants)]) -> Result<(), RenderingError> {
         let mut canvas = self.canvas.borrow_mut();
         let cmd_buf = match canvas.current_command_buffer() {
             Some(cmd_buf) => cmd_buf,
@@ -63,17 +67,7 @@ where
             cmd_buf.bind_graphics_pipeline(&self.pipeline);
             for mesh in meshes {
                 // Add push constant handling here.
-                cmd_buf.bind_vertex_buffers(
-                    0,
-                    std::iter::once((
-                        mesh.0.buffer().buffer().deref(),
-                        hal::buffer::SubRange {
-                            offset: 0,
-                            size: Some(mesh.0.buffer().len()),
-                        },
-                    )),
-                );
-                cmd_buf.draw(0..mesh.0.vertex_count(), 0..1);
+                mesh.0.render(cmd_buf);
             }
         }
 
@@ -155,7 +149,7 @@ where
             .vertex_buffers
             .push(hal::pso::VertexBufferDesc {
                 binding: 0,
-                stride: std::mem::size_of::<Config::Vertex>() as u32,
+                stride: Mesh::stride(),
                 rate: hal::pso::VertexInputRate::Vertex,
             });
         let pipeline = halw::GraphicsPipeline::create(gpu, &pipeline_desc, None)?;
@@ -206,6 +200,12 @@ impl From<hal::device::ShaderError> for PipelineCreationError {
     }
 }
 
+impl From<hal::pso::CreationError> for PipelineCreationError {
+    fn from(e: hal::pso::CreationError) -> Self {
+        PipelineCreationError::PipelineCreationFailed(e)
+    }
+}
+
 #[derive(Debug, PartialEq, Clone)]
 pub enum RenderingError {
     NotProcessingFrame,
@@ -222,12 +222,6 @@ impl std::fmt::Display for RenderingError {
 impl std::error::Error for RenderingError {
     fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
         None
-    }
-}
-
-impl From<hal::pso::CreationError> for PipelineCreationError {
-    fn from(e: hal::pso::CreationError) -> Self {
-        PipelineCreationError::PipelineCreationFailed(e)
     }
 }
 
