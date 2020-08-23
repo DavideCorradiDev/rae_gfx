@@ -16,8 +16,7 @@ impl<Vertex> Mesh<Vertex> {
         instance: &Instance,
         vertices: &[Vertex],
     ) -> Result<Self, BufferCreationError> {
-        let (_, bytes, _) = unsafe { vertices.align_to::<u8>() };
-        let buffer = ImmutableBuffer::from_data(instance, bytes)?;
+        let buffer = ImmutableBuffer::from_data(instance, vertices)?;
         Ok(Self {
             buffer,
             vertex_count: vertices.len() as VertexCount,

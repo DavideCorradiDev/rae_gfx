@@ -20,7 +20,16 @@ pub struct ImmutableBuffer {
 }
 
 impl ImmutableBuffer {
-    pub fn from_data(instance: &Instance, data: &[u8]) -> Result<Self, BufferCreationError> {
+    pub fn from_data<T>(instance: &Instance, data: &[T]) -> Result<Self, BufferCreationError> {
+        let (prefix, raw_data, suffix) = unsafe { data.align_to::<u8>() };
+        assert!(
+            prefix.len() == 0 && suffix.len() == 0,
+            "Failed to align buffer data"
+        );
+        Self::from_raw_data(instance, raw_data)
+    }
+
+    pub fn from_raw_data(instance: &Instance, data: &[u8]) -> Result<Self, BufferCreationError> {
         use hal::{buffer::Usage, memory::Properties};
 
         let buffer_len = data.len() as u64;
@@ -256,9 +265,18 @@ mod tests {
     use super::*;
 
     #[test]
-    fn immutable_buffer_creation() {
+    fn immutable_buffer_from_raw_data() {
         let instance = Instance::create().unwrap();
-        let buffer = ImmutableBuffer::from_data(&instance, &[1, 2, 3, 4, 5, 6, 7]).unwrap();
+        let buffer = ImmutableBuffer::from_raw_data(&instance, &[1, 2, 3, 4, 5, 6, 7]).unwrap();
         expect_that!(&buffer.len(), eq(7));
+    }
+
+    #[test]
+    fn immutable_buffer_from_i32_data() {
+        let instance = Instance::create().unwrap();
+        let buffer =
+            ImmutableBuffer::from_data(&instance, &[1i32, 2i32, 3i32, 4i32, 5i32, 6i32, 7i32])
+                .unwrap();
+        expect_that!(&buffer.len(), eq(28));
     }
 }
