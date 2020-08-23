@@ -215,10 +215,9 @@ mod test {
                 stride: 8,
                 rate: VertexInputRate::Vertex,
             }],
-            vertex_shader_source: include_bytes!("../shaders/gen/spirv/mesh2d.vert.vert.spv")
-                .to_vec(),
+            vertex_shader_source: include_bytes!("../shaders/gen/spirv/mesh2d.vert.spv").to_vec(),
             fragment_shader_source: Some(
-                include_bytes!("../shaders/gen/spirv/mesh2d.frag.frag.spv").to_vec(),
+                include_bytes!("../shaders/gen/spirv/mesh2d.frag.spv").to_vec(),
             ),
         };
         let _pipeline = Pipeline::create(&instance, canvas, &config).unwrap();
