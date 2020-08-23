@@ -12,14 +12,14 @@ pub use hal::pso::{
 };
 
 #[derive(Debug, PartialEq, Clone)]
-pub struct ShaderStagePushConstantRange {
+pub struct PushConstantLayoutBinding {
     stages: ShaderStageFlags,
     range: Range<u32>,
 }
 
 pub struct PipelineConfig {
     // descriptor_set_bindings: Vec<DescriptorSetLayoutBinding>,
-    push_constant_ranges: Vec<ShaderStagePushConstantRange>,
+    push_constant_layout_bindings: Vec<PushConstantLayoutBinding>,
     vertex_buffer_descriptions: Vec<VertexBufferDesc>,
     vertex_shader_source: Vec<u32>,
     fragment_shader_source: Vec<u32>,
@@ -57,11 +57,8 @@ impl Pipeline {
     ) -> Result<halw::PipelineLayout, hal::device::OutOfMemory> {
         let push_constants = {
             let mut push_constants = Vec::new();
-            for push_constant_range in config.push_constant_ranges.iter() {
-                push_constants.push((
-                    push_constant_range.stages,
-                    push_constant_range.range.clone(),
-                ));
+            for pc_layout_binding in config.push_constant_layout_bindings.iter() {
+                push_constants.push((pc_layout_binding.stages, pc_layout_binding.range.clone()));
             }
             push_constants
         };
