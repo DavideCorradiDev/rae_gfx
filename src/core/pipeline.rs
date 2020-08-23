@@ -1,8 +1,7 @@
 extern crate gfx_hal as hal;
 
+use core::ops::Range;
 use std::{cell::RefCell, rc::Rc};
-
-use hal::command::CommandBuffer as HalCommandBuffer;
 
 use super::{Canvas, Instance};
 use crate::halw;
@@ -12,83 +11,67 @@ pub trait Renderable {
     fn render(&self, command_buffer: &mut halw::CommandBuffer);
 }
 
+pub use hal::pso::{
+    DescriptorArrayIndex, DescriptorBinding, DescriptorSetLayoutBinding, ShaderStageFlags,
+    VertexBufferDesc,
+};
+
 #[derive(Debug, PartialEq, Clone)]
-pub struct ShaderConfig {
-    source: Vec<u32>,
-    push_constant_range: Option<std::ops::Range<u32>>,
+pub struct ShaderStagePushConstantRange {
+    stages: ShaderStageFlags,
+    range: Range<u32>,
 }
 
-pub trait PipelineConfig {
-    type Constants;
-    fn vertex_shader_config() -> &'static ShaderConfig;
-    fn fragment_shader_config() -> &'static ShaderConfig;
+pub struct PipelineConfig {
+    // descriptor_set_bindings: Vec<DescriptorSetLayoutBinding>,
+    push_constant_ranges: Vec<ShaderStagePushConstantRange>,
+    vertex_buffer_descriptions: Vec<VertexBufferDesc>,
+    vertex_shader_source: Vec<u32>,
+    fragment_shader_source: Vec<u32>,
 }
 
-pub struct Pipeline<Config: PipelineConfig, Mesh: Renderable> {
-    canvas: Rc<RefCell<dyn Canvas>>,
+pub struct Pipeline {
+    _canvas: Rc<RefCell<dyn Canvas>>,
     _layout: halw::PipelineLayout,
-    pipeline: halw::GraphicsPipeline,
-    _p1: std::marker::PhantomData<Config>,
-    _p2: std::marker::PhantomData<Mesh>,
+    _pipeline: halw::GraphicsPipeline,
 }
 
-impl<Config, Mesh> Pipeline<Config, Mesh>
-where
-    Config: PipelineConfig,
-    Mesh: Renderable,
-{
+impl Pipeline {
     pub fn create(
         instance: &Instance,
         canvas: Rc<RefCell<dyn Canvas>>,
+        config: &PipelineConfig,
     ) -> Result<Self, PipelineCreationError> {
-        let layout = Self::create_layout(Rc::clone(&instance.gpu_rc()))?;
+        let layout = Self::create_layout(Rc::clone(&instance.gpu_rc()), config)?;
         let pipeline = Self::create_pipeline(
             Rc::clone(&instance.gpu_rc()),
             canvas.borrow().render_pass(),
             &layout,
+            config,
         )?;
         Ok(Self {
-            canvas,
+            _canvas: canvas,
             _layout: layout,
-            pipeline,
-            _p1: std::marker::PhantomData,
-            _p2: std::marker::PhantomData,
+            _pipeline: pipeline,
         })
-    }
-
-    pub fn render(&mut self, meshes: &[(Mesh, Config::Constants)]) -> Result<(), RenderingError> {
-        let mut canvas = self.canvas.borrow_mut();
-        let cmd_buf = match canvas.current_command_buffer() {
-            Some(cmd_buf) => cmd_buf,
-            None => return Err(RenderingError::NotProcessingFrame),
-        };
-
-        unsafe {
-            cmd_buf.bind_graphics_pipeline(&self.pipeline);
-            for mesh in meshes {
-                // Add push constant handling here.
-                mesh.0.render(cmd_buf);
-            }
-        }
-
-        Ok(())
     }
 
     fn create_layout(
         gpu: Rc<RefCell<halw::Gpu>>,
+        config: &PipelineConfig,
     ) -> Result<halw::PipelineLayout, hal::device::OutOfMemory> {
-        let push_constants_config = {
-            let mut push_constants_config = Vec::new();
-            if let Some(push_constant_range) =
-                Config::vertex_shader_config().push_constant_range.clone()
-            {
-                push_constants_config
-                    .push((hal::pso::ShaderStageFlags::VERTEX, push_constant_range));
+        let push_constants = {
+            let mut push_constants = Vec::new();
+            for push_constant_range in config.push_constant_ranges.iter() {
+                push_constants.push((
+                    push_constant_range.stages,
+                    push_constant_range.range.clone(),
+                ));
             }
-            push_constants_config
+            push_constants
         };
 
-        let pipeline = halw::PipelineLayout::create(gpu, &[], push_constants_config.iter())?;
+        let pipeline = halw::PipelineLayout::create(gpu, &[], push_constants.iter())?;
 
         Ok(pipeline)
     }
@@ -97,12 +80,13 @@ where
         gpu: Rc<RefCell<halw::Gpu>>,
         render_pass: &halw::RenderPass,
         layout: &halw::PipelineLayout,
+        config: &PipelineConfig,
     ) -> Result<halw::GraphicsPipeline, PipelineCreationError> {
         let vs_module = halw::ShaderModule::from_spirv(
             Rc::clone(&gpu),
-            Config::vertex_shader_config().source.as_slice(),
+            config.vertex_shader_source.as_slice(),
         )?;
-        let vs_entry = halw::EntryPoint {
+        let vs_entry_point = halw::EntryPoint {
             entry: "main",
             module: &vs_module,
             specialization: hal::pso::Specialization::default(),
@@ -110,17 +94,17 @@ where
 
         let fs_module = halw::ShaderModule::from_spirv(
             Rc::clone(&gpu),
-            Config::fragment_shader_config().source.as_slice(),
+            config.fragment_shader_source.as_slice(),
         )?;
-        let fs_entry = halw::EntryPoint {
+        let fs_entry_point = halw::EntryPoint {
             entry: "main",
             module: &fs_module,
             specialization: hal::pso::Specialization::default(),
         };
 
         let shader_entries = hal::pso::GraphicsShaderSet {
-            vertex: vs_entry,
-            fragment: Some(fs_entry),
+            vertex: vs_entry_point,
+            fragment: Some(fs_entry_point),
             geometry: None,
             hull: None,
             domain: None,
@@ -145,13 +129,7 @@ where
                 mask: hal::pso::ColorMask::ALL,
                 blend: Some(hal::pso::BlendState::ALPHA),
             });
-        pipeline_desc
-            .vertex_buffers
-            .push(hal::pso::VertexBufferDesc {
-                binding: 0,
-                stride: Mesh::stride(),
-                rate: hal::pso::VertexInputRate::Vertex,
-            });
+        pipeline_desc.vertex_buffers = config.vertex_buffer_descriptions.clone();
         let pipeline = halw::GraphicsPipeline::create(gpu, &pipeline_desc, None)?;
         Ok(pipeline)
     }

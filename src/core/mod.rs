@@ -19,4 +19,4 @@ mod buffer;
 pub use buffer::{BufferCreationError, BufferLength, ImmutableBuffer};
 
 mod pipeline;
-pub use pipeline::{Pipeline, PipelineConfig, PipelineCreationError, Renderable, ShaderConfig};
+pub use pipeline::{Pipeline, PipelineConfig, PipelineCreationError, Renderable};
