@@ -22,7 +22,7 @@ pub struct PipelineConfig {
     push_constant_layout_bindings: Vec<PushConstantLayoutBinding>,
     vertex_buffer_descriptions: Vec<VertexBufferDesc>,
     vertex_shader_source: Vec<u32>,
-    fragment_shader_source: Vec<u32>,
+    fragment_shader_source: Option<Vec<u32>>,
 }
 
 pub struct Pipeline {
@@ -84,19 +84,28 @@ impl Pipeline {
             specialization: hal::pso::Specialization::default(),
         };
 
-        let fs_module = halw::ShaderModule::from_spirv(
-            Rc::clone(&gpu),
-            config.fragment_shader_source.as_slice(),
-        )?;
-        let fs_entry_point = halw::EntryPoint {
-            entry: "main",
-            module: &fs_module,
-            specialization: hal::pso::Specialization::default(),
+        let fs_module = match &config.fragment_shader_source {
+            Some(v) => {
+                let module = halw::ShaderModule::from_spirv(Rc::clone(&gpu), v.as_slice())?;
+                Some(module)
+            }
+            None => None,
+        };
+        let fs_entry_point = match &fs_module {
+            Some(v) => {
+                let entry_point = halw::EntryPoint {
+                    entry: "main",
+                    module: &v,
+                    specialization: hal::pso::Specialization::default(),
+                };
+                Some(entry_point)
+            }
+            None => None,
         };
 
         let shader_entries = hal::pso::GraphicsShaderSet {
             vertex: vs_entry_point,
-            fragment: Some(fs_entry_point),
+            fragment: fs_entry_point,
             geometry: None,
             hull: None,
             domain: None,
