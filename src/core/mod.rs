@@ -18,6 +18,3 @@ pub use buffer::*;
 
 mod pipeline;
 pub use pipeline::*;
-
-mod renderer;
-pub use renderer::*;

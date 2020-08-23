@@ -17,48 +17,72 @@ pub struct PushConstantLayoutBinding {
     range: Range<u32>,
 }
 
-#[derive(Debug, PartialEq, Clone)]
-pub struct PipelineConfig {
-    // descriptor_set_bindings: Vec<DescriptorSetLayoutBinding>,
-    push_constant_layout_bindings: Vec<PushConstantLayoutBinding>,
-    vertex_buffer_descriptions: Vec<VertexBufferDesc>,
-    vertex_shader_source: Vec<u8>,
-    fragment_shader_source: Option<Vec<u8>>,
+pub trait VertexArray {
+    fn stride() -> u32;
+    fn render(&self, command_buffer: &mut halw::CommandBuffer);
 }
 
-pub struct Pipeline {
+pub trait PushConstant {
+    fn bind(&self, command_buffer: &mut halw::CommandBuffer);
+}
+
+pub trait PipelineConfig<VA, PC>
+where
+    VA: VertexArray,
+    PC: PushConstant,
+{
+    fn push_constant_layout_bindings() -> Vec<PushConstantLayoutBinding>;
+    fn vertex_buffer_descriptions() -> Vec<VertexBufferDesc>;
+    fn vertex_shader_source() -> Vec<u8>;
+    fn fragment_shader_source() -> Option<Vec<u8>>;
+}
+
+pub struct Pipeline<Config, VA, PC>
+where
+    Config: PipelineConfig<VA, PC>,
+    VA: VertexArray,
+    PC: PushConstant,
+{
     _canvas: Rc<RefCell<dyn Canvas>>,
     _layout: halw::PipelineLayout,
     _pipeline: halw::GraphicsPipeline,
+    _p1: std::marker::PhantomData<Config>,
+    _p2: std::marker::PhantomData<VA>,
+    _p3: std::marker::PhantomData<PC>,
 }
 
-impl Pipeline {
+impl<Config, VA, PC> Pipeline<Config, VA, PC>
+where
+    Config: PipelineConfig<VA, PC>,
+    VA: VertexArray,
+    PC: PushConstant,
+{
     pub fn create(
         instance: &Instance,
         canvas: Rc<RefCell<dyn Canvas>>,
-        config: &PipelineConfig,
     ) -> Result<Self, PipelineCreationError> {
-        let layout = Self::create_layout(Rc::clone(&instance.gpu_rc()), config)?;
+        let layout = Self::create_layout(Rc::clone(&instance.gpu_rc()))?;
         let pipeline = Self::create_pipeline(
             Rc::clone(&instance.gpu_rc()),
             canvas.borrow().render_pass(),
             &layout,
-            config,
         )?;
         Ok(Self {
             _canvas: canvas,
             _layout: layout,
             _pipeline: pipeline,
+            _p1: std::marker::PhantomData,
+            _p2: std::marker::PhantomData,
+            _p3: std::marker::PhantomData,
         })
     }
 
     fn create_layout(
         gpu: Rc<RefCell<halw::Gpu>>,
-        config: &PipelineConfig,
     ) -> Result<halw::PipelineLayout, hal::device::OutOfMemory> {
         let push_constants = {
             let mut push_constants = Vec::new();
-            for pc_layout_binding in config.push_constant_layout_bindings.iter() {
+            for pc_layout_binding in Config::push_constant_layout_bindings().iter() {
                 push_constants.push((pc_layout_binding.stages, pc_layout_binding.range.clone()));
             }
             push_constants
@@ -73,11 +97,10 @@ impl Pipeline {
         gpu: Rc<RefCell<halw::Gpu>>,
         render_pass: &halw::RenderPass,
         layout: &halw::PipelineLayout,
-        config: &PipelineConfig,
     ) -> Result<halw::GraphicsPipeline, PipelineCreationError> {
         let vs_module = halw::ShaderModule::from_spirv(
             Rc::clone(&gpu),
-            config.vertex_shader_source.as_slice(),
+            Config::vertex_shader_source().as_slice(),
         )?;
         let vs_entry_point = halw::EntryPoint {
             entry: "main",
@@ -85,7 +108,7 @@ impl Pipeline {
             specialization: hal::pso::Specialization::default(),
         };
 
-        let fs_module = match &config.fragment_shader_source {
+        let fs_module = match Config::fragment_shader_source() {
             Some(v) => {
                 let module = halw::ShaderModule::from_spirv(Rc::clone(&gpu), v.as_slice())?;
                 Some(module)
@@ -131,7 +154,7 @@ impl Pipeline {
                 mask: hal::pso::ColorMask::ALL,
                 blend: Some(hal::pso::BlendState::ALPHA),
             });
-        pipeline_desc.vertex_buffers = config.vertex_buffer_descriptions.clone();
+        pipeline_desc.vertex_buffers = Config::vertex_buffer_descriptions();
         let pipeline = halw::GraphicsPipeline::create(gpu, &pipeline_desc, None)?;
         Ok(pipeline)
     }
@@ -186,6 +209,25 @@ impl From<hal::pso::CreationError> for PipelineCreationError {
     }
 }
 
+#[derive(Debug, PartialEq, Clone)]
+pub enum RenderingError {
+    NotProcessingFrame,
+}
+
+impl std::fmt::Display for RenderingError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            RenderingError::NotProcessingFrame => write!(f, "No frame is being processed"),
+        }
+    }
+}
+
+impl std::error::Error for RenderingError {
+    fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
+        None
+    }
+}
+
 #[cfg(test)]
 mod test {
     extern crate rae_app;
@@ -194,6 +236,49 @@ mod test {
 
     use super::*;
     use crate::core::CanvasWindowBuilder;
+
+    struct TestVertexArray {}
+
+    impl VertexArray for TestVertexArray {
+        fn stride() -> u32 {
+            8u32
+        }
+
+        fn render(&self, _: &mut halw::CommandBuffer) {}
+    }
+
+    struct TestPushConstant {}
+
+    impl PushConstant for TestPushConstant {
+        fn bind(&self, _: &mut halw::CommandBuffer) {}
+    }
+
+    struct TestPipelineConfig {}
+
+    impl PipelineConfig<TestVertexArray, TestPushConstant> for TestPipelineConfig {
+        fn push_constant_layout_bindings() -> Vec<PushConstantLayoutBinding> {
+            vec![PushConstantLayoutBinding {
+                stages: ShaderStageFlags::VERTEX,
+                range: 0..16,
+            }]
+        }
+
+        fn vertex_buffer_descriptions() -> Vec<VertexBufferDesc> {
+            vec![VertexBufferDesc {
+                binding: 0,
+                stride: 8,
+                rate: VertexInputRate::Vertex,
+            }]
+        }
+
+        fn vertex_shader_source() -> Vec<u8> {
+            include_bytes!("../shaders/gen/spirv/mesh2d.vert.spv").to_vec()
+        }
+
+        fn fragment_shader_source() -> Option<Vec<u8>> {
+            Some(include_bytes!("../shaders/gen/spirv/mesh2d.frag.spv").to_vec())
+        }
+    }
 
     #[test]
     fn create_pipeline() {
@@ -205,21 +290,6 @@ mod test {
                 .build(&instance, &event_loop)
                 .unwrap(),
         ));
-        let config = PipelineConfig {
-            push_constant_layout_bindings: vec![PushConstantLayoutBinding {
-                stages: ShaderStageFlags::VERTEX,
-                range: 0..16,
-            }],
-            vertex_buffer_descriptions: vec![VertexBufferDesc {
-                binding: 0,
-                stride: 8,
-                rate: VertexInputRate::Vertex,
-            }],
-            vertex_shader_source: include_bytes!("../shaders/gen/spirv/mesh2d.vert.spv").to_vec(),
-            fragment_shader_source: Some(
-                include_bytes!("../shaders/gen/spirv/mesh2d.frag.spv").to_vec(),
-            ),
-        };
-        let _pipeline = Pipeline::create(&instance, canvas, &config).unwrap();
+        let _pipeline = Pipeline::<TestPipelineConfig, _, _>::create(&instance, canvas).unwrap();
     }
 }
