@@ -1,22 +1,23 @@
 mod instance;
-pub use instance::{Instance, InstanceCreationError};
+pub use instance::*;
 
 mod size;
-pub use size::Size;
+pub use size::*;
 
 mod canvas;
-pub use canvas::{BeginFrameError, Canvas, EndFrameError, SynchronizeFrameError};
+pub use canvas::*;
 
 mod canvas_window;
-pub use canvas_window::{
-    CanvasWindow, CanvasWindowBuilder, CanvasWindowCreationError, CanvasWindowOperationError,
-};
+pub use canvas_window::*;
 
 mod texture_format;
-pub use texture_format::TextureFormat;
+pub use texture_format::*;
 
 mod buffer;
-pub use buffer::{BufferCreationError, BufferLength, ImmutableBuffer};
+pub use buffer::*;
 
 mod pipeline;
-pub use pipeline::{Pipeline, PipelineConfig, PipelineCreationError, Renderable};
+pub use pipeline::*;
+
+mod renderer;
+pub use renderer::*;
