@@ -255,10 +255,12 @@ impl std::error::Error for RenderingError {
 
 #[cfg(test)]
 mod test {
+    extern crate galvanic_assert;
     extern crate rae_app;
 
     use std::ops::Deref;
 
+    use galvanic_assert::{matchers::*, *};
     use rae_app::{event, event::EventLoopAnyThread};
 
     use super::*;
@@ -409,11 +411,31 @@ mod test {
             color: [1., 0., 0., 1.],
         };
 
+        assert_that!(
+            &pipeline.render(&[]),
+            eq(Err(RenderingError::NotProcessingFrame))
+        );
+
         canvas.borrow_mut().begin_frame().unwrap();
         pipeline
-            .render(&[(&white, &va1), (&red, &va1), (&red, &va2)])
+            .render(&[
+                (&white, &va1),
+                (&red, &va1),
+                (
+                    &TestPushConstant {
+                        color: [0., 1., 0., 1.],
+                    },
+                    &va2,
+                ),
+            ])
             .unwrap();
+        pipeline.render(&[]).unwrap();
         pipeline.render(&[(&white, &va1)]).unwrap();
         canvas.borrow_mut().end_frame().unwrap();
+
+        assert_that!(
+            &pipeline.render(&[]),
+            eq(Err(RenderingError::NotProcessingFrame))
+        );
     }
 }
