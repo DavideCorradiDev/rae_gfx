@@ -313,7 +313,7 @@ mod test {
         fn bind(&self, pipeline_layout: &halw::PipelineLayout, cmd_buf: &mut halw::CommandBuffer) {
             unsafe {
                 let (prefix, aligned_data, suffix) = self.color.align_to::<u32>();
-                assert!(prefix.len() != 0 && suffix.len() != 0);
+                assert!(prefix.len() == 0 && suffix.len() == 0);
                 cmd_buf.push_graphics_constants(
                     pipeline_layout,
                     hal::pso::ShaderStageFlags::VERTEX,
