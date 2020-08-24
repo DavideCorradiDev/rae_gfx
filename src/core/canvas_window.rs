@@ -15,9 +15,7 @@ use hal::{
 
 use rae_app::{event, window};
 
-use super::{
-    BeginFrameError, Canvas, EndFrameError, Instance, SynchronizeFrameError, TextureFormat,
-};
+use super::{BeginFrameError, Canvas, EndFrameError, Format, Instance, SynchronizeFrameError};
 use crate::halw;
 
 #[derive(Debug)]
@@ -25,7 +23,7 @@ pub struct CanvasWindow {
     window: window::Window,
     gpu: Rc<RefCell<halw::Gpu>>,
     surface: halw::Surface,
-    surface_color_format: TextureFormat,
+    surface_color_format: Format,
     surface_extent: hal::window::Extent2D,
     render_pass: halw::RenderPass,
     cmd_buffers: Vec<halw::CommandBuffer>,

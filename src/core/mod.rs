@@ -1,3 +1,7 @@
+extern crate gfx_hal as hal;
+
+pub use hal::format::Format;
+
 mod instance;
 pub use instance::*;
 
@@ -9,9 +13,6 @@ pub use canvas::*;
 
 mod canvas_window;
 pub use canvas_window::*;
-
-mod texture_format;
-pub use texture_format::*;
 
 mod buffer;
 pub use buffer::*;

@@ -5,19 +5,13 @@ use std::{cell::RefCell, rc::Rc};
 
 use hal::command::CommandBuffer as HalCommandBuffer;
 
-use super::{Canvas, Instance};
+use super::{Canvas, Format, Instance};
 use crate::halw;
 
 pub use hal::pso::{
-    DescriptorArrayIndex, DescriptorBinding, DescriptorSetLayoutBinding, ElemStride, InstanceRate,
-    ShaderStageFlags, VertexBufferDesc, VertexInputRate,
+    BufferIndex, DescriptorArrayIndex, DescriptorBinding, DescriptorSetLayoutBinding, ElemOffset,
+    ElemStride, InstanceRate, Location, ShaderStageFlags, VertexInputRate,
 };
-
-#[derive(Debug, PartialEq, Clone)]
-pub struct PushConstantLayoutBinding {
-    pub stages: ShaderStageFlags,
-    pub range: Range<u32>,
-}
 
 pub trait VertexArray {
     fn stride() -> u32;
@@ -26,6 +20,27 @@ pub trait VertexArray {
 
 pub trait PushConstant {
     fn bind(&self, pipeline_layout: &halw::PipelineLayout, cmd_buf: &mut halw::CommandBuffer);
+}
+
+#[derive(Debug, PartialEq, Clone)]
+pub struct PushConstantLayoutBinding {
+    pub stages: ShaderStageFlags,
+    pub range: Range<u32>,
+}
+
+#[derive(Debug, PartialEq, Clone)]
+pub struct VertexAttributeDesc {
+    pub location: Location,
+    pub format: Format,
+    pub offset: ElemOffset,
+}
+
+#[derive(Debug, PartialEq, Clone)]
+pub struct VertexBufferDesc {
+    pub binding: BufferIndex,
+    pub stride: ElemStride,
+    pub rate: VertexInputRate,
+    pub vertex_attribute_descs: Vec<VertexAttributeDesc>,
 }
 
 pub trait PipelineConfig<VA, PC>
@@ -177,7 +192,25 @@ where
                 mask: hal::pso::ColorMask::ALL,
                 blend: Some(hal::pso::BlendState::ALPHA),
             });
-        pipeline_desc.vertex_buffers = Config::vertex_buffer_descriptions();
+        for vbd in Config::vertex_buffer_descriptions() {
+            pipeline_desc
+                .vertex_buffers
+                .push(hal::pso::VertexBufferDesc {
+                    binding: vbd.binding,
+                    stride: vbd.stride,
+                    rate: vbd.rate,
+                });
+            for vad in vbd.vertex_attribute_descs {
+                pipeline_desc.attributes.push(hal::pso::AttributeDesc {
+                    binding: vbd.binding,
+                    location: vad.location,
+                    element: hal::pso::Element {
+                        format: vad.format,
+                        offset: vad.offset,
+                    },
+                });
+            }
+        }
         let pipeline = halw::GraphicsPipeline::create(gpu, &pipeline_desc, None)?;
         Ok(pipeline)
     }
@@ -341,6 +374,11 @@ mod test {
                 binding: 0,
                 stride: 8,
                 rate: VertexInputRate::Vertex,
+                vertex_attribute_descs: vec![VertexAttributeDesc {
+                    location: 0,
+                    format: Format::Rg32Sfloat,
+                    offset: 0,
+                }],
             }]
         }
 

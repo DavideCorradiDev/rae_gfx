@@ -4,7 +4,7 @@ use std::ops::Deref;
 
 use hal::command::CommandBuffer as HalCommandBuffer;
 
-use super::{pipeline, BufferCreationError, ImmutableBuffer, Instance, VertexCount};
+use super::{pipeline, BufferCreationError, Format, ImmutableBuffer, Instance, VertexCount};
 use crate::halw;
 
 #[derive(Debug, PartialEq, Clone)]
@@ -89,6 +89,11 @@ impl pipeline::PipelineConfig<VertexArray, PushConstant> for PipelineConfig {
             binding: 0,
             stride: std::mem::size_of::<Vertex>() as pipeline::ElemStride,
             rate: pipeline::VertexInputRate::Vertex,
+            vertex_attribute_descs: vec![pipeline::VertexAttributeDesc {
+                location: 0,
+                format: Format::Rg32Sfloat,
+                offset: 0,
+            }],
         }]
     }
 
