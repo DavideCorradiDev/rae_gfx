@@ -299,10 +299,13 @@ mod test {
         BufferCreationError, CanvasWindow, CanvasWindowBuilder, ImmutableBuffer, VertexCount,
     };
 
+    #[repr(packed)]
+    #[derive(Debug, PartialEq, Clone, Copy)]
     struct TestVertex {
         _pos: [f32; 2],
     }
 
+    #[derive(Debug)]
     struct TestVertexArray {
         buffer: ImmutableBuffer,
         vertex_count: VertexCount,
@@ -340,6 +343,8 @@ mod test {
         }
     }
 
+    #[repr(packed)]
+    #[derive(Debug, PartialEq, Clone, Copy)]
     struct TestPushConstant {
         color: [f32; 4],
     }
