@@ -84,7 +84,7 @@ where
 
     pub fn render(&mut self, elements: &[(&PC, &VA)]) -> Result<(), RenderingError> {
         let mut canvas = self.canvas.borrow_mut();
-        let cmd_buf = match canvas.current_command_buffer() {
+        let cmd_buf = match canvas.current_command_buffer_mut() {
             Some(v) => v,
             None => return Err(RenderingError::NotProcessingFrame),
         };
