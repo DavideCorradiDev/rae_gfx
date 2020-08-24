@@ -146,9 +146,9 @@ impl EventHandler<ApplicationError, ApplicationEvent> for ApplicationImpl {
         let triangle = geometry2d_pipeline::VertexArray::from_vertices(
             &instance,
             &[
-                geometry2d_pipeline::Vertex { pos: [-0.5, -0.5] },
-                geometry2d_pipeline::Vertex { pos: [0., -0.5] },
                 geometry2d_pipeline::Vertex { pos: [-0.5, 0.5] },
+                geometry2d_pipeline::Vertex { pos: [0., -0.5] },
+                geometry2d_pipeline::Vertex { pos: [0.5, 0.5] },
             ],
         )?;
         Ok(Self {
