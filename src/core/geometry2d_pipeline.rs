@@ -80,14 +80,14 @@ impl pipeline::PipelineConfig<VertexArray, PushConstant> for PipelineConfig {
     fn push_constant_layout_bindings() -> Vec<pipeline::PushConstantLayoutBinding> {
         vec![pipeline::PushConstantLayoutBinding {
             stages: pipeline::ShaderStageFlags::VERTEX,
-            range: 0..16,
+            range: 0..std::mem::size_of::<PushConstant>() as u32,
         }]
     }
 
     fn vertex_buffer_descriptions() -> Vec<pipeline::VertexBufferDesc> {
         vec![pipeline::VertexBufferDesc {
             binding: 0,
-            stride: 8,
+            stride: std::mem::size_of::<Vertex>() as pipeline::ElemStride,
             rate: pipeline::VertexInputRate::Vertex,
         }]
     }

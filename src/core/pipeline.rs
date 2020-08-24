@@ -9,7 +9,7 @@ use super::{Canvas, Instance};
 use crate::halw;
 
 pub use hal::pso::{
-    DescriptorArrayIndex, DescriptorBinding, DescriptorSetLayoutBinding, InstanceRate,
+    DescriptorArrayIndex, DescriptorBinding, DescriptorSetLayoutBinding, ElemStride, InstanceRate,
     ShaderStageFlags, VertexBufferDesc, VertexInputRate,
 };
 
