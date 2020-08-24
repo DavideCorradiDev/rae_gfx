@@ -8,18 +8,15 @@ use hal::command::CommandBuffer as HalCommandBuffer;
 use super::{Canvas, Instance};
 use crate::halw;
 
-pub use hal::{
-    pso::{
-        DescriptorArrayIndex, DescriptorBinding, DescriptorSetLayoutBinding, InstanceRate,
-        ShaderStageFlags, VertexBufferDesc, VertexInputRate,
-    },
-    VertexCount,
+pub use hal::pso::{
+    DescriptorArrayIndex, DescriptorBinding, DescriptorSetLayoutBinding, InstanceRate,
+    ShaderStageFlags, VertexBufferDesc, VertexInputRate,
 };
 
 #[derive(Debug, PartialEq, Clone)]
 pub struct PushConstantLayoutBinding {
-    stages: ShaderStageFlags,
-    range: Range<u32>,
+    pub stages: ShaderStageFlags,
+    pub range: Range<u32>,
 }
 
 pub trait VertexArray {
@@ -264,7 +261,9 @@ mod test {
     use rae_app::{event, event::EventLoopAnyThread};
 
     use super::*;
-    use crate::core::{BufferCreationError, CanvasWindow, CanvasWindowBuilder, ImmutableBuffer};
+    use crate::core::{
+        BufferCreationError, CanvasWindow, CanvasWindowBuilder, ImmutableBuffer, VertexCount,
+    };
 
     struct TestVertex {
         _pos: [f32; 2],

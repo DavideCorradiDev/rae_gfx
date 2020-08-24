@@ -11,6 +11,7 @@ use super::Instance;
 use crate::halw;
 
 pub type BufferLength = u64;
+pub use hal::{VertexCount, VertexOffset};
 
 #[derive(Debug)]
 pub struct ImmutableBuffer {

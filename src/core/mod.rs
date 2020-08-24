@@ -16,5 +16,6 @@ pub use texture_format::*;
 mod buffer;
 pub use buffer::*;
 
-mod pipeline;
-pub use pipeline::*;
+pub mod pipeline;
+
+pub mod geometry2d_pipeline;
