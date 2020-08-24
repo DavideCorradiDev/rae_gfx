@@ -5,10 +5,11 @@
 layout(location = 0) in vec2 inPosition;
 layout(location = 0) out vec4 fragColor;
 layout(push_constant) uniform pushConstants {
+    mat4 transform;
     vec4 color;
 } u_pushConstants;
 
 void main() {
-    gl_Position = vec4(inPosition, 0.0, 1.0);
+    gl_Position = u_pushConstants.transform * vec4(inPosition, 0.0, 1.0);
     fragColor = u_pushConstants.color;
 }

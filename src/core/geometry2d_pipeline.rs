@@ -7,7 +7,8 @@ use hal::command::CommandBuffer as HalCommandBuffer;
 use super::{pipeline, BufferCreationError, Format, ImmutableBuffer, Instance, VertexCount};
 use crate::halw;
 
-#[derive(Debug, PartialEq, Clone)]
+#[repr(packed)]
+#[derive(Debug, PartialEq, Clone, Copy)]
 pub struct Vertex {
     pub pos: [f32; 2],
 }
@@ -53,15 +54,20 @@ impl pipeline::VertexArray for VertexArray {
     }
 }
 
-#[derive(Debug, PartialEq, Clone)]
+#[repr(packed)]
+#[derive(Debug, PartialEq, Clone, Copy)]
 pub struct PushConstant {
+    pub transform: [f32; 16],
     pub color: [f32; 4],
 }
 
 impl pipeline::PushConstant for PushConstant {
     fn bind(&self, pipeline_layout: &halw::PipelineLayout, cmd_buf: &mut halw::CommandBuffer) {
         unsafe {
-            let (prefix, aligned_data, suffix) = self.color.align_to::<u32>();
+            let pc: *const PushConstant = self;
+            let pc: *const u8 = pc as *const u8;
+            let data = std::slice::from_raw_parts(pc, std::mem::size_of::<PushConstant>());
+            let (prefix, aligned_data, suffix) = data.align_to::<u32>();
             assert!(prefix.len() == 0 && suffix.len() == 0);
             cmd_buf.push_graphics_constants(
                 pipeline_layout,

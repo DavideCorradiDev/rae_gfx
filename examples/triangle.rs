@@ -172,7 +172,10 @@ impl EventHandler<ApplicationError, ApplicationEvent> for ApplicationImpl {
 
     fn on_variable_update(&mut self, _: std::time::Duration) -> Result<ControlFlow, Self::Error> {
         let push_constant = geometry2d_pipeline::PushConstant {
-            color: [1., 1., 1., 1.],
+            transform: [
+                1., 0., 0., 0., 0., 1., 0., 0., 0., 0., 1., 0., 0., 0., 0., 1.,
+            ],
+            color: [0., 1., 1., 1.],
         };
         self.window.borrow_mut().begin_frame()?;
         self.pipeline.render(&[(&push_constant, &self.triangle)])?;
