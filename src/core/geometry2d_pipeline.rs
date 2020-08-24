@@ -55,7 +55,7 @@ impl pipeline::VertexArray for VertexArray {
 
 #[derive(Debug, PartialEq, Clone)]
 pub struct PushConstant {
-    color: [f32; 4],
+    pub color: [f32; 4],
 }
 
 impl pipeline::PushConstant for PushConstant {

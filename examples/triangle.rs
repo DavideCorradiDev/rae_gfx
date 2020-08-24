@@ -10,9 +10,11 @@ use rae_app::{
 };
 
 use rae_gfx::core::{
-    geometry2d_pipeline, pipeline::PipelineCreationError, BeginFrameError, BufferCreationError,
-    Canvas, CanvasWindow, CanvasWindowBuilder, CanvasWindowCreationError,
-    CanvasWindowOperationError, EndFrameError, Instance, InstanceCreationError,
+    geometry2d_pipeline,
+    pipeline::{PipelineCreationError, RenderingError},
+    BeginFrameError, BufferCreationError, Canvas, CanvasWindow, CanvasWindowBuilder,
+    CanvasWindowCreationError, CanvasWindowOperationError, EndFrameError, Instance,
+    InstanceCreationError,
 };
 
 type ApplicationEvent = ();
@@ -26,6 +28,7 @@ enum ApplicationError {
     BufferCreationFailed(BufferCreationError),
     BeginFrameFailed(BeginFrameError),
     EndFrameFailed(EndFrameError),
+    RenderingFailed(RenderingError),
 }
 
 impl std::fmt::Display for ApplicationError {
@@ -48,6 +51,7 @@ impl std::fmt::Display for ApplicationError {
             }
             ApplicationError::BeginFrameFailed(e) => write!(f, "Render frame start failed ({})", e),
             ApplicationError::EndFrameFailed(e) => write!(f, "Render frame end failed ({})", e),
+            ApplicationError::RenderingFailed(e) => write!(f, "Rendering failed ({})", e),
         }
     }
 }
@@ -62,6 +66,7 @@ impl std::error::Error for ApplicationError {
             ApplicationError::BufferCreationFailed(e) => Some(e),
             ApplicationError::BeginFrameFailed(e) => Some(e),
             ApplicationError::EndFrameFailed(e) => Some(e),
+            ApplicationError::RenderingFailed(e) => Some(e),
         }
     }
 }
@@ -105,6 +110,12 @@ impl From<BeginFrameError> for ApplicationError {
 impl From<EndFrameError> for ApplicationError {
     fn from(e: EndFrameError) -> Self {
         ApplicationError::EndFrameFailed(e)
+    }
+}
+
+impl From<RenderingError> for ApplicationError {
+    fn from(e: RenderingError) -> Self {
+        ApplicationError::RenderingFailed(e)
     }
 }
 
@@ -160,7 +171,11 @@ impl EventHandler<ApplicationError, ApplicationEvent> for ApplicationImpl {
     }
 
     fn on_variable_update(&mut self, _: std::time::Duration) -> Result<ControlFlow, Self::Error> {
+        let push_constant = geometry2d_pipeline::PushConstant {
+            color: [1., 1., 1., 1.],
+        };
         self.window.borrow_mut().begin_frame()?;
+        self.pipeline.render(&[(&push_constant, &self.triangle)])?;
         self.window.borrow_mut().end_frame()?;
         Ok(ControlFlow::Continue)
     }
