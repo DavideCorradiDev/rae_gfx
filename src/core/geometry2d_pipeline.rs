@@ -19,7 +19,10 @@ pub struct VertexArray {
 }
 
 impl VertexArray {
-    pub fn new(instance: &Instance, data: &[Vertex]) -> Result<Self, BufferCreationError> {
+    pub fn from_vertices(
+        instance: &Instance,
+        data: &[Vertex],
+    ) -> Result<Self, BufferCreationError> {
         let buffer = ImmutableBuffer::from_data(instance, data)?;
         Ok(Self {
             buffer,
@@ -97,3 +100,5 @@ impl pipeline::PipelineConfig<VertexArray, PushConstant> for PipelineConfig {
         Some(include_bytes!("shaders/gen/spirv/geometry2d.frag.spv").to_vec())
     }
 }
+
+pub type Pipeline<C> = pipeline::Pipeline<C, PipelineConfig, VertexArray, PushConstant>;

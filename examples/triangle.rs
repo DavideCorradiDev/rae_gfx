@@ -1,5 +1,7 @@
 extern crate rae_app;
 
+use std::{cell::RefCell, rc::Rc};
+
 use rae_app::{
     application::Application,
     event::{ControlFlow, EventHandler, EventLoop},
@@ -8,7 +10,8 @@ use rae_app::{
 };
 
 use rae_gfx::core::{
-    BeginFrameError, Canvas, CanvasWindow, CanvasWindowBuilder, CanvasWindowCreationError,
+    geometry2d_pipeline, pipeline::PipelineCreationError, BeginFrameError, BufferCreationError,
+    Canvas, CanvasWindow, CanvasWindowBuilder, CanvasWindowCreationError,
     CanvasWindowOperationError, EndFrameError, Instance, InstanceCreationError,
 };
 
@@ -19,6 +22,8 @@ enum ApplicationError {
     InstanceCreationFailed(InstanceCreationError),
     WindowCreationFailed(CanvasWindowCreationError),
     WindowOperationFailed(CanvasWindowOperationError),
+    PipelineCreationFailed(PipelineCreationError),
+    BufferCreationFailed(BufferCreationError),
     BeginFrameFailed(BeginFrameError),
     EndFrameFailed(EndFrameError),
 }
@@ -35,6 +40,12 @@ impl std::fmt::Display for ApplicationError {
             ApplicationError::WindowOperationFailed(e) => {
                 write!(f, "Render frame start failed ({})", e)
             }
+            ApplicationError::PipelineCreationFailed(e) => {
+                write!(f, "Pipeline creation failed ({})", e)
+            }
+            ApplicationError::BufferCreationFailed(e) => {
+                write!(f, "Buffer creation failed ({})", e)
+            }
             ApplicationError::BeginFrameFailed(e) => write!(f, "Render frame start failed ({})", e),
             ApplicationError::EndFrameFailed(e) => write!(f, "Render frame end failed ({})", e),
         }
@@ -47,6 +58,8 @@ impl std::error::Error for ApplicationError {
             ApplicationError::InstanceCreationFailed(e) => Some(e),
             ApplicationError::WindowCreationFailed(e) => Some(e),
             ApplicationError::WindowOperationFailed(e) => Some(e),
+            ApplicationError::PipelineCreationFailed(e) => Some(e),
+            ApplicationError::BufferCreationFailed(e) => Some(e),
             ApplicationError::BeginFrameFailed(e) => Some(e),
             ApplicationError::EndFrameFailed(e) => Some(e),
         }
@@ -71,6 +84,18 @@ impl From<CanvasWindowOperationError> for ApplicationError {
     }
 }
 
+impl From<PipelineCreationError> for ApplicationError {
+    fn from(e: PipelineCreationError) -> Self {
+        ApplicationError::PipelineCreationFailed(e)
+    }
+}
+
+impl From<BufferCreationError> for ApplicationError {
+    fn from(e: BufferCreationError) -> Self {
+        ApplicationError::BufferCreationFailed(e)
+    }
+}
+
 impl From<BeginFrameError> for ApplicationError {
     fn from(e: BeginFrameError) -> Self {
         ApplicationError::BeginFrameFailed(e)
@@ -86,7 +111,9 @@ impl From<EndFrameError> for ApplicationError {
 #[derive(Debug)]
 struct ApplicationImpl {
     instance: Instance,
-    window: CanvasWindow,
+    window: Rc<RefCell<CanvasWindow>>,
+    pipeline: geometry2d_pipeline::Pipeline<CanvasWindow>,
+    triangle: geometry2d_pipeline::VertexArray,
 }
 
 impl EventHandler<ApplicationError, ApplicationEvent> for ApplicationImpl {
@@ -95,14 +122,30 @@ impl EventHandler<ApplicationError, ApplicationEvent> for ApplicationImpl {
 
     fn new(event_loop: &EventLoop<Self::CustomEvent>) -> Result<Self, Self::Error> {
         let instance = Instance::create()?;
-        let window = CanvasWindowBuilder::new()
-            .with_title("Triangle Example")
-            .with_inner_size(window::Size::Physical(window::PhysicalSize {
-                width: 800,
-                height: 600,
-            }))
-            .build(&instance, event_loop)?;
-        Ok(Self { instance, window })
+        let window = Rc::new(RefCell::new(
+            CanvasWindowBuilder::new()
+                .with_title("Triangle Example")
+                .with_inner_size(window::Size::Physical(window::PhysicalSize {
+                    width: 800,
+                    height: 600,
+                }))
+                .build(&instance, event_loop)?,
+        ));
+        let pipeline = geometry2d_pipeline::Pipeline::create(&instance, Rc::clone(&window))?;
+        let triangle = geometry2d_pipeline::VertexArray::from_vertices(
+            &instance,
+            &[
+                geometry2d_pipeline::Vertex { pos: [-0.5, -0.5] },
+                geometry2d_pipeline::Vertex { pos: [0., -0.5] },
+                geometry2d_pipeline::Vertex { pos: [-0.5, 0.5] },
+            ],
+        )?;
+        Ok(Self {
+            instance,
+            window,
+            pipeline,
+            triangle,
+        })
     }
 
     fn on_resized(
@@ -110,15 +153,15 @@ impl EventHandler<ApplicationError, ApplicationEvent> for ApplicationImpl {
         wid: WindowId,
         _size: window::PhysicalSize<u32>,
     ) -> Result<ControlFlow, Self::Error> {
-        if wid == self.window.id() {
-            self.window.resize_canvas_if_necessary()?;
+        if wid == self.window.borrow().id() {
+            self.window.borrow_mut().resize_canvas_if_necessary()?;
         }
         Ok(ControlFlow::Continue)
     }
 
     fn on_variable_update(&mut self, _: std::time::Duration) -> Result<ControlFlow, Self::Error> {
-        self.window.begin_frame()?;
-        self.window.end_frame()?;
+        self.window.borrow_mut().begin_frame()?;
+        self.window.borrow_mut().end_frame()?;
         Ok(ControlFlow::Continue)
     }
 }

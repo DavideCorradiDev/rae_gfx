@@ -39,6 +39,7 @@ where
     fn fragment_shader_source() -> Option<Vec<u8>>;
 }
 
+#[derive(Debug)]
 pub struct Pipeline<C, Config, VA, PC>
 where
     C: Canvas,
