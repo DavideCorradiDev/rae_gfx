@@ -1,8 +1,8 @@
 extern crate rae_shader;
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
-    let in_dir = std::path::PathBuf::from("src/shaders/glsl");
-    let out_dir = std::path::PathBuf::from("src/shaders/gen/spirv");
+    let in_dir = std::path::PathBuf::from("src/core/shaders/glsl");
+    let out_dir = std::path::PathBuf::from("src/core/shaders/gen/spirv");
     println!(
         "cargo:rerun-if-changed={}/**",
         in_dir.to_str().unwrap_or("")

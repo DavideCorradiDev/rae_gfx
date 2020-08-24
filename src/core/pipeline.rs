@@ -345,11 +345,11 @@ mod test {
         }
 
         fn vertex_shader_source() -> Vec<u8> {
-            include_bytes!("../shaders/gen/spirv/mesh2d.vert.spv").to_vec()
+            include_bytes!("shaders/gen/spirv/test.vert.spv").to_vec()
         }
 
         fn fragment_shader_source() -> Option<Vec<u8>> {
-            Some(include_bytes!("../shaders/gen/spirv/mesh2d.frag.spv").to_vec())
+            Some(include_bytes!("shaders/gen/spirv/test.frag.spv").to_vec())
         }
     }
 
