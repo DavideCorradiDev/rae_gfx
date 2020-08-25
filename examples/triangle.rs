@@ -170,6 +170,7 @@ impl EventHandler<ApplicationError, ApplicationEvent> for ApplicationImpl {
                 }))
                 .build(&instance, event_loop)?,
         ));
+        window.borrow().set_cursor_visible(false);
         let pipeline = geometry2d_pipeline::Pipeline::create(&instance, Rc::clone(&window))?;
         let triangle = geometry2d_pipeline::VertexArray::from_vertices(
             &instance,
