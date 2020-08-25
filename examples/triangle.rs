@@ -10,7 +10,7 @@ use rae_app::{
     window::WindowId,
 };
 
-use nalgebra::geometry::{Rotation2, Transform2};
+use nalgebra::{base::Matrix3, geometry::Point2};
 
 use rae_gfx::core::{
     geometry2d_pipeline,
@@ -128,6 +128,7 @@ struct ApplicationImpl {
     window: Rc<RefCell<CanvasWindow>>,
     pipeline: geometry2d_pipeline::Pipeline<CanvasWindow>,
     triangle: geometry2d_pipeline::VertexArray,
+    current_angle: f32,
 }
 
 impl EventHandler<ApplicationError, ApplicationEvent> for ApplicationImpl {
@@ -141,7 +142,7 @@ impl EventHandler<ApplicationError, ApplicationEvent> for ApplicationImpl {
                 .with_title("Triangle Example")
                 .with_inner_size(window::Size::Physical(window::PhysicalSize {
                     width: 800,
-                    height: 600,
+                    height: 800,
                 }))
                 .build(&instance, event_loop)?,
         ));
@@ -159,6 +160,7 @@ impl EventHandler<ApplicationError, ApplicationEvent> for ApplicationImpl {
             window,
             pipeline,
             triangle,
+            current_angle: 0.,
         })
     }
 
@@ -173,13 +175,17 @@ impl EventHandler<ApplicationError, ApplicationEvent> for ApplicationImpl {
         Ok(ControlFlow::Continue)
     }
 
-    fn on_variable_update(&mut self, _: std::time::Duration) -> Result<ControlFlow, Self::Error> {
-        let push_constant = geometry2d_pipeline::PushConstant {
-            transform: [
-                1., 0., 0., 0., 0., 1., 0., 0., 0., 0., 1., 0., 0., 0., 0., 1.,
-            ],
-            color: [1., 1., 1., 1.],
-        };
+    fn on_variable_update(&mut self, dt: std::time::Duration) -> Result<ControlFlow, Self::Error> {
+        const ANGULAR_SPEED: f32 = std::f32::consts::PI * 0.25;
+        self.current_angle = self.current_angle + ANGULAR_SPEED * dt.as_secs_f32();
+        while self.current_angle >= std::f32::consts::PI * 2. {
+            self.current_angle = self.current_angle - std::f32::consts::PI * 2.;
+        }
+
+        let push_constant = geometry2d_pipeline::PushConstant::new(
+            Matrix3::new_rotation(self.current_angle),
+            [1., 1., 1., 1.],
+        );
         self.window.borrow_mut().begin_frame()?;
         self.pipeline.render(&[(&push_constant, &self.triangle)])?;
         self.window.borrow_mut().end_frame()?;

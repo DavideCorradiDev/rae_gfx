@@ -4,12 +4,14 @@ extern crate nalgebra;
 use std::ops::Deref;
 
 use hal::command::CommandBuffer as HalCommandBuffer;
-use nalgebra::geometry::{Point2, Transform2};
+use nalgebra::{
+    base::{Matrix3, Matrix4},
+    geometry::Point2,
+};
 
 use super::{pipeline, BufferCreationError, Format, ImmutableBuffer, Instance, VertexCount};
 use crate::halw;
 
-#[repr(packed)]
 #[derive(Debug, PartialEq, Clone, Copy)]
 pub struct Vertex {
     pub pos: Point2<f32>,
@@ -64,11 +66,33 @@ impl pipeline::VertexArray for VertexArray {
     }
 }
 
-#[repr(packed)]
 #[derive(Debug, PartialEq, Clone, Copy)]
 pub struct PushConstant {
-    pub transform: [f32; 16],
-    pub color: [f32; 4],
+    transform: Matrix4<f32>,
+    color: [f32; 4],
+}
+
+impl PushConstant {
+    pub fn new(transform: Matrix3<f32>, color: [f32; 4]) -> Self {
+        let mut push_constant = Self {
+            transform: Matrix4::<f32>::identity(),
+            color,
+        };
+        push_constant.set_transform(transform);
+        push_constant
+    }
+
+    pub fn set_transform(&mut self, value: Matrix3<f32>) {
+        for row in [0, 1].iter() {
+            self.transform[(*row, 0)] = value[(*row, 0)];
+            self.transform[(*row, 1)] = value[(*row, 1)];
+            self.transform[(*row, 3)] = value[(*row, 2)];
+        }
+    }
+
+    pub fn set_color(&mut self, value: [f32; 4]) {
+        self.color = value;
+    }
 }
 
 impl pipeline::PushConstant for PushConstant {
