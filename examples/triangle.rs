@@ -136,6 +136,23 @@ struct ApplicationImpl {
     current_position: Point2<f32>,
     current_angle: f32,
     current_scaling: f32,
+    current_color: [f32; 4],
+    saved_triangle_constants: Vec<geometry2d_pipeline::PushConstant>,
+}
+
+impl ApplicationImpl {
+    pub fn generate_push_constant(&self) -> geometry2d_pipeline::PushConstant {
+        let object_transform =
+            Similarity::<f32, nalgebra::base::dimension::U2, Rotation2<f32>>::from_parts(
+                Translation2::new(self.current_position.x, self.current_position.y),
+                Rotation2::new(self.current_angle),
+                self.current_scaling,
+            );
+        geometry2d_pipeline::PushConstant::new(
+            self.projection_transform.to_homogeneous() * object_transform.to_homogeneous(),
+            self.current_color,
+        )
+    }
 }
 
 impl EventHandler<ApplicationError, ApplicationEvent> for ApplicationImpl {
@@ -178,6 +195,8 @@ impl EventHandler<ApplicationError, ApplicationEvent> for ApplicationImpl {
             current_position,
             current_angle: 0.,
             current_scaling: 1.,
+            current_color: [1., 1., 1., 0.75],
+            saved_triangle_constants: Vec::new(),
         })
     }
 
@@ -213,8 +232,13 @@ impl EventHandler<ApplicationError, ApplicationEvent> for ApplicationImpl {
     ) -> Result<ControlFlow, Self::Error> {
         if wid == self.window.borrow().id() {
             if button == mouse::Button::Left {
+                self.saved_triangle_constants
+                    .push(self.generate_push_constant());
                 let mut rng = rand::thread_rng();
                 self.current_scaling = rng.gen_range(0.25, 4.);
+                self.current_color[0] = rng.gen_range(0., 1.);
+                self.current_color[1] = rng.gen_range(0., 1.);
+                self.current_color[2] = rng.gen_range(0., 1.);
             }
         }
         Ok(ControlFlow::Continue)
@@ -227,18 +251,15 @@ impl EventHandler<ApplicationError, ApplicationEvent> for ApplicationImpl {
             self.current_angle = self.current_angle - std::f32::consts::PI * 2.;
         }
 
-        let object_transform =
-            Similarity::<f32, nalgebra::base::dimension::U2, Rotation2<f32>>::from_parts(
-                Translation2::new(self.current_position.x, self.current_position.y),
-                Rotation2::new(self.current_angle),
-                self.current_scaling,
-            );
-        let push_constant = geometry2d_pipeline::PushConstant::new(
-            self.projection_transform.to_homogeneous() * object_transform.to_homogeneous(),
-            [1., 1., 1., 1.],
-        );
+        let mut elements = Vec::new();
+        for triangle_constant in &self.saved_triangle_constants {
+            elements.push((triangle_constant, &self.triangle));
+        }
+        let current_triangle_constant = self.generate_push_constant();
+        elements.push((&current_triangle_constant, &self.triangle));
+
         self.window.borrow_mut().begin_frame()?;
-        self.pipeline.render(&[(&push_constant, &self.triangle)])?;
+        self.pipeline.render(elements.as_slice())?;
         self.window.borrow_mut().end_frame()?;
         Ok(ControlFlow::Continue)
     }
