@@ -1,16 +1,22 @@
+extern crate gfx_hal as hal;
+
+pub use hal::format::Format;
+
 mod instance;
-pub use instance::{Instance, InstanceCreationError};
+pub use instance::*;
 
 mod size;
-pub use size::Size;
+pub use size::*;
 
 mod canvas;
-pub use canvas::{BeginFrameError, Canvas, EndFrameError, SynchronizeFrameError};
+pub use canvas::*;
 
 mod canvas_window;
-pub use canvas_window::{
-    CanvasWindow, CanvasWindowBuilder, CanvasWindowCreationError, CanvasWindowOperationError,
-};
+pub use canvas_window::*;
 
-mod texture_format;
-pub use texture_format::TextureFormat;
+mod buffer;
+pub use buffer::*;
+
+pub mod pipeline;
+
+pub mod geometry2d_pipeline;

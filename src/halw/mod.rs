@@ -2,8 +2,7 @@
 
 mod backend;
 pub use backend::{
-    Adapter, Backend, CommandQueue, Device, GraphicsPipelineDesc, PhysicalDevice, QueueFamily,
-    QueueGroup, SwapchainImage,
+    Adapter, Backend, CommandQueue, Device, PhysicalDevice, QueueFamily, QueueGroup, SwapchainImage,
 };
 
 mod instance;
@@ -68,3 +67,12 @@ pub use graphics_pipeline::GraphicsPipeline;
 
 mod shader_module;
 pub use shader_module::ShaderModule;
+
+mod graphics_pipeline_desc;
+pub use graphics_pipeline_desc::{GraphicsPipelineDesc, Primitive, Rasterizer};
+
+mod entry_point;
+pub use entry_point::EntryPoint;
+
+mod subpass;
+pub use subpass::Subpass;

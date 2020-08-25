@@ -17,11 +17,17 @@ pub struct ShaderModule {
 }
 
 impl ShaderModule {
-    pub fn from_spirv(
+    pub fn from_spirv<T>(
         gpu: Rc<RefCell<Gpu>>,
-        spirv_data: &[u32],
+        spirv_data: &[T],
     ) -> Result<Self, hal::device::ShaderError> {
-        let shader_module = unsafe { gpu.borrow().device.create_shader_module(spirv_data) }?;
+        let (prefix, aligned_data, suffix) = unsafe { spirv_data.align_to::<u32>() };
+        if prefix.len() != 0 || suffix.len() != 0 {
+            return Err(hal::device::ShaderError::CompilationFailed(String::from(
+                "Misaligned spirv data",
+            )));
+        }
+        let shader_module = unsafe { gpu.borrow().device.create_shader_module(aligned_data) }?;
         Ok(Self {
             value: ManuallyDrop::new(shader_module),
             gpu,

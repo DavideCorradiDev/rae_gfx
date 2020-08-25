@@ -1,15 +1,27 @@
+extern crate nalgebra;
 extern crate rae_app;
+extern crate rand;
+
+use std::{cell::RefCell, rc::Rc};
 
 use rae_app::{
     application::Application,
-    event::{ControlFlow, EventHandler, EventLoop},
+    event::{mouse, ControlFlow, DeviceId, EventHandler, EventLoop},
     window,
     window::WindowId,
 };
 
-use rae_gfx::core::{
-    BeginFrameError, Canvas, CanvasWindow, CanvasWindowBuilder, CanvasWindowCreationError,
-    CanvasWindowOperationError, EndFrameError, Instance, InstanceCreationError,
+use rand::Rng;
+
+use rae_gfx::{
+    core::{
+        geometry2d_pipeline,
+        pipeline::{PipelineCreationError, RenderingError},
+        BeginFrameError, BufferCreationError, Canvas, CanvasWindow, CanvasWindowBuilder,
+        CanvasWindowCreationError, CanvasWindowOperationError, EndFrameError, Instance,
+        InstanceCreationError,
+    },
+    geometry::{Orthographic2, Point2, Rotation2, Similarity, Translation2},
 };
 
 type ApplicationEvent = ();
@@ -19,8 +31,11 @@ enum ApplicationError {
     InstanceCreationFailed(InstanceCreationError),
     WindowCreationFailed(CanvasWindowCreationError),
     WindowOperationFailed(CanvasWindowOperationError),
+    PipelineCreationFailed(PipelineCreationError),
+    BufferCreationFailed(BufferCreationError),
     BeginFrameFailed(BeginFrameError),
     EndFrameFailed(EndFrameError),
+    RenderingFailed(RenderingError),
 }
 
 impl std::fmt::Display for ApplicationError {
@@ -35,8 +50,15 @@ impl std::fmt::Display for ApplicationError {
             ApplicationError::WindowOperationFailed(e) => {
                 write!(f, "Render frame start failed ({})", e)
             }
+            ApplicationError::PipelineCreationFailed(e) => {
+                write!(f, "Pipeline creation failed ({})", e)
+            }
+            ApplicationError::BufferCreationFailed(e) => {
+                write!(f, "Buffer creation failed ({})", e)
+            }
             ApplicationError::BeginFrameFailed(e) => write!(f, "Render frame start failed ({})", e),
             ApplicationError::EndFrameFailed(e) => write!(f, "Render frame end failed ({})", e),
+            ApplicationError::RenderingFailed(e) => write!(f, "Rendering failed ({})", e),
         }
     }
 }
@@ -47,8 +69,11 @@ impl std::error::Error for ApplicationError {
             ApplicationError::InstanceCreationFailed(e) => Some(e),
             ApplicationError::WindowCreationFailed(e) => Some(e),
             ApplicationError::WindowOperationFailed(e) => Some(e),
+            ApplicationError::PipelineCreationFailed(e) => Some(e),
+            ApplicationError::BufferCreationFailed(e) => Some(e),
             ApplicationError::BeginFrameFailed(e) => Some(e),
             ApplicationError::EndFrameFailed(e) => Some(e),
+            ApplicationError::RenderingFailed(e) => Some(e),
         }
     }
 }
@@ -71,6 +96,18 @@ impl From<CanvasWindowOperationError> for ApplicationError {
     }
 }
 
+impl From<PipelineCreationError> for ApplicationError {
+    fn from(e: PipelineCreationError) -> Self {
+        ApplicationError::PipelineCreationFailed(e)
+    }
+}
+
+impl From<BufferCreationError> for ApplicationError {
+    fn from(e: BufferCreationError) -> Self {
+        ApplicationError::BufferCreationFailed(e)
+    }
+}
+
 impl From<BeginFrameError> for ApplicationError {
     fn from(e: BeginFrameError) -> Self {
         ApplicationError::BeginFrameFailed(e)
@@ -83,10 +120,39 @@ impl From<EndFrameError> for ApplicationError {
     }
 }
 
+impl From<RenderingError> for ApplicationError {
+    fn from(e: RenderingError) -> Self {
+        ApplicationError::RenderingFailed(e)
+    }
+}
+
 #[derive(Debug)]
 struct ApplicationImpl {
     instance: Instance,
-    window: CanvasWindow,
+    window: Rc<RefCell<CanvasWindow>>,
+    pipeline: geometry2d_pipeline::Pipeline<CanvasWindow>,
+    triangle: geometry2d_pipeline::VertexArray,
+    projection_transform: Orthographic2<f32>,
+    current_position: Point2<f32>,
+    current_angle: f32,
+    current_scaling: f32,
+    current_color: [f32; 4],
+    saved_triangle_constants: Vec<geometry2d_pipeline::PushConstant>,
+}
+
+impl ApplicationImpl {
+    pub fn generate_push_constant(&self) -> geometry2d_pipeline::PushConstant {
+        let object_transform =
+            Similarity::<f32, nalgebra::base::dimension::U2, Rotation2<f32>>::from_parts(
+                Translation2::new(self.current_position.x, self.current_position.y),
+                Rotation2::new(self.current_angle),
+                self.current_scaling,
+            );
+        geometry2d_pipeline::PushConstant::new(
+            self.projection_transform.to_homogeneous() * object_transform.to_homogeneous(),
+            self.current_color,
+        )
+    }
 }
 
 impl EventHandler<ApplicationError, ApplicationEvent> for ApplicationImpl {
@@ -95,30 +161,109 @@ impl EventHandler<ApplicationError, ApplicationEvent> for ApplicationImpl {
 
     fn new(event_loop: &EventLoop<Self::CustomEvent>) -> Result<Self, Self::Error> {
         let instance = Instance::create()?;
-        let window = CanvasWindowBuilder::new()
-            .with_title("Triangle Example")
-            .with_inner_size(window::Size::Physical(window::PhysicalSize {
-                width: 800,
-                height: 600,
-            }))
-            .build(&instance, event_loop)?;
-        Ok(Self { instance, window })
+        let window = Rc::new(RefCell::new(
+            CanvasWindowBuilder::new()
+                .with_title("Triangle Example")
+                .with_inner_size(window::Size::Physical(window::PhysicalSize {
+                    width: 800,
+                    height: 800,
+                }))
+                .build(&instance, event_loop)?,
+        ));
+        window.borrow().set_cursor_visible(false);
+        let pipeline = geometry2d_pipeline::Pipeline::create(&instance, Rc::clone(&window))?;
+        let triangle = geometry2d_pipeline::VertexArray::from_vertices(
+            &instance,
+            &[
+                geometry2d_pipeline::Vertex::new(-50., 50.),
+                geometry2d_pipeline::Vertex::new(0.0, -50.),
+                geometry2d_pipeline::Vertex::new(50., 50.),
+            ],
+        )?;
+        let window_size = window.borrow().inner_size();
+        let projection_transform =
+            Orthographic2::new(0., window_size.width as f32, 0., window_size.height as f32);
+        let current_position = Point2::new(
+            window_size.width as f32 / 2.,
+            window_size.height as f32 / 2.,
+        );
+        Ok(Self {
+            instance,
+            window,
+            pipeline,
+            triangle,
+            projection_transform,
+            current_position,
+            current_angle: 0.,
+            current_scaling: 1.,
+            current_color: [1., 1., 1., 0.75],
+            saved_triangle_constants: Vec::new(),
+        })
     }
 
     fn on_resized(
         &mut self,
         wid: WindowId,
-        _size: window::PhysicalSize<u32>,
+        size: window::PhysicalSize<u32>,
     ) -> Result<ControlFlow, Self::Error> {
-        if wid == self.window.id() {
-            self.window.resize_canvas_if_necessary()?;
+        if wid == self.window.borrow().id() {
+            self.window.borrow_mut().resize_canvas_if_necessary()?;
+            self.projection_transform =
+                Orthographic2::new(0., size.width as f32, 0., size.height as f32);
         }
         Ok(ControlFlow::Continue)
     }
 
-    fn on_variable_update(&mut self, _: std::time::Duration) -> Result<ControlFlow, Self::Error> {
-        self.window.begin_frame()?;
-        self.window.end_frame()?;
+    fn on_cursor_moved(
+        &mut self,
+        wid: WindowId,
+        _device_id: DeviceId,
+        position: window::PhysicalPosition<f64>,
+    ) -> Result<ControlFlow, Self::Error> {
+        if wid == self.window.borrow().id() {
+            self.current_position.x = position.x as f32;
+            self.current_position.y = position.y as f32;
+        }
+        Ok(ControlFlow::Continue)
+    }
+
+    fn on_mouse_button_released(
+        &mut self,
+        wid: WindowId,
+        _device_id: DeviceId,
+        button: mouse::Button,
+    ) -> Result<ControlFlow, Self::Error> {
+        if wid == self.window.borrow().id() {
+            if button == mouse::Button::Left {
+                self.saved_triangle_constants
+                    .push(self.generate_push_constant());
+                let mut rng = rand::thread_rng();
+                self.current_scaling = rng.gen_range(0.25, 4.);
+                self.current_color[0] = rng.gen_range(0., 1.);
+                self.current_color[1] = rng.gen_range(0., 1.);
+                self.current_color[2] = rng.gen_range(0., 1.);
+            }
+        }
+        Ok(ControlFlow::Continue)
+    }
+
+    fn on_variable_update(&mut self, dt: std::time::Duration) -> Result<ControlFlow, Self::Error> {
+        const ANGULAR_SPEED: f32 = std::f32::consts::PI * 0.25;
+        self.current_angle = self.current_angle + ANGULAR_SPEED * dt.as_secs_f32();
+        while self.current_angle >= std::f32::consts::PI * 2. {
+            self.current_angle = self.current_angle - std::f32::consts::PI * 2.;
+        }
+
+        let mut elements = Vec::new();
+        for triangle_constant in &self.saved_triangle_constants {
+            elements.push((triangle_constant, &self.triangle));
+        }
+        let current_triangle_constant = self.generate_push_constant();
+        elements.push((&current_triangle_constant, &self.triangle));
+
+        self.window.borrow_mut().begin_frame()?;
+        self.pipeline.render(elements.as_slice())?;
+        self.window.borrow_mut().end_frame()?;
         Ok(ControlFlow::Continue)
     }
 }
