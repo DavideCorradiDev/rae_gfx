@@ -18,7 +18,7 @@ use rae_gfx::{
         CanvasWindowCreationError, CanvasWindowOperationError, EndFrameError, Instance,
         InstanceCreationError,
     },
-    geometry::{Affine2, Orthographic2, Rotation2},
+    geometry::{Orthographic2, Point2, Rotation2, Similarity, Translation2},
 };
 
 type ApplicationEvent = ();
@@ -129,7 +129,9 @@ struct ApplicationImpl {
     window: Rc<RefCell<CanvasWindow>>,
     pipeline: geometry2d_pipeline::Pipeline<CanvasWindow>,
     triangle: geometry2d_pipeline::VertexArray,
+    projection_transform: Orthographic2<f32>,
     current_angle: f32,
+    current_position: Point2<f32>,
 }
 
 impl EventHandler<ApplicationError, ApplicationEvent> for ApplicationImpl {
@@ -151,17 +153,26 @@ impl EventHandler<ApplicationError, ApplicationEvent> for ApplicationImpl {
         let triangle = geometry2d_pipeline::VertexArray::from_vertices(
             &instance,
             &[
-                geometry2d_pipeline::Vertex::new(-0.5, 0.5),
-                geometry2d_pipeline::Vertex::new(0.0, -0.5),
-                geometry2d_pipeline::Vertex::new(0.5, 0.5),
+                geometry2d_pipeline::Vertex::new(-50., 50.),
+                geometry2d_pipeline::Vertex::new(0.0, -50.),
+                geometry2d_pipeline::Vertex::new(50., 50.),
             ],
         )?;
+        let window_size = window.borrow().inner_size();
+        let projection_transform =
+            Orthographic2::new(0., window_size.width as f32, 0., window_size.height as f32);
+        let current_position = Point2::new(
+            window_size.width as f32 / 2.,
+            window_size.height as f32 / 2.,
+        );
         Ok(Self {
             instance,
             window,
             pipeline,
             triangle,
+            projection_transform,
             current_angle: 0.,
+            current_position,
         })
     }
 
@@ -183,8 +194,14 @@ impl EventHandler<ApplicationError, ApplicationEvent> for ApplicationImpl {
             self.current_angle = self.current_angle - std::f32::consts::PI * 2.;
         }
 
+        let object_transform =
+            Similarity::<f32, nalgebra::base::dimension::U2, Rotation2<f32>>::from_parts(
+                Translation2::new(self.current_position.x, self.current_position.y),
+                Rotation2::new(self.current_angle),
+                1.,
+            );
         let push_constant = geometry2d_pipeline::PushConstant::new(
-            Rotation2::new(self.current_angle).to_homogeneous(),
+            self.projection_transform.to_homogeneous() * object_transform.to_homogeneous(),
             [1., 1., 1., 1.],
         );
         self.window.borrow_mut().begin_frame()?;

@@ -36,4 +36,8 @@ impl<N: nalgebra::RealField> Orthographic2<N> {
         self.matrix[(1, 1)] = nalgebra::convert::<_, N>(2.0) / (top - bottom);
         self.matrix[(1, 2)] = -(top + bottom) / (top - bottom);
     }
+
+    pub fn to_homogeneous(&self) -> Matrix3<N> {
+        self.matrix
+    }
 }
