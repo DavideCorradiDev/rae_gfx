@@ -179,8 +179,12 @@ impl EventHandler<ApplicationError, ApplicationEvent> for ApplicationImpl {
         //     color: [0., 1., 1., 1.],
         // };
         let push_constant = geometry2d_pipeline::PushConstant {
-            transform: Transform2::identity(),
-            color: [0., 1., 1., 1.],
+            // transform: Transform2::identity(),
+            // transform: [1., 0., 0., 0., 1., 0., 0., 0., 1.],
+            transform: [
+                1., 0., 0., 0., 0., 1., 0., 0., 0., 0., 1., 0., 0., 0., 0., 1.,
+            ],
+            color: [1., 1., 1., 1.],
         };
         self.window.borrow_mut().begin_frame()?;
         self.pipeline.render(&[(&push_constant, &self.triangle)])?;

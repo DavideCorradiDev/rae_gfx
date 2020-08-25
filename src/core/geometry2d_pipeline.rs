@@ -67,7 +67,7 @@ impl pipeline::VertexArray for VertexArray {
 #[repr(packed)]
 #[derive(Debug, PartialEq, Clone, Copy)]
 pub struct PushConstant {
-    pub transform: Transform2<f32>,
+    pub transform: [f32; 16],
     pub color: [f32; 4],
 }
 
