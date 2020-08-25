@@ -1,14 +1,17 @@
 extern crate nalgebra;
 extern crate rae_app;
+extern crate rand;
 
 use std::{cell::RefCell, rc::Rc};
 
 use rae_app::{
     application::Application,
-    event::{ControlFlow, EventHandler, EventLoop},
+    event::{mouse, ControlFlow, DeviceId, EventHandler, EventLoop},
     window,
     window::WindowId,
 };
+
+use rand::Rng;
 
 use rae_gfx::{
     core::{
@@ -130,8 +133,9 @@ struct ApplicationImpl {
     pipeline: geometry2d_pipeline::Pipeline<CanvasWindow>,
     triangle: geometry2d_pipeline::VertexArray,
     projection_transform: Orthographic2<f32>,
-    current_angle: f32,
     current_position: Point2<f32>,
+    current_angle: f32,
+    current_scaling: f32,
 }
 
 impl EventHandler<ApplicationError, ApplicationEvent> for ApplicationImpl {
@@ -171,8 +175,9 @@ impl EventHandler<ApplicationError, ApplicationEvent> for ApplicationImpl {
             pipeline,
             triangle,
             projection_transform,
-            current_angle: 0.,
             current_position,
+            current_angle: 0.,
+            current_scaling: 1.,
         })
     }
 
@@ -183,6 +188,34 @@ impl EventHandler<ApplicationError, ApplicationEvent> for ApplicationImpl {
     ) -> Result<ControlFlow, Self::Error> {
         if wid == self.window.borrow().id() {
             self.window.borrow_mut().resize_canvas_if_necessary()?;
+        }
+        Ok(ControlFlow::Continue)
+    }
+
+    fn on_cursor_moved(
+        &mut self,
+        wid: WindowId,
+        _device_id: DeviceId,
+        position: window::PhysicalPosition<f64>,
+    ) -> Result<ControlFlow, Self::Error> {
+        if wid == self.window.borrow().id() {
+            self.current_position.x = position.x as f32;
+            self.current_position.y = position.y as f32;
+        }
+        Ok(ControlFlow::Continue)
+    }
+
+    fn on_mouse_button_released(
+        &mut self,
+        wid: WindowId,
+        _device_id: DeviceId,
+        button: mouse::Button,
+    ) -> Result<ControlFlow, Self::Error> {
+        if wid == self.window.borrow().id() {
+            if button == mouse::Button::Left {
+                let mut rng = rand::thread_rng();
+                self.current_scaling = rng.gen_range(0.25, 4.);
+            }
         }
         Ok(ControlFlow::Continue)
     }
@@ -198,7 +231,7 @@ impl EventHandler<ApplicationError, ApplicationEvent> for ApplicationImpl {
             Similarity::<f32, nalgebra::base::dimension::U2, Rotation2<f32>>::from_parts(
                 Translation2::new(self.current_position.x, self.current_position.y),
                 Rotation2::new(self.current_angle),
-                1.,
+                self.current_scaling,
             );
         let push_constant = geometry2d_pipeline::PushConstant::new(
             self.projection_transform.to_homogeneous() * object_transform.to_homogeneous(),
