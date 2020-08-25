@@ -10,14 +10,15 @@ use rae_app::{
     window::WindowId,
 };
 
-use nalgebra::{base::Matrix3, geometry::Point2};
-
-use rae_gfx::core::{
-    geometry2d_pipeline,
-    pipeline::{PipelineCreationError, RenderingError},
-    BeginFrameError, BufferCreationError, Canvas, CanvasWindow, CanvasWindowBuilder,
-    CanvasWindowCreationError, CanvasWindowOperationError, EndFrameError, Instance,
-    InstanceCreationError,
+use rae_gfx::{
+    core::{
+        geometry2d_pipeline,
+        pipeline::{PipelineCreationError, RenderingError},
+        BeginFrameError, BufferCreationError, Canvas, CanvasWindow, CanvasWindowBuilder,
+        CanvasWindowCreationError, CanvasWindowOperationError, EndFrameError, Instance,
+        InstanceCreationError,
+    },
+    geometry::{Affine2, Orthographic2, Rotation2},
 };
 
 type ApplicationEvent = ();
@@ -183,7 +184,7 @@ impl EventHandler<ApplicationError, ApplicationEvent> for ApplicationImpl {
         }
 
         let push_constant = geometry2d_pipeline::PushConstant::new(
-            Matrix3::new_rotation(self.current_angle),
+            Rotation2::new(self.current_angle).to_homogeneous(),
             [1., 1., 1., 1.],
         );
         self.window.borrow_mut().begin_frame()?;
