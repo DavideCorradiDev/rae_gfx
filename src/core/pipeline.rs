@@ -410,7 +410,6 @@ mod test {
             Pipeline::<CanvasWindow, TestPipelineConfig, _, _>::create(&instance, canvas).unwrap();
     }
 
-    #[cfg(not(feature = "dx12"))]
     #[test]
     fn render() {
         let instance = Instance::create().unwrap();

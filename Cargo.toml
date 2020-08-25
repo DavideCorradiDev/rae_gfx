@@ -7,7 +7,6 @@ edition = "2018"
 [features]
 default = ["gfx-backend-vulkan", "gfx-backend-metal"]
 empty = ["gfx-backend-empty"]
-dx12 = ["gfx-backend-dx12"]
 gl = ["gfx-backend-gl"]
 metal = ["gfx-backend-metal"]
 vulkan = ["gfx-backend-vulkan"]
@@ -18,9 +17,6 @@ raw-window-handle = "0.3.3"
 nalgebra = "0.21"
 gfx-hal = "0.5"
 gfx-backend-empty = { version = "0.5", optional = true }
-
-[target.'cfg(target_os = "windows")'.dependencies]
-gfx-backend-dx12 = { version = "0.5", optional = true }
 
 [target.'cfg(target_os = "linux")'.dependencies]
 gfx-backend-gl = { version = "0.5", optional = true, features = ["glutin"] }

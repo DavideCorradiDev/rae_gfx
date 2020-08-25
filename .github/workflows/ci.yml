@@ -29,7 +29,6 @@ jobs:
           - {os: ubuntu-latest, options: "--features empty", run_tests: false, gen_doc: true}
           - {os: ubuntu-latest, options: "--features gl", run_tests: false, gen_doc: false}
           - {os: ubuntu-latest, options: "--features vulkan", run_tests: false, gen_doc: false}
-          - {os: windows-latest, options: "--features dx12", test_options: "--test-threads=1", run_tests: true, gen_doc: false}
           - {os: windows-latest, options: "--features vulkan", run_tests: false, gen_doc: false}
           - {os: macos-latest, options: "--features metal", run_tests: false, gen_doc: false}
 
