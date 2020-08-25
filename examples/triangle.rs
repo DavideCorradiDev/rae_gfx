@@ -203,10 +203,12 @@ impl EventHandler<ApplicationError, ApplicationEvent> for ApplicationImpl {
     fn on_resized(
         &mut self,
         wid: WindowId,
-        _size: window::PhysicalSize<u32>,
+        size: window::PhysicalSize<u32>,
     ) -> Result<ControlFlow, Self::Error> {
         if wid == self.window.borrow().id() {
             self.window.borrow_mut().resize_canvas_if_necessary()?;
+            self.projection_transform =
+                Orthographic2::new(0., size.width as f32, 0., size.height as f32);
         }
         Ok(ControlFlow::Continue)
     }
