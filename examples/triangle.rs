@@ -174,13 +174,7 @@ impl EventHandler<ApplicationError, ApplicationEvent> for ApplicationImpl {
     }
 
     fn on_variable_update(&mut self, _: std::time::Duration) -> Result<ControlFlow, Self::Error> {
-        // let push_constant = geometry2d_pipeline::PushConstant {
-        //     transform: Transform2::from_matrix_unchecked(Rotation2::new(1.).to_homogeneous()),
-        //     color: [0., 1., 1., 1.],
-        // };
         let push_constant = geometry2d_pipeline::PushConstant {
-            // transform: Transform2::identity(),
-            // transform: [1., 0., 0., 0., 1., 0., 0., 0., 1.],
             transform: [
                 1., 0., 0., 0., 0., 1., 0., 0., 0., 0., 1., 0., 0., 0., 0., 1.,
             ],

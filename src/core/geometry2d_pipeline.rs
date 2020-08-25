@@ -96,7 +96,10 @@ impl pipeline::PipelineConfig<VertexArray, PushConstant> for PipelineConfig {
     fn push_constant_layout_bindings() -> Vec<pipeline::PushConstantLayoutBinding> {
         vec![pipeline::PushConstantLayoutBinding {
             stages: pipeline::ShaderStageFlags::VERTEX,
-            range: 0..std::mem::size_of::<PushConstant>() as u32,
+            range: core::ops::Range {
+                start: 0,
+                end: std::mem::size_of::<PushConstant>() as u32,
+            },
         }]
     }
 
