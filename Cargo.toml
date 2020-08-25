@@ -16,6 +16,7 @@ vulkan = ["gfx-backend-vulkan"]
 [dependencies]
 rae_app = { git = "https://github.com/DavideCorradiDev/rae_app.git", tag = "v0.1.0" }
 raw-window-handle = "0.3.3"
+nalgebra = "0.21"
 gfx-hal = "0.5"
 gfx-backend-empty = { version = "0.5", optional = true }
 

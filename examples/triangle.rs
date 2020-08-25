@@ -1,3 +1,4 @@
+extern crate nalgebra;
 extern crate rae_app;
 
 use std::{cell::RefCell, rc::Rc};
@@ -8,6 +9,8 @@ use rae_app::{
     window,
     window::WindowId,
 };
+
+use nalgebra::geometry::{Rotation2, Transform2};
 
 use rae_gfx::core::{
     geometry2d_pipeline,
@@ -146,9 +149,9 @@ impl EventHandler<ApplicationError, ApplicationEvent> for ApplicationImpl {
         let triangle = geometry2d_pipeline::VertexArray::from_vertices(
             &instance,
             &[
-                geometry2d_pipeline::Vertex { pos: [-0.5, 0.5] },
-                geometry2d_pipeline::Vertex { pos: [0., -0.5] },
-                geometry2d_pipeline::Vertex { pos: [0.5, 0.5] },
+                geometry2d_pipeline::Vertex::new(-0.5, 0.5),
+                geometry2d_pipeline::Vertex::new(0.0, -0.5),
+                geometry2d_pipeline::Vertex::new(0.5, 0.5),
             ],
         )?;
         Ok(Self {
@@ -171,10 +174,12 @@ impl EventHandler<ApplicationError, ApplicationEvent> for ApplicationImpl {
     }
 
     fn on_variable_update(&mut self, _: std::time::Duration) -> Result<ControlFlow, Self::Error> {
+        // let push_constant = geometry2d_pipeline::PushConstant {
+        //     transform: Transform2::from_matrix_unchecked(Rotation2::new(1.).to_homogeneous()),
+        //     color: [0., 1., 1., 1.],
+        // };
         let push_constant = geometry2d_pipeline::PushConstant {
-            transform: [
-                1., 0., 0., 0., 0., 1., 0., 0., 0., 0., 1., 0., 0., 0., 0., 1.,
-            ],
+            transform: Transform2::identity(),
             color: [0., 1., 1., 1.],
         };
         self.window.borrow_mut().begin_frame()?;

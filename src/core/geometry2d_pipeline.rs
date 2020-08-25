@@ -1,8 +1,10 @@
 extern crate gfx_hal as hal;
+extern crate nalgebra;
 
 use std::ops::Deref;
 
 use hal::command::CommandBuffer as HalCommandBuffer;
+use nalgebra::geometry::{Point2, Transform2};
 
 use super::{pipeline, BufferCreationError, Format, ImmutableBuffer, Instance, VertexCount};
 use crate::halw;
@@ -10,7 +12,15 @@ use crate::halw;
 #[repr(packed)]
 #[derive(Debug, PartialEq, Clone, Copy)]
 pub struct Vertex {
-    pub pos: [f32; 2],
+    pub pos: Point2<f32>,
+}
+
+impl Vertex {
+    pub fn new(x: f32, y: f32) -> Self {
+        Self {
+            pos: Point2::from([x, y]),
+        }
+    }
 }
 
 #[derive(Debug)]
@@ -57,7 +67,7 @@ impl pipeline::VertexArray for VertexArray {
 #[repr(packed)]
 #[derive(Debug, PartialEq, Clone, Copy)]
 pub struct PushConstant {
-    pub transform: [f32; 16],
+    pub transform: Transform2<f32>,
     pub color: [f32; 4],
 }
 
