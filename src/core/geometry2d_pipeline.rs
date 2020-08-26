@@ -2,7 +2,11 @@ extern crate gfx_hal as hal;
 
 use std::ops::Deref;
 
-use rae_math::{geometry2, geometry3};
+use rae_math::{
+    conversion::ToHomogeneous3,
+    geometry2::{Point, Transform},
+    geometry3,
+};
 
 use hal::command::CommandBuffer as HalCommandBuffer;
 
@@ -11,13 +15,13 @@ use crate::halw;
 
 #[derive(Debug, PartialEq, Clone, Copy)]
 pub struct Vertex {
-    pub pos: geometry2::Point<f32>,
+    pub pos: Point<f32>,
 }
 
 impl Vertex {
     pub fn new(x: f32, y: f32) -> Self {
         Self {
-            pos: geometry2::Point::from([x, y]),
+            pos: Point::from([x, y]),
         }
     }
 }
@@ -70,21 +74,15 @@ pub struct PushConstant {
 }
 
 impl PushConstant {
-    pub fn new(transform: geometry2::HomogeneousMatrix<f32>, color: [f32; 4]) -> Self {
-        let mut push_constant = Self {
-            transform: geometry3::HomogeneousMatrix::<f32>::identity(),
+    pub fn new(transform: Transform<f32>, color: [f32; 4]) -> Self {
+        Self {
+            transform: transform.to_homogeneous3(),
             color,
-        };
-        push_constant.set_transform(transform);
-        push_constant
+        }
     }
 
-    pub fn set_transform(&mut self, value: geometry2::HomogeneousMatrix<f32>) {
-        for row in [0, 1].iter() {
-            self.transform[(*row, 0)] = value[(*row, 0)];
-            self.transform[(*row, 1)] = value[(*row, 1)];
-            self.transform[(*row, 3)] = value[(*row, 2)];
-        }
+    pub fn set_transform(&mut self, value: Transform<f32>) {
+        self.transform = value.to_homogeneous3();
     }
 
     pub fn set_color(&mut self, value: [f32; 4]) {

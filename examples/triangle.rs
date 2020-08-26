@@ -12,7 +12,10 @@ use rae_app::{
     window::WindowId,
 };
 
-use rae_math::geometry2::{OrthographicProjection, Point, Similarity, Translation, UnitComplex};
+use rae_math::{
+    conversion::convert,
+    geometry2::{OrthographicProjection, Point, Projective, Similarity, Translation, UnitComplex},
+};
 
 use rae_gfx::core::{
     geometry2d_pipeline,
@@ -130,7 +133,7 @@ struct ApplicationImpl {
     window: Rc<RefCell<CanvasWindow>>,
     pipeline: geometry2d_pipeline::Pipeline<CanvasWindow>,
     triangle: geometry2d_pipeline::VertexArray,
-    projection_transform: OrthographicProjection<f32>,
+    projection_transform: Projective<f32>,
     current_position: Point<f32>,
     current_angle: f32,
     current_scaling: f32,
@@ -146,7 +149,7 @@ impl ApplicationImpl {
             self.current_scaling,
         );
         geometry2d_pipeline::PushConstant::new(
-            self.projection_transform.to_homogeneous() * object_transform.to_homogeneous(),
+            convert(self.projection_transform * object_transform),
             self.current_color,
         )
     }
@@ -183,7 +186,8 @@ impl EventHandler<ApplicationError, ApplicationEvent> for ApplicationImpl {
             window_size.width as f32,
             0.,
             window_size.height as f32,
-        );
+        )
+        .to_projective();
         let current_position = Point::new(
             window_size.width as f32 / 2.,
             window_size.height as f32 / 2.,
@@ -210,7 +214,8 @@ impl EventHandler<ApplicationError, ApplicationEvent> for ApplicationImpl {
         if wid == self.window.borrow().id() {
             self.window.borrow_mut().resize_canvas_if_necessary()?;
             self.projection_transform =
-                OrthographicProjection::new(0., size.width as f32, 0., size.height as f32);
+                OrthographicProjection::new(0., size.width as f32, 0., size.height as f32)
+                    .to_projective();
         }
         Ok(ControlFlow::Continue)
     }
