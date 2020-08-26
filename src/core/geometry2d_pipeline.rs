@@ -1,26 +1,23 @@
 extern crate gfx_hal as hal;
-extern crate nalgebra;
 
 use std::ops::Deref;
 
+use rae_math::{geometry2, geometry3};
+
 use hal::command::CommandBuffer as HalCommandBuffer;
-use nalgebra::{
-    base::{Matrix3, Matrix4},
-    geometry::Point2,
-};
 
 use super::{pipeline, BufferCreationError, Format, ImmutableBuffer, Instance, VertexCount};
 use crate::halw;
 
 #[derive(Debug, PartialEq, Clone, Copy)]
 pub struct Vertex {
-    pub pos: Point2<f32>,
+    pub pos: geometry2::Point<f32>,
 }
 
 impl Vertex {
     pub fn new(x: f32, y: f32) -> Self {
         Self {
-            pos: Point2::from([x, y]),
+            pos: geometry2::Point::from([x, y]),
         }
     }
 }
@@ -68,21 +65,21 @@ impl pipeline::VertexArray for VertexArray {
 
 #[derive(Debug, PartialEq, Clone, Copy)]
 pub struct PushConstant {
-    transform: Matrix4<f32>,
+    transform: geometry3::HomogeneousMatrix<f32>,
     color: [f32; 4],
 }
 
 impl PushConstant {
-    pub fn new(transform: Matrix3<f32>, color: [f32; 4]) -> Self {
+    pub fn new(transform: geometry2::HomogeneousMatrix<f32>, color: [f32; 4]) -> Self {
         let mut push_constant = Self {
-            transform: Matrix4::<f32>::identity(),
+            transform: geometry3::HomogeneousMatrix::<f32>::identity(),
             color,
         };
         push_constant.set_transform(transform);
         push_constant
     }
 
-    pub fn set_transform(&mut self, value: Matrix3<f32>) {
+    pub fn set_transform(&mut self, value: geometry2::HomogeneousMatrix<f32>) {
         for row in [0, 1].iter() {
             self.transform[(*row, 0)] = value[(*row, 0)];
             self.transform[(*row, 1)] = value[(*row, 1)];

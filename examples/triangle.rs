@@ -1,8 +1,9 @@
-extern crate nalgebra;
 extern crate rae_app;
 extern crate rand;
 
 use std::{cell::RefCell, rc::Rc};
+
+use rand::Rng;
 
 use rae_app::{
     application::Application,
@@ -11,17 +12,14 @@ use rae_app::{
     window::WindowId,
 };
 
-use rand::Rng;
+use rae_math::geometry2::{OrthographicProjection, Point, Similarity, Translation, UnitComplex};
 
-use rae_gfx::{
-    core::{
-        geometry2d_pipeline,
-        pipeline::{PipelineCreationError, RenderingError},
-        BeginFrameError, BufferCreationError, Canvas, CanvasWindow, CanvasWindowBuilder,
-        CanvasWindowCreationError, CanvasWindowOperationError, EndFrameError, Instance,
-        InstanceCreationError,
-    },
-    geometry::{Orthographic2, Point2, Rotation2, Similarity, Translation2},
+use rae_gfx::core::{
+    geometry2d_pipeline,
+    pipeline::{PipelineCreationError, RenderingError},
+    BeginFrameError, BufferCreationError, Canvas, CanvasWindow, CanvasWindowBuilder,
+    CanvasWindowCreationError, CanvasWindowOperationError, EndFrameError, Instance,
+    InstanceCreationError,
 };
 
 type ApplicationEvent = ();
@@ -132,8 +130,8 @@ struct ApplicationImpl {
     window: Rc<RefCell<CanvasWindow>>,
     pipeline: geometry2d_pipeline::Pipeline<CanvasWindow>,
     triangle: geometry2d_pipeline::VertexArray,
-    projection_transform: Orthographic2<f32>,
-    current_position: Point2<f32>,
+    projection_transform: OrthographicProjection<f32>,
+    current_position: Point<f32>,
     current_angle: f32,
     current_scaling: f32,
     current_color: [f32; 4],
@@ -142,12 +140,11 @@ struct ApplicationImpl {
 
 impl ApplicationImpl {
     pub fn generate_push_constant(&self) -> geometry2d_pipeline::PushConstant {
-        let object_transform =
-            Similarity::<f32, nalgebra::base::dimension::U2, Rotation2<f32>>::from_parts(
-                Translation2::new(self.current_position.x, self.current_position.y),
-                Rotation2::new(self.current_angle),
-                self.current_scaling,
-            );
+        let object_transform = Similarity::<f32>::from_parts(
+            Translation::new(self.current_position.x, self.current_position.y),
+            UnitComplex::new(self.current_angle),
+            self.current_scaling,
+        );
         geometry2d_pipeline::PushConstant::new(
             self.projection_transform.to_homogeneous() * object_transform.to_homogeneous(),
             self.current_color,
@@ -181,9 +178,13 @@ impl EventHandler<ApplicationError, ApplicationEvent> for ApplicationImpl {
             ],
         )?;
         let window_size = window.borrow().inner_size();
-        let projection_transform =
-            Orthographic2::new(0., window_size.width as f32, 0., window_size.height as f32);
-        let current_position = Point2::new(
+        let projection_transform = OrthographicProjection::new(
+            0.,
+            window_size.width as f32,
+            0.,
+            window_size.height as f32,
+        );
+        let current_position = Point::new(
             window_size.width as f32 / 2.,
             window_size.height as f32 / 2.,
         );
@@ -209,7 +210,7 @@ impl EventHandler<ApplicationError, ApplicationEvent> for ApplicationImpl {
         if wid == self.window.borrow().id() {
             self.window.borrow_mut().resize_canvas_if_necessary()?;
             self.projection_transform =
-                Orthographic2::new(0., size.width as f32, 0., size.height as f32);
+                OrthographicProjection::new(0., size.width as f32, 0., size.height as f32);
         }
         Ok(ControlFlow::Continue)
     }
