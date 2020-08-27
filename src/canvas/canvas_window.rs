@@ -354,7 +354,7 @@ impl Canvas for CanvasWindow {
     }
 
     fn begin_frame(&mut self) -> Result<(), BeginFrameError> {
-        // Make sure that a fence isn't currently being processed.
+        // Make sure that a frame isn't currently being processed.
         if self.is_processing_frame() {
             return Err(BeginFrameError::AlreadyProcessingFrame);
         }
