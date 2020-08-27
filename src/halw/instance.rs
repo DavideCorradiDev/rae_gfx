@@ -43,3 +43,13 @@ impl Debug for Instance {
         write!(f, "Instance {{}}")
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn creation() {
+        let _instance = Instance::create("Name", 1).unwrap();
+    }
+}

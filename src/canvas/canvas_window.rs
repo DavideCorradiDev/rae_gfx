@@ -681,8 +681,6 @@ impl From<hal::window::CreationError> for CanvasWindowOperationError {
 
 #[cfg(test)]
 mod tests {
-    extern crate galvanic_assert;
-
     use galvanic_assert::{matchers::*, *};
 
     use event::EventLoopAnyThread;

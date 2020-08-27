@@ -289,7 +289,6 @@ impl std::error::Error for RenderingError {
 
 // #[cfg(test)]
 // mod test {
-//     extern crate galvanic_assert;
 //     extern crate rae_app;
 //
 //     use std::ops::Deref;

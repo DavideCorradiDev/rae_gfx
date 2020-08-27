@@ -34,3 +34,14 @@ impl DerefMut for Adapter {
         &mut self.value
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn creation() {
+        let instance = Instance::create("Name", 1).unwrap();
+        let _adapters = Adapter::enumerate(&instance);
+    }
+}

@@ -42,3 +42,24 @@ impl Debug for Gpu {
         write!(f, "Gpu {{ value: {:?} }}", self.value)
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use galvanic_assert::{matchers::*, *};
+
+    use super::*;
+    use crate::halw::Instance;
+
+    #[test]
+    fn creation() {
+        let instance = Instance::create("Name", 1).unwrap();
+        let mut adapters = Adapter::enumerate(&instance);
+        assert_that!(&adapters.len(), not(eq(0)));
+        let adapter = adapters.remove(0);
+        let _gpu = Gpu::open(
+            &adapter,
+            &[(&adapter.queue_families[0], &[1.0])],
+            hal::Features::empty(),
+        );
+    }
+}

@@ -258,8 +258,6 @@ impl From<hal::device::OutOfMemory> for BufferCreationError {
 
 #[cfg(test)]
 mod tests {
-    extern crate galvanic_assert;
-
     use galvanic_assert::{matchers::*, *};
 
     use super::*;
