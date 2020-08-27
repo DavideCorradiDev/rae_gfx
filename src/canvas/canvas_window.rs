@@ -340,6 +340,7 @@ impl Drop for CanvasWindow {
     fn drop(&mut self) {
         self.current_framebuffer = None;
         self.current_image = None;
+        self.surface.unconfigure_swapchain();
     }
 }
 

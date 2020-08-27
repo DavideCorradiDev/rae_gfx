@@ -1,7 +1,10 @@
 extern crate gfx_hal as hal;
 extern crate raw_window_handle;
 
-use hal::{window::Surface as HalSurface, Instance as HalInstance};
+use hal::{
+    window::{PresentationSurface as HalPresentationSurface, Surface as HalSurface},
+    Instance as HalInstance,
+};
 use std::{
     cell::RefCell,
     fmt::{Debug, Formatter},
@@ -49,11 +52,14 @@ impl Surface {
         &mut self,
         config: hal::window::SwapchainConfig,
     ) -> Result<(), hal::window::CreationError> {
-        use hal::window::PresentationSurface;
         unsafe {
             self.value
                 .configure_swapchain(&self.gpu.borrow().device, config)
         }
+    }
+
+    pub fn unconfigure_swapchain(&mut self) {
+        unsafe { self.value.unconfigure_swapchain(&self.gpu.borrow().device) }
     }
 }
 
