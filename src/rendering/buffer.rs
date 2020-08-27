@@ -7,8 +7,7 @@ use hal::{
     device::Device as HalDevice, queue::CommandQueue as HalCommandQueue,
 };
 
-use super::Instance;
-use crate::halw;
+use crate::{core::Instance, halw};
 
 pub type BufferLength = u64;
 pub use hal::{VertexCount, VertexOffset};

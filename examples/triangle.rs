@@ -1,6 +1,3 @@
-extern crate rae_app;
-extern crate rand;
-
 use std::{cell::RefCell, rc::Rc};
 
 use rand::Rng;
@@ -17,12 +14,14 @@ use rae_math::{
     geometry2::{OrthographicProjection, Point, Projective, Similarity, Translation, UnitComplex},
 };
 
-use rae_gfx::core::{
-    geometry2d_pipeline,
-    pipeline::{PipelineCreationError, RenderingError},
-    BeginFrameError, BufferCreationError, Canvas, CanvasWindow, CanvasWindowBuilder,
-    CanvasWindowCreationError, CanvasWindowOperationError, EndFrameError, Instance,
-    InstanceCreationError,
+use rae_gfx::{
+    canvas::{
+        BeginFrameError, Canvas, CanvasWindow, CanvasWindowBuilder, CanvasWindowCreationError,
+        CanvasWindowOperationError, EndFrameError,
+    },
+    core::{Instance, InstanceCreationError},
+    geometry2_rendering,
+    rendering::{BufferCreationError, PipelineCreationError, RenderingError},
 };
 
 type ApplicationEvent = ();
@@ -131,24 +130,24 @@ impl From<RenderingError> for ApplicationError {
 struct ApplicationImpl {
     instance: Instance,
     window: Rc<RefCell<CanvasWindow>>,
-    pipeline: geometry2d_pipeline::Pipeline<CanvasWindow>,
-    triangle: geometry2d_pipeline::VertexArray,
+    pipeline: geometry2_rendering::Pipeline<CanvasWindow>,
+    triangle: geometry2_rendering::VertexArray,
     projection_transform: Projective<f32>,
     current_position: Point<f32>,
     current_angle: f32,
     current_scaling: f32,
     current_color: [f32; 4],
-    saved_triangle_constants: Vec<geometry2d_pipeline::PushConstant>,
+    saved_triangle_constants: Vec<geometry2_rendering::PushConstant>,
 }
 
 impl ApplicationImpl {
-    pub fn generate_push_constant(&self) -> geometry2d_pipeline::PushConstant {
+    pub fn generate_push_constant(&self) -> geometry2_rendering::PushConstant {
         let object_transform = Similarity::<f32>::from_parts(
             Translation::new(self.current_position.x, self.current_position.y),
             UnitComplex::new(self.current_angle),
             self.current_scaling,
         );
-        geometry2d_pipeline::PushConstant::new(
+        geometry2_rendering::PushConstant::new(
             convert(self.projection_transform * object_transform),
             self.current_color,
         )
@@ -171,13 +170,13 @@ impl EventHandler<ApplicationError, ApplicationEvent> for ApplicationImpl {
                 .build(&instance, event_loop)?,
         ));
         window.borrow().set_cursor_visible(false);
-        let pipeline = geometry2d_pipeline::Pipeline::create(&instance, Rc::clone(&window))?;
-        let triangle = geometry2d_pipeline::VertexArray::from_vertices(
+        let pipeline = geometry2_rendering::Pipeline::create(&instance, Rc::clone(&window))?;
+        let triangle = geometry2_rendering::VertexArray::from_vertices(
             &instance,
             &[
-                geometry2d_pipeline::Vertex::new(-50., 50.),
-                geometry2d_pipeline::Vertex::new(0.0, -50.),
-                geometry2d_pipeline::Vertex::new(50., 50.),
+                geometry2_rendering::Vertex::new(-50., 50.),
+                geometry2_rendering::Vertex::new(0.0, -50.),
+                geometry2_rendering::Vertex::new(50., 50.),
             ],
         )?;
         let window_size = window.borrow().inner_size();
