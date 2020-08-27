@@ -8,6 +8,7 @@ pub trait Canvas {
     fn begin_frame(&mut self) -> Result<(), BeginFrameError>;
     fn end_frame(&mut self) -> Result<(), EndFrameError>;
     fn synchronize(&self) -> Result<(), SynchronizeFrameError>;
+    fn synchronize_all_frames(&self) -> Result<(), SynchronizeFrameError>;
     fn render_pass(&self) -> &halw::RenderPass;
     fn current_command_buffer(&self) -> Option<&halw::CommandBuffer>;
     fn current_command_buffer_mut(&mut self) -> Option<&mut halw::CommandBuffer>;

@@ -94,7 +94,7 @@ pub struct CanvasWindow {
 impl Drop for CanvasWindow {
     fn drop(&mut self) {
         println!("*** Dropping CanvasWindow {:?}", self.id());
-        self.synchronize().unwrap();
+        self.synchronize_all_frames().unwrap();
         self.current_framebuffer = None;
         self.current_image = None;
     }
@@ -502,7 +502,9 @@ impl Canvas for CanvasWindow {
         };
 
         // Reset the fence and submit the commands to the queue.
+        println!("++++++ Fence status before reset: {:?}", fence.status());
         fence.reset()?;
+        println!("++++++ Fence status after reset: {:?}", fence.status());
         unsafe {
             let queue = &mut self.gpu.borrow_mut().queue_groups[0].queues[0];
             queue.submit(submission, Some(fence.deref()));
@@ -516,6 +518,14 @@ impl Canvas for CanvasWindow {
         let fence = &self.fences[self.current_frame_idx];
         println!("++++++ Fence status: {:?}", fence.status());
         fence.wait(!0)?;
+        Ok(())
+    }
+
+    fn synchronize_all_frames(&self) -> Result<(), SynchronizeFrameError> {
+        for fence in self.fences.iter() {
+            println!("++++++ Fence status: {:?}", fence.status());
+            fence.wait(!0)?;
+        }
         Ok(())
     }
 
