@@ -2,7 +2,6 @@ extern crate gfx_hal as hal;
 extern crate rae_app;
 
 use std::{
-    borrow::Borrow,
     cell::RefCell,
     ops::{Deref, DerefMut},
     rc::Rc,
@@ -354,6 +353,8 @@ impl Canvas for CanvasWindow {
     }
 
     fn begin_frame(&mut self) -> Result<(), BeginFrameError> {
+        use std::borrow::Borrow;
+
         // Make sure that a frame isn't currently being processed.
         if self.is_processing_frame() {
             return Err(BeginFrameError::AlreadyProcessingFrame);
