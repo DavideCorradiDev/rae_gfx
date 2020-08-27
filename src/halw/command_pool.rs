@@ -36,6 +36,7 @@ impl CommandPool {
 
 impl Drop for CommandPool {
     fn drop(&mut self) {
+        self.gpu.borrow().wait_idle().unwrap();
         unsafe {
             self.gpu
                 .borrow()

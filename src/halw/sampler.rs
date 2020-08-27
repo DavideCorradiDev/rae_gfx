@@ -31,6 +31,7 @@ impl Sampler {
 
 impl Drop for Sampler {
     fn drop(&mut self) {
+        self.gpu.borrow().wait_idle().unwrap();
         unsafe {
             self.gpu
                 .borrow()

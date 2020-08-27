@@ -1,6 +1,6 @@
 extern crate gfx_hal as hal;
 
-use hal::adapter::PhysicalDevice as HalPhysicalDevice;
+use hal::{adapter::PhysicalDevice as HalPhysicalDevice, device::Device};
 
 use std::{
     cell::RefCell,
@@ -32,6 +32,10 @@ impl Gpu {
             value: gpu,
             adapter,
         })
+    }
+
+    pub fn wait_idle(&self) -> Result<(), hal::device::OutOfMemory> {
+        self.value.device.wait_idle()
     }
 }
 

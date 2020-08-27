@@ -37,6 +37,7 @@ impl ShaderModule {
 
 impl Drop for ShaderModule {
     fn drop(&mut self) {
+        self.gpu.borrow().wait_idle().unwrap();
         unsafe {
             self.gpu
                 .borrow()

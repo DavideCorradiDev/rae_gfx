@@ -41,6 +41,7 @@ impl Framebuffer {
 
 impl Drop for Framebuffer {
     fn drop(&mut self) {
+        self.gpu.borrow().wait_idle().unwrap();
         unsafe {
             self.gpu
                 .borrow()

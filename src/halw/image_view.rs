@@ -39,6 +39,7 @@ impl ImageView {
 
 impl Drop for ImageView {
     fn drop(&mut self) {
+        self.gpu.borrow().wait_idle().unwrap();
         unsafe {
             self.gpu
                 .borrow()
