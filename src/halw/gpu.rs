@@ -1,6 +1,7 @@
 extern crate gfx_hal as hal;
 
 use hal::adapter::PhysicalDevice as HalPhysicalDevice;
+
 use std::{
     fmt::{Debug, Formatter},
     ops::{Deref, DerefMut},

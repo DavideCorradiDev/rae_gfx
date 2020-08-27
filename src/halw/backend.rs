@@ -36,7 +36,6 @@ extern crate gfx_backend_vulkan as hal_backend;
 
 pub use hal_backend::Backend;
 
-pub type Adapter = hal::adapter::Adapter<Backend>;
 pub type PhysicalDevice = <Backend as hal::Backend>::PhysicalDevice;
 pub type Device = <Backend as hal::Backend>::Device;
 pub type QueueGroup = hal::queue::family::QueueGroup<Backend>;

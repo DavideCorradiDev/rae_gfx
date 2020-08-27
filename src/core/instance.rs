@@ -6,7 +6,7 @@ use std::{
     rc::Rc,
 };
 
-use hal::{queue::QueueFamily as HalQueueFamily, Instance as HalInstance};
+use hal::queue::QueueFamily as HalQueueFamily;
 
 use crate::halw;
 
@@ -73,13 +73,13 @@ impl Instance {
     }
 
     #[cfg(not(feature = "empty"))]
-    fn adapter_selection_criteria(adapter: &hal::adapter::Adapter<halw::Backend>) -> bool {
+    fn adapter_selection_criteria(adapter: &halw::Adapter) -> bool {
         adapter.info.device_type == hal::adapter::DeviceType::DiscreteGpu
             || adapter.info.device_type == hal::adapter::DeviceType::IntegratedGpu
     }
 
     fn select_adapter(instance: &halw::Instance) -> Result<halw::Adapter, InstanceCreationError> {
-        let mut adapters = instance.enumerate_adapters();
+        let mut adapters = halw::Adapter::enumerate(instance);
         adapters.retain(Self::adapter_selection_criteria);
         if adapters.is_empty() {
             return Err(InstanceCreationError::NoSuitableAdapter);
