@@ -3,24 +3,35 @@ extern crate gfx_hal as hal;
 use hal::adapter::PhysicalDevice as HalPhysicalDevice;
 
 use std::{
+    cell::RefCell,
     fmt::{Debug, Formatter},
     ops::{Deref, DerefMut},
+    rc::Rc,
 };
 
 use super::{Adapter, Backend, QueueFamily};
 
 pub struct Gpu {
     value: hal::adapter::Gpu<Backend>,
+    adapter: Rc<RefCell<Adapter>>,
 }
 
 impl Gpu {
     pub fn open(
-        adapter: &Adapter,
+        adapter: Rc<RefCell<Adapter>>,
         families: &[(&QueueFamily, &[hal::queue::QueuePriority])],
         requested_features: hal::Features,
     ) -> Result<Self, hal::device::CreationError> {
-        let gpu = unsafe { adapter.physical_device.open(families, requested_features) }?;
-        Ok(Self { value: gpu })
+        let gpu = unsafe {
+            adapter
+                .borrow()
+                .physical_device
+                .open(families, requested_features)
+        }?;
+        Ok(Self {
+            value: gpu,
+            adapter,
+        })
     }
 }
 
@@ -52,13 +63,14 @@ mod tests {
 
     #[test]
     fn creation() {
-        let instance = Instance::create("Name", 1).unwrap();
-        let mut adapters = Adapter::enumerate(&instance);
+        let instance = Rc::new(RefCell::new(Instance::create("Name", 1).unwrap()));
+        let mut adapters = Adapter::enumerate(instance);
         assert_that!(&adapters.len(), not(eq(0)));
-        let adapter = adapters.remove(0);
+        let adapter = Rc::new(RefCell::new(adapters.remove(0)));
+        let queue_family = &adapter.borrow().queue_families[0];
         let _gpu = Gpu::open(
-            &adapter,
-            &[(&adapter.queue_families[0], &[1.0])],
+            Rc::clone(&adapter),
+            &[(queue_family, &[1.0])],
             hal::Features::empty(),
         );
     }

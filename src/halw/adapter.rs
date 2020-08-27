@@ -1,7 +1,11 @@
 extern crate gfx_hal as hal;
 use super::Backend;
 
-use std::ops::{Deref, DerefMut};
+use std::{
+    cell::RefCell,
+    ops::{Deref, DerefMut},
+    rc::Rc,
+};
 
 use hal::Instance as HalInstance;
 
@@ -10,14 +14,19 @@ use super::Instance;
 #[derive(Debug)]
 pub struct Adapter {
     value: hal::adapter::Adapter<Backend>,
+    instance: Rc<RefCell<Instance>>,
 }
 
 impl Adapter {
-    pub fn enumerate(instance: &Instance) -> Vec<Self> {
+    pub fn enumerate(instance: Rc<RefCell<Instance>>) -> Vec<Self> {
         instance
+            .borrow()
             .enumerate_adapters()
             .into_iter()
-            .map(|x| Self { value: x })
+            .map(|x| Self {
+                value: x,
+                instance: Rc::clone(&instance),
+            })
             .collect()
     }
 }
@@ -41,7 +50,7 @@ mod tests {
 
     #[test]
     fn creation() {
-        let instance = Instance::create("Name", 1).unwrap();
-        let _adapters = Adapter::enumerate(&instance);
+        let instance = Rc::new(RefCell::new(Instance::create("Name", 1).unwrap()));
+        let _adapters = Adapter::enumerate(instance);
     }
 }
