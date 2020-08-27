@@ -18,7 +18,7 @@ pub struct Instance {
 
 impl Instance {
     pub fn create() -> Result<Self, InstanceCreationError> {
-        let instance = Rc::new(RefCell::new(halw::Instance::create("Read Ape Engine", 1)?));
+        let instance = Rc::new(RefCell::new(halw::Instance::create("Red Ape Engine", 1)?));
         let adapter = Rc::new(RefCell::new(Self::select_adapter(Rc::clone(&instance))?));
         let gpu = Rc::new(RefCell::new(Self::open_device(Rc::clone(&adapter))?));
         Ok(Self {
