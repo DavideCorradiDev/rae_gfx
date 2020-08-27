@@ -41,6 +41,7 @@ impl Framebuffer {
 
 impl Drop for Framebuffer {
     fn drop(&mut self) {
+        println!("*** Dropping Framebuffer {:?}", self);
         unsafe {
             self.gpu
                 .borrow()

@@ -54,6 +54,12 @@ impl Debug for Gpu {
     }
 }
 
+impl Drop for Gpu {
+    fn drop(&mut self) {
+        println!("*** Dropping Gpu {:?}", self);
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use galvanic_assert::{matchers::*, *};

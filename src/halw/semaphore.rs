@@ -28,6 +28,7 @@ impl Semaphore {
 
 impl Drop for Semaphore {
     fn drop(&mut self) {
+        println!("*** Dropping Semaphore {:?}", self);
         unsafe {
             self.gpu
                 .borrow()

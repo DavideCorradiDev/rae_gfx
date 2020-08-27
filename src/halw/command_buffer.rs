@@ -43,6 +43,7 @@ impl CommandBuffer {
 
 impl Drop for CommandBuffer {
     fn drop(&mut self) {
+        println!("*** Dropping Command Buffer {:?}", self);
         unsafe {
             self.pool
                 .borrow_mut()

@@ -22,6 +22,30 @@ use crate::{
 };
 
 #[derive(Debug)]
+struct WindowWrapper {
+    w: window::Window,
+}
+
+impl Drop for WindowWrapper {
+    fn drop(&mut self) {
+        println!("*** Dropping WindowWrapper {:?}", self);
+    }
+}
+
+impl Deref for WindowWrapper {
+    type Target = window::Window;
+    fn deref(&self) -> &Self::Target {
+        &self.w
+    }
+}
+
+impl DerefMut for WindowWrapper {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        &mut self.w
+    }
+}
+
+#[derive(Debug)]
 pub struct CanvasWindow {
     gpu: Rc<RefCell<halw::Gpu>>,
     surface: halw::Surface,
@@ -34,7 +58,15 @@ pub struct CanvasWindow {
     current_image: Option<halw::SwapchainImage>,
     current_framebuffer: Option<halw::Framebuffer>,
     current_frame_idx: usize,
-    window: window::Window,
+    window: WindowWrapper,
+}
+
+impl Drop for CanvasWindow {
+    fn drop(&mut self) {
+        println!("*** Dropping CanvasWindow {:?}", self.id());
+        self.current_framebuffer = None;
+        self.current_image = None;
+    }
 }
 
 impl CanvasWindow {
@@ -216,7 +248,7 @@ impl CanvasWindow {
         let semaphores = Self::create_semaphores(instance)?;
         let fences = Self::create_fences(instance)?;
         let mut canvas_window = Self {
-            window,
+            window: WindowWrapper { w: window },
             gpu: Rc::clone(&instance.gpu_rc()),
             surface,
             surface_color_format,
