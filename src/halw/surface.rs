@@ -59,7 +59,6 @@ impl Surface {
 
 impl Drop for Surface {
     fn drop(&mut self) {
-        println!("*** Dropping Surface {:?}", self);
         unsafe {
             self.instance
                 .borrow()

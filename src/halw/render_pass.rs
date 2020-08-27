@@ -37,7 +37,6 @@ impl RenderPass {
 
 impl Drop for RenderPass {
     fn drop(&mut self) {
-        println!("*** Dropping RenderPass {:?}", self);
         unsafe {
             self.gpu
                 .borrow()

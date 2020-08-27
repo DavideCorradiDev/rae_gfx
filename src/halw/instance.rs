@@ -44,12 +44,6 @@ impl Debug for Instance {
     }
 }
 
-impl Drop for Instance {
-    fn drop(&mut self) {
-        println!("*** Dropping Instance {:?}", self);
-    }
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;

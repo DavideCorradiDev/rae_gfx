@@ -22,54 +22,6 @@ use crate::{
 };
 
 #[derive(Debug)]
-struct EventLoopWrapper {
-    value: event::EventLoop<()>,
-}
-
-impl Drop for EventLoopWrapper {
-    fn drop(&mut self) {
-        println!("*** Dropping EventLoopWrapper {:?}", self);
-    }
-}
-
-impl Deref for EventLoopWrapper {
-    type Target = event::EventLoop<()>;
-    fn deref(&self) -> &Self::Target {
-        &self.value
-    }
-}
-
-impl DerefMut for EventLoopWrapper {
-    fn deref_mut(&mut self) -> &mut Self::Target {
-        &mut self.value
-    }
-}
-
-#[derive(Debug)]
-struct WindowWrapper {
-    value: window::Window,
-}
-
-impl Drop for WindowWrapper {
-    fn drop(&mut self) {
-        println!("*** Dropping WindowWrapper {:?}", self);
-    }
-}
-
-impl Deref for WindowWrapper {
-    type Target = window::Window;
-    fn deref(&self) -> &Self::Target {
-        &self.value
-    }
-}
-
-impl DerefMut for WindowWrapper {
-    fn deref_mut(&mut self) -> &mut Self::Target {
-        &mut self.value
-    }
-}
-
-#[derive(Debug)]
 pub struct CanvasWindow {
     current_frame_idx: usize,
     current_framebuffer: Option<halw::Framebuffer>,
@@ -88,12 +40,11 @@ pub struct CanvasWindow {
 
     gpu: Rc<RefCell<halw::Gpu>>,
 
-    window: WindowWrapper,
+    window: window::Window,
 }
 
 impl Drop for CanvasWindow {
     fn drop(&mut self) {
-        println!("*** Dropping CanvasWindow {:?}", self.id());
         self.synchronize_all_frames().unwrap();
         self.current_framebuffer = None;
         self.current_image = None;
@@ -279,21 +230,21 @@ impl CanvasWindow {
         let semaphores = Self::create_semaphores(instance)?;
         let fences = Self::create_fences(instance)?;
         let mut canvas_window = Self {
-            window: WindowWrapper { value: window },
-            gpu: Rc::clone(&instance.gpu_rc()),
-            surface,
+            current_frame_idx: 0,
+            current_framebuffer: None,
+            current_image: None,
+            fences,
+            semaphores,
+            cmd_buffers,
+            render_pass,
             surface_color_format,
             surface_extent: hal::window::Extent2D {
                 width: 0,
                 height: 0,
             },
-            render_pass,
-            cmd_buffers,
-            semaphores,
-            fences,
-            current_image: None,
-            current_framebuffer: None,
-            current_frame_idx: 0,
+            surface,
+            gpu: Rc::clone(&instance.gpu_rc()),
+            window,
         };
         canvas_window.configure_swapchain()?;
         Ok(canvas_window)
@@ -502,9 +453,7 @@ impl Canvas for CanvasWindow {
         };
 
         // Reset the fence and submit the commands to the queue.
-        println!("++++++ Fence status before reset: {:?}", fence.status());
         fence.reset()?;
-        println!("++++++ Fence status after reset: {:?}", fence.status());
         unsafe {
             let queue = &mut self.gpu.borrow_mut().queue_groups[0].queues[0];
             queue.submit(submission, Some(fence.deref()));
@@ -516,22 +465,12 @@ impl Canvas for CanvasWindow {
 
     fn synchronize(&self) -> Result<(), SynchronizeFrameError> {
         let fence = &self.fences[self.current_frame_idx];
-        println!(
-            "++++++ Fence {} status: {:?}",
-            self.current_frame_idx,
-            fence.status()
-        );
         fence.wait(!0)?;
         Ok(())
     }
 
     fn synchronize_all_frames(&self) -> Result<(), SynchronizeFrameError> {
         for frame_idx in 0..self.fences.len() {
-            println!(
-                "++++++ Fence {} status: {:?}",
-                frame_idx,
-                self.fences[frame_idx].status()
-            );
             self.fences[frame_idx].wait(!0)?;
         }
         Ok(())
@@ -771,15 +710,13 @@ mod tests {
 
     struct TestFixture {
         pub instance: Instance,
-        pub event_loop: EventLoopWrapper,
+        pub event_loop: event::EventLoop<()>,
     }
 
     impl TestFixture {
         pub fn setup() -> Self {
             let instance = Instance::create().unwrap();
-            let event_loop = EventLoopWrapper {
-                value: event::EventLoop::new_any_thread(),
-            };
+            let event_loop = event::EventLoop::new_any_thread();
             Self {
                 instance,
                 event_loop,
@@ -799,31 +736,25 @@ mod tests {
         }
     }
 
-    // #[test]
-    // fn window_creation() {
-    //     println!("Test start");
-    //     let tf = TestFixture::setup();
-    //     let _window = tf.new_window();
-    //     println!("Test done");
-    // }
+    #[test]
+    fn window_creation() {
+        let tf = TestFixture::setup();
+        let _window = tf.new_window();
+    }
 
-    // #[test]
-    // fn id() {
-    //     println!("Test start");
-    //     let tf = TestFixture::setup();
-    //     let window1 = tf.new_window();
-    //     let window2 = tf.new_window();
-    //     expect_that!(&window1.id(), not(eq(window2.id())));
-    //     println!("Test done");
-    // }
+    #[test]
+    fn id() {
+        let tf = TestFixture::setup();
+        let window1 = tf.new_window();
+        let window2 = tf.new_window();
+        expect_that!(&window1.id(), not(eq(window2.id())));
+    }
 
     #[test]
     fn image_count() {
-        println!("Test start");
         let tf = TestFixture::setup();
         let window = tf.new_window();
         expect_that!(&window.image_count(), eq(3));
-        println!("Test done");
     }
 
     #[test]
@@ -837,35 +768,35 @@ mod tests {
         expect_that!(!window.is_processing_frame());
     }
 
-    // #[test]
-    // fn double_frame_begin_error() {
-    //     let tf = TestFixture::setup();
-    //     let mut window = tf.new_window();
-    //     expect_that!(window.begin_frame().is_ok());
-    //     expect_that!(
-    //         &window.begin_frame(),
-    //         eq(Err(BeginFrameError::AlreadyProcessingFrame))
-    //     );
-    // }
+    #[test]
+    fn double_frame_begin_error() {
+        let tf = TestFixture::setup();
+        let mut window = tf.new_window();
+        expect_that!(window.begin_frame().is_ok());
+        expect_that!(
+            &window.begin_frame(),
+            eq(Err(BeginFrameError::AlreadyProcessingFrame))
+        );
+    }
 
-    // #[test]
-    // fn double_frame_end_error() {
-    // let tf = TestFixture::setup();
-    // let mut window = tf.new_window();
-    // expect_that!(
-    // &window.end_frame(),
-    // eq(Err(EndFrameError::NotProcessingFrame))
-    // );
-    // }
+    #[test]
+    fn double_frame_end_error() {
+        let tf = TestFixture::setup();
+        let mut window = tf.new_window();
+        expect_that!(
+            &window.end_frame(),
+            eq(Err(EndFrameError::NotProcessingFrame))
+        );
+    }
 
-    // #[test]
-    // fn synchronization() {
-    // let tf = TestFixture::setup();
-    // let mut window = tf.new_window();
-    // window.synchronize().unwrap();
-    // window.begin_frame().unwrap();
-    // window.synchronize().unwrap();
-    // window.end_frame().unwrap();
-    // window.synchronize().unwrap();
-    // }
+    #[test]
+    fn synchronization() {
+        let tf = TestFixture::setup();
+        let mut window = tf.new_window();
+        window.synchronize().unwrap();
+        window.begin_frame().unwrap();
+        window.synchronize().unwrap();
+        window.end_frame().unwrap();
+        window.synchronize().unwrap();
+    }
 }

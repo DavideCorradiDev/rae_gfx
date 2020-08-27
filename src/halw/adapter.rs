@@ -44,12 +44,6 @@ impl DerefMut for Adapter {
     }
 }
 
-impl Drop for Adapter {
-    fn drop(&mut self) {
-        println!("*** Dropping Adapter {:?}", self.info.name);
-    }
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;

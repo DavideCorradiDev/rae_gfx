@@ -45,7 +45,6 @@ impl Fence {
 
 impl Drop for Fence {
     fn drop(&mut self) {
-        println!("*** Dropping Fence {:?}", self);
         unsafe {
             self.gpu
                 .borrow()
