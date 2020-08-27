@@ -1,12 +1,21 @@
 extern crate rae_shader;
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
-    let in_dir = std::path::PathBuf::from("src/core/shaders/glsl");
-    let out_dir = std::path::PathBuf::from("src/core/shaders/gen/spirv");
-    println!(
-        "cargo:rerun-if-changed={}/**",
-        in_dir.to_str().unwrap_or("")
-    );
-    rae_shader::compile_shaders_into_spirv(in_dir, out_dir)?;
+    let shader_folders = vec!["src/geometry2_rendering/shaders", "src/rendering/shaders"];
+
+    for shader_folder in shader_folders.iter() {
+        let in_dir: std::path::PathBuf = [shader_folder, "glsl"].iter().collect();
+        println!(
+            "cargo:rerun-if-changed={}/**",
+            in_dir.to_str().unwrap_or("")
+        );
+    }
+
+    for shader_folder in shader_folders.iter() {
+        let in_dir: std::path::PathBuf = [shader_folder, "glsl"].iter().collect();
+        let out_dir: std::path::PathBuf = [shader_folder, "gen", "spirv"].iter().collect();
+        println!("in_dir: {:?}, out_dir: {:?}", in_dir, out_dir);
+        rae_shader::compile_shaders_into_spirv(in_dir, out_dir)?;
+    }
     Ok(())
 }

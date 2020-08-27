@@ -1,26 +1,30 @@
 extern crate gfx_hal as hal;
-extern crate nalgebra;
 
 use std::ops::Deref;
 
-use hal::command::CommandBuffer as HalCommandBuffer;
-use nalgebra::{
-    base::{Matrix3, Matrix4},
-    geometry::Point2,
+use rae_math::{
+    conversion::ToHomogeneous3,
+    geometry2::{Point, Transform},
+    geometry3,
 };
 
-use super::{pipeline, BufferCreationError, Format, ImmutableBuffer, Instance, VertexCount};
-use crate::halw;
+use hal::command::CommandBuffer as HalCommandBuffer;
+
+use crate::{
+    core::{Format, Instance},
+    halw, rendering,
+    rendering::{BufferCreationError, ImmutableBuffer, VertexCount},
+};
 
 #[derive(Debug, PartialEq, Clone, Copy)]
 pub struct Vertex {
-    pub pos: Point2<f32>,
+    pub pos: Point<f32>,
 }
 
 impl Vertex {
     pub fn new(x: f32, y: f32) -> Self {
         Self {
-            pos: Point2::from([x, y]),
+            pos: Point::from([x, y]),
         }
     }
 }
@@ -44,7 +48,7 @@ impl VertexArray {
     }
 }
 
-impl pipeline::VertexArray for VertexArray {
+impl rendering::VertexArray for VertexArray {
     fn stride() -> u32 {
         std::mem::size_of::<Vertex>() as u32
     }
@@ -68,26 +72,20 @@ impl pipeline::VertexArray for VertexArray {
 
 #[derive(Debug, PartialEq, Clone, Copy)]
 pub struct PushConstant {
-    transform: Matrix4<f32>,
+    transform: geometry3::HomogeneousMatrix<f32>,
     color: [f32; 4],
 }
 
 impl PushConstant {
-    pub fn new(transform: Matrix3<f32>, color: [f32; 4]) -> Self {
-        let mut push_constant = Self {
-            transform: Matrix4::<f32>::identity(),
+    pub fn new(transform: Transform<f32>, color: [f32; 4]) -> Self {
+        Self {
+            transform: transform.to_homogeneous3(),
             color,
-        };
-        push_constant.set_transform(transform);
-        push_constant
+        }
     }
 
-    pub fn set_transform(&mut self, value: Matrix3<f32>) {
-        for row in [0, 1].iter() {
-            self.transform[(*row, 0)] = value[(*row, 0)];
-            self.transform[(*row, 1)] = value[(*row, 1)];
-            self.transform[(*row, 3)] = value[(*row, 2)];
-        }
+    pub fn set_transform(&mut self, value: Transform<f32>) {
+        self.transform = value.to_homogeneous3();
     }
 
     pub fn set_color(&mut self, value: [f32; 4]) {
@@ -95,7 +93,7 @@ impl PushConstant {
     }
 }
 
-impl pipeline::PushConstant for PushConstant {
+impl rendering::PushConstant for PushConstant {
     fn bind(&self, pipeline_layout: &halw::PipelineLayout, cmd_buf: &mut halw::CommandBuffer) {
         unsafe {
             let pc: *const PushConstant = self;
@@ -116,10 +114,10 @@ impl pipeline::PushConstant for PushConstant {
 #[derive(Debug, PartialEq, Clone)]
 pub struct PipelineConfig {}
 
-impl pipeline::PipelineConfig<VertexArray, PushConstant> for PipelineConfig {
-    fn push_constant_layout_bindings() -> Vec<pipeline::PushConstantLayoutBinding> {
-        vec![pipeline::PushConstantLayoutBinding {
-            stages: pipeline::ShaderStageFlags::VERTEX,
+impl rendering::PipelineConfig<VertexArray, PushConstant> for PipelineConfig {
+    fn push_constant_layout_bindings() -> Vec<rendering::PushConstantLayoutBinding> {
+        vec![rendering::PushConstantLayoutBinding {
+            stages: rendering::ShaderStageFlags::VERTEX,
             range: core::ops::Range {
                 start: 0,
                 end: std::mem::size_of::<PushConstant>() as u32,
@@ -127,12 +125,12 @@ impl pipeline::PipelineConfig<VertexArray, PushConstant> for PipelineConfig {
         }]
     }
 
-    fn vertex_buffer_descriptions() -> Vec<pipeline::VertexBufferDesc> {
-        vec![pipeline::VertexBufferDesc {
+    fn vertex_buffer_descriptions() -> Vec<rendering::VertexBufferDesc> {
+        vec![rendering::VertexBufferDesc {
             binding: 0,
-            stride: std::mem::size_of::<Vertex>() as pipeline::ElemStride,
-            rate: pipeline::VertexInputRate::Vertex,
-            vertex_attribute_descs: vec![pipeline::VertexAttributeDesc {
+            stride: std::mem::size_of::<Vertex>() as rendering::ElemStride,
+            rate: rendering::VertexInputRate::Vertex,
+            vertex_attribute_descs: vec![rendering::VertexAttributeDesc {
                 location: 0,
                 format: Format::Rg32Sfloat,
                 offset: 0,
@@ -149,4 +147,4 @@ impl pipeline::PipelineConfig<VertexArray, PushConstant> for PipelineConfig {
     }
 }
 
-pub type Pipeline<C> = pipeline::Pipeline<C, PipelineConfig, VertexArray, PushConstant>;
+pub type Pipeline<C> = rendering::Pipeline<C, PipelineConfig, VertexArray, PushConstant>;

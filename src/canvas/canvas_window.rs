@@ -15,12 +15,14 @@ use hal::{
 
 use rae_app::{event, window};
 
-use super::{BeginFrameError, Canvas, EndFrameError, Format, Instance, SynchronizeFrameError};
-use crate::halw;
+use super::{BeginFrameError, Canvas, EndFrameError, SynchronizeFrameError};
+use crate::{
+    core::{Format, Instance},
+    halw,
+};
 
 #[derive(Debug)]
 pub struct CanvasWindow {
-    window: window::Window,
     gpu: Rc<RefCell<halw::Gpu>>,
     surface: halw::Surface,
     surface_color_format: Format,
@@ -32,6 +34,7 @@ pub struct CanvasWindow {
     current_image: Option<halw::SwapchainImage>,
     current_framebuffer: Option<halw::Framebuffer>,
     current_frame_idx: usize,
+    window: window::Window,
 }
 
 impl CanvasWindow {
@@ -718,6 +721,7 @@ mod tests {
     fn window_creation() {
         let tf = TestFixture::setup();
         let _window = tf.new_window();
+        println!("Test done");
     }
 
     #[test]
@@ -726,6 +730,7 @@ mod tests {
         let window1 = tf.new_window();
         let window2 = tf.new_window();
         expect_that!(&window1.id(), not(eq(window2.id())));
+        println!("Test done");
     }
 
     #[test]
@@ -733,6 +738,7 @@ mod tests {
         let tf = TestFixture::setup();
         let window = tf.new_window();
         expect_that!(&window.image_count(), eq(3));
+        println!("Test done");
     }
 
     #[test]
