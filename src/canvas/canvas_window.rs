@@ -47,17 +47,23 @@ impl DerefMut for WindowWrapper {
 
 #[derive(Debug)]
 pub struct CanvasWindow {
-    gpu: Rc<RefCell<halw::Gpu>>,
-    surface: halw::Surface,
+    current_frame_idx: usize,
+    current_framebuffer: Option<halw::Framebuffer>,
+    current_image: Option<halw::SwapchainImage>,
+
+    fences: Vec<halw::Fence>,
+    semaphores: Vec<halw::Semaphore>,
+
+    cmd_buffers: Vec<halw::CommandBuffer>,
+
+    render_pass: halw::RenderPass,
+
     surface_color_format: Format,
     surface_extent: hal::window::Extent2D,
-    render_pass: halw::RenderPass,
-    cmd_buffers: Vec<halw::CommandBuffer>,
-    semaphores: Vec<halw::Semaphore>,
-    fences: Vec<halw::Fence>,
-    current_image: Option<halw::SwapchainImage>,
-    current_framebuffer: Option<halw::Framebuffer>,
-    current_frame_idx: usize,
+    surface: halw::Surface,
+
+    gpu: Rc<RefCell<halw::Gpu>>,
+
     window: WindowWrapper,
 }
 
