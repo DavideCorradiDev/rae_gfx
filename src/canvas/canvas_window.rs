@@ -43,14 +43,6 @@ pub struct CanvasWindow {
     window: window::Window,
 }
 
-impl Drop for CanvasWindow {
-    fn drop(&mut self) {
-        self.synchronize_all_frames().unwrap();
-        self.current_framebuffer = None;
-        self.current_image = None;
-    }
-}
-
 impl CanvasWindow {
     const IMAGE_COUNT: usize = 3;
 
@@ -344,6 +336,14 @@ impl CanvasWindow {
     }
 }
 
+impl Drop for CanvasWindow {
+    fn drop(&mut self) {
+        self.wait_for_all_frames_ready().unwrap();
+        self.current_framebuffer = None;
+        self.current_image = None;
+    }
+}
+
 impl Canvas for CanvasWindow {
     fn image_count(&self) -> usize {
         CanvasWindow::IMAGE_COUNT
@@ -354,13 +354,13 @@ impl Canvas for CanvasWindow {
     }
 
     fn begin_frame(&mut self) -> Result<(), BeginFrameError> {
-        // Make sure that a frame isn't currently being processed.
+        // Make sure that a fence isn't currently being processed.
         if self.is_processing_frame() {
             return Err(BeginFrameError::AlreadyProcessingFrame);
         }
 
         // Make sure the current image isn't still under process in the GPU.
-        self.synchronize()?;
+        self.wait_for_current_frame_ready()?;
 
         // Create framebuffer.
         let (image, _) = unsafe { self.surface.acquire_image(!0) }?;
@@ -463,15 +463,15 @@ impl Canvas for CanvasWindow {
         Ok(())
     }
 
-    fn synchronize(&self) -> Result<(), SynchronizeFrameError> {
+    fn wait_for_current_frame_ready(&self) -> Result<(), SynchronizeFrameError> {
         let fence = &self.fences[self.current_frame_idx];
         fence.wait(!0)?;
         Ok(())
     }
 
-    fn synchronize_all_frames(&self) -> Result<(), SynchronizeFrameError> {
-        for frame_idx in 0..self.fences.len() {
-            self.fences[frame_idx].wait(!0)?;
+    fn wait_for_all_frames_ready(&self) -> Result<(), SynchronizeFrameError> {
+        for fence in self.fences.iter() {
+            fence.wait(!0)?;
         }
         Ok(())
     }
@@ -793,10 +793,10 @@ mod tests {
     fn synchronization() {
         let tf = TestFixture::setup();
         let mut window = tf.new_window();
-        window.synchronize().unwrap();
+        window.wait_for_current_frame_ready().unwrap();
         window.begin_frame().unwrap();
-        window.synchronize().unwrap();
+        window.wait_for_current_frame_ready().unwrap();
         window.end_frame().unwrap();
-        window.synchronize().unwrap();
+        window.wait_for_current_frame_ready().unwrap();
     }
 }

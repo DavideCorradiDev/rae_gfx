@@ -212,9 +212,13 @@ impl EventHandler<ApplicationError, ApplicationEvent> for ApplicationImpl {
     ) -> Result<ControlFlow, Self::Error> {
         if wid == self.window.borrow().id() {
             self.window.borrow_mut().resize_canvas_if_necessary()?;
-            self.projection_transform =
-                OrthographicProjection::new(0., size.width as f32, 0., size.height as f32)
-                    .to_projective();
+            self.projection_transform = OrthographicProjection::new(
+                0.,
+                1f32.max(size.width as f32),
+                0.,
+                1f32.max(size.height as f32),
+            )
+            .to_projective();
         }
         Ok(ControlFlow::Continue)
     }
