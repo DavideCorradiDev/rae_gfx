@@ -516,15 +516,23 @@ impl Canvas for CanvasWindow {
 
     fn synchronize(&self) -> Result<(), SynchronizeFrameError> {
         let fence = &self.fences[self.current_frame_idx];
-        println!("++++++ Fence status: {:?}", fence.status());
+        println!(
+            "++++++ Fence {} status: {:?}",
+            self.current_frame_idx,
+            fence.status()
+        );
         fence.wait(!0)?;
         Ok(())
     }
 
     fn synchronize_all_frames(&self) -> Result<(), SynchronizeFrameError> {
-        for fence in self.fences.iter() {
-            println!("++++++ Fence status: {:?}", fence.status());
-            fence.wait(!0)?;
+        for frame_idx in 0..self.fences.len() {
+            println!(
+                "++++++ Fence {} status: {:?}",
+                frame_idx,
+                self.fences[frame_idx].status()
+            );
+            self.fences[frame_idx].wait(!0)?;
         }
         Ok(())
     }
