@@ -338,7 +338,6 @@ impl CanvasWindow {
 
 impl Drop for CanvasWindow {
     fn drop(&mut self) {
-        self.wait_for_all_frames_ready().unwrap();
         self.current_framebuffer = None;
         self.current_image = None;
     }

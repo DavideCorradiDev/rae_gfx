@@ -5,7 +5,7 @@ use std::{
     rc::Rc,
 };
 
-use hal::queue::QueueFamily as HalQueueFamily;
+use hal::{device::Device as HalDevice, queue::QueueFamily as HalQueueFamily};
 
 use crate::halw;
 
@@ -26,6 +26,11 @@ impl Instance {
             adapter,
             instance,
         })
+    }
+
+    pub fn wait_idle(&self) -> Result<(), InstanceWaitIdleError> {
+        self.gpu.borrow().device.wait_idle()?;
+        Ok(())
     }
 
     pub fn instance(&self) -> Ref<halw::Instance> {
@@ -169,6 +174,33 @@ impl From<hal::window::InitError> for InstanceCreationError {
 impl From<hal::device::CreationError> for InstanceCreationError {
     fn from(_: hal::device::CreationError) -> Self {
         InstanceCreationError::DeviceCreationFailed
+    }
+}
+
+#[derive(Debug)]
+pub enum InstanceWaitIdleError {
+    OutOfMemory(hal::device::OutOfMemory),
+}
+
+impl std::fmt::Display for InstanceWaitIdleError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            InstanceWaitIdleError::OutOfMemory(e) => write!(f, "Out of memory ({})", e),
+        }
+    }
+}
+
+impl std::error::Error for InstanceWaitIdleError {
+    fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
+        match self {
+            InstanceWaitIdleError::OutOfMemory(e) => Some(e),
+        }
+    }
+}
+
+impl From<hal::device::OutOfMemory> for InstanceWaitIdleError {
+    fn from(e: hal::device::OutOfMemory) -> Self {
+        InstanceWaitIdleError::OutOfMemory(e)
     }
 }
 
