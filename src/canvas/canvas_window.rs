@@ -94,7 +94,7 @@ pub struct CanvasWindow {
 impl Drop for CanvasWindow {
     fn drop(&mut self) {
         println!("*** Dropping CanvasWindow {:?}", self.id());
-        // self.synchronize().unwrap();
+        self.synchronize().unwrap();
         self.current_framebuffer = None;
         self.current_image = None;
     }
@@ -514,6 +514,7 @@ impl Canvas for CanvasWindow {
 
     fn synchronize(&self) -> Result<(), SynchronizeFrameError> {
         let fence = &self.fences[self.current_frame_idx];
+        println!("++++++ Fence status: {:?}", fence.status());
         fence.wait(!0)?;
         Ok(())
     }
