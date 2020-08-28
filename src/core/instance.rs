@@ -70,7 +70,7 @@ impl Instance {
     }
 
     #[cfg(feature = "empty")]
-    fn adapter_selection_criteria(_adapter: &hal::adapter::Adapter<halw::Backend>) -> bool {
+    fn adapter_selection_criteria(_: &halw::Adapter) -> bool {
         true
     }
 
