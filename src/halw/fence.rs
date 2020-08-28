@@ -37,6 +37,10 @@ impl Fence {
     pub fn reset(&self) -> Result<(), hal::device::OutOfMemory> {
         unsafe { self.gpu.borrow().device.reset_fence(&self.value) }
     }
+
+    pub fn status(&self) -> Result<bool, hal::device::DeviceLost> {
+        unsafe { self.gpu.borrow().device.get_fence_status(&self.value) }
+    }
 }
 
 impl Drop for Fence {

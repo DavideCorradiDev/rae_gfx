@@ -2,7 +2,6 @@ extern crate gfx_hal as hal;
 extern crate rae_app;
 
 use std::{
-    borrow::Borrow,
     cell::RefCell,
     ops::{Deref, DerefMut},
     rc::Rc,
@@ -23,17 +22,23 @@ use crate::{
 
 #[derive(Debug)]
 pub struct CanvasWindow {
-    gpu: Rc<RefCell<halw::Gpu>>,
-    surface: halw::Surface,
+    current_frame_idx: usize,
+    current_framebuffer: Option<halw::Framebuffer>,
+    current_image: Option<halw::SwapchainImage>,
+
+    fences: Vec<halw::Fence>,
+    semaphores: Vec<halw::Semaphore>,
+
+    cmd_buffers: Vec<halw::CommandBuffer>,
+
+    render_pass: halw::RenderPass,
+
     surface_color_format: Format,
     surface_extent: hal::window::Extent2D,
-    render_pass: halw::RenderPass,
-    cmd_buffers: Vec<halw::CommandBuffer>,
-    semaphores: Vec<halw::Semaphore>,
-    fences: Vec<halw::Fence>,
-    current_image: Option<halw::SwapchainImage>,
-    current_framebuffer: Option<halw::Framebuffer>,
-    current_frame_idx: usize,
+    surface: halw::Surface,
+
+    gpu: Rc<RefCell<halw::Gpu>>,
+
     window: window::Window,
 }
 
@@ -216,21 +221,21 @@ impl CanvasWindow {
         let semaphores = Self::create_semaphores(instance)?;
         let fences = Self::create_fences(instance)?;
         let mut canvas_window = Self {
-            window,
-            gpu: Rc::clone(&instance.gpu_rc()),
-            surface,
+            current_frame_idx: 0,
+            current_framebuffer: None,
+            current_image: None,
+            fences,
+            semaphores,
+            cmd_buffers,
+            render_pass,
             surface_color_format,
             surface_extent: hal::window::Extent2D {
                 width: 0,
                 height: 0,
             },
-            render_pass,
-            cmd_buffers,
-            semaphores,
-            fences,
-            current_image: None,
-            current_framebuffer: None,
-            current_frame_idx: 0,
+            surface,
+            gpu: Rc::clone(&instance.gpu_rc()),
+            window,
         };
         canvas_window.configure_swapchain()?;
         Ok(canvas_window)
@@ -330,6 +335,14 @@ impl CanvasWindow {
     }
 }
 
+impl Drop for CanvasWindow {
+    fn drop(&mut self) {
+        self.current_framebuffer = None;
+        self.current_image = None;
+        self.surface.unconfigure_swapchain();
+    }
+}
+
 impl Canvas for CanvasWindow {
     fn image_count(&self) -> usize {
         CanvasWindow::IMAGE_COUNT
@@ -340,13 +353,15 @@ impl Canvas for CanvasWindow {
     }
 
     fn begin_frame(&mut self) -> Result<(), BeginFrameError> {
+        use std::borrow::Borrow;
+
         // Make sure that a frame isn't currently being processed.
         if self.is_processing_frame() {
             return Err(BeginFrameError::AlreadyProcessingFrame);
         }
 
         // Make sure the current image isn't still under process in the GPU.
-        self.synchronize()?;
+        self.wait_for_current_frame_ready()?;
 
         // Create framebuffer.
         let (image, _) = unsafe { self.surface.acquire_image(!0) }?;
@@ -449,9 +464,16 @@ impl Canvas for CanvasWindow {
         Ok(())
     }
 
-    fn synchronize(&self) -> Result<(), SynchronizeFrameError> {
+    fn wait_for_current_frame_ready(&self) -> Result<(), SynchronizeFrameError> {
         let fence = &self.fences[self.current_frame_idx];
         fence.wait(!0)?;
+        Ok(())
+    }
+
+    fn wait_for_all_frames_ready(&self) -> Result<(), SynchronizeFrameError> {
+        for fence in self.fences.iter() {
+            fence.wait(!0)?;
+        }
         Ok(())
     }
 
@@ -681,8 +703,6 @@ impl From<hal::window::CreationError> for CanvasWindowOperationError {
 
 #[cfg(test)]
 mod tests {
-    extern crate galvanic_assert;
-
     use galvanic_assert::{matchers::*, *};
 
     use event::EventLoopAnyThread;
@@ -721,7 +741,6 @@ mod tests {
     fn window_creation() {
         let tf = TestFixture::setup();
         let _window = tf.new_window();
-        println!("Test done");
     }
 
     #[test]
@@ -730,7 +749,6 @@ mod tests {
         let window1 = tf.new_window();
         let window2 = tf.new_window();
         expect_that!(&window1.id(), not(eq(window2.id())));
-        println!("Test done");
     }
 
     #[test]
@@ -738,7 +756,6 @@ mod tests {
         let tf = TestFixture::setup();
         let window = tf.new_window();
         expect_that!(&window.image_count(), eq(3));
-        println!("Test done");
     }
 
     #[test]
@@ -777,10 +794,10 @@ mod tests {
     fn synchronization() {
         let tf = TestFixture::setup();
         let mut window = tf.new_window();
-        window.synchronize().unwrap();
+        window.wait_for_current_frame_ready().unwrap();
         window.begin_frame().unwrap();
-        window.synchronize().unwrap();
+        window.wait_for_current_frame_ready().unwrap();
         window.end_frame().unwrap();
-        window.synchronize().unwrap();
+        window.wait_for_current_frame_ready().unwrap();
     }
 }

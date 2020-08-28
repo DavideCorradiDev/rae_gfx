@@ -2,33 +2,35 @@ extern crate gfx_hal as hal;
 
 use std::{
     cell::{Ref, RefCell, RefMut},
-    ops::Deref,
     rc::Rc,
 };
 
-use hal::{queue::QueueFamily as HalQueueFamily, Instance as HalInstance};
+use hal::{device::Device as HalDevice, queue::QueueFamily as HalQueueFamily};
 
 use crate::halw;
 
 #[derive(Debug)]
 pub struct Instance {
-    instance: Rc<RefCell<halw::Instance>>,
-    adapter: Rc<RefCell<halw::Adapter>>,
     gpu: Rc<RefCell<halw::Gpu>>,
+    adapter: Rc<RefCell<halw::Adapter>>,
+    instance: Rc<RefCell<halw::Instance>>,
 }
 
 impl Instance {
     pub fn create() -> Result<Self, InstanceCreationError> {
-        let instance = Rc::new(RefCell::new(halw::Instance::create("Read Ape Engine", 1)?));
-        let adapter = Rc::new(RefCell::new(Self::select_adapter(
-            instance.borrow().deref(),
-        )?));
-        let gpu = Rc::new(RefCell::new(Self::open_device(adapter.borrow().deref())?));
+        let instance = Rc::new(RefCell::new(halw::Instance::create("Red Ape Engine", 1)?));
+        let adapter = Rc::new(RefCell::new(Self::select_adapter(Rc::clone(&instance))?));
+        let gpu = Rc::new(RefCell::new(Self::open_device(Rc::clone(&adapter))?));
         Ok(Self {
-            instance,
-            adapter,
             gpu,
+            adapter,
+            instance,
         })
+    }
+
+    pub fn wait_idle(&self) -> Result<(), InstanceWaitIdleError> {
+        self.gpu.borrow().device.wait_idle()?;
+        Ok(())
     }
 
     pub fn instance(&self) -> Ref<halw::Instance> {
@@ -68,18 +70,20 @@ impl Instance {
     }
 
     #[cfg(feature = "empty")]
-    fn adapter_selection_criteria(_adapter: &hal::adapter::Adapter<halw::Backend>) -> bool {
+    fn adapter_selection_criteria(_: &halw::Adapter) -> bool {
         true
     }
 
     #[cfg(not(feature = "empty"))]
-    fn adapter_selection_criteria(adapter: &hal::adapter::Adapter<halw::Backend>) -> bool {
+    fn adapter_selection_criteria(adapter: &halw::Adapter) -> bool {
         adapter.info.device_type == hal::adapter::DeviceType::DiscreteGpu
             || adapter.info.device_type == hal::adapter::DeviceType::IntegratedGpu
     }
 
-    fn select_adapter(instance: &halw::Instance) -> Result<halw::Adapter, InstanceCreationError> {
-        let mut adapters = instance.enumerate_adapters();
+    fn select_adapter(
+        instance: Rc<RefCell<halw::Instance>>,
+    ) -> Result<halw::Adapter, InstanceCreationError> {
+        let mut adapters = halw::Adapter::enumerate(instance);
         adapters.retain(Self::adapter_selection_criteria);
         if adapters.is_empty() {
             return Err(InstanceCreationError::NoSuitableAdapter);
@@ -111,10 +115,17 @@ impl Instance {
         }
     }
 
-    fn open_device(adapter: &halw::Adapter) -> Result<halw::Gpu, InstanceCreationError> {
+    fn open_device(
+        adapter: Rc<RefCell<halw::Adapter>>,
+    ) -> Result<halw::Gpu, InstanceCreationError> {
         // Eventually add required GPU features here.
-        let queue_family = Self::select_queue_family(adapter)?;
-        let gpu = halw::Gpu::open(adapter, &[(queue_family, &[1.0])], hal::Features::empty())?;
+        let adapter_ref = &adapter.borrow();
+        let queue_family = Self::select_queue_family(adapter_ref)?;
+        let gpu = halw::Gpu::open(
+            Rc::clone(&adapter),
+            &[(queue_family, &[1.0])],
+            hal::Features::empty(),
+        )?;
         Ok(gpu)
     }
 }
@@ -163,6 +174,33 @@ impl From<hal::window::InitError> for InstanceCreationError {
 impl From<hal::device::CreationError> for InstanceCreationError {
     fn from(_: hal::device::CreationError) -> Self {
         InstanceCreationError::DeviceCreationFailed
+    }
+}
+
+#[derive(Debug)]
+pub enum InstanceWaitIdleError {
+    OutOfMemory(hal::device::OutOfMemory),
+}
+
+impl std::fmt::Display for InstanceWaitIdleError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            InstanceWaitIdleError::OutOfMemory(e) => write!(f, "Out of memory ({})", e),
+        }
+    }
+}
+
+impl std::error::Error for InstanceWaitIdleError {
+    fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
+        match self {
+            InstanceWaitIdleError::OutOfMemory(e) => Some(e),
+        }
+    }
+}
+
+impl From<hal::device::OutOfMemory> for InstanceWaitIdleError {
+    fn from(e: hal::device::OutOfMemory) -> Self {
+        InstanceWaitIdleError::OutOfMemory(e)
     }
 }
 
