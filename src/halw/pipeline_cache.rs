@@ -31,7 +31,6 @@ impl PipelineCache {
 
 impl Drop for PipelineCache {
     fn drop(&mut self) {
-        self.gpu.borrow().wait_idle().unwrap();
         unsafe {
             self.gpu
                 .borrow()

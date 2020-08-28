@@ -40,7 +40,6 @@ impl Image {
 
 impl Drop for Image {
     fn drop(&mut self) {
-        self.gpu.borrow().wait_idle().unwrap();
         unsafe {
             self.gpu
                 .borrow()

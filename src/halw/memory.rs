@@ -32,7 +32,6 @@ impl Memory {
 
 impl Drop for Memory {
     fn drop(&mut self) {
-        self.gpu.borrow().wait_idle().unwrap();
         unsafe {
             self.gpu
                 .borrow()

@@ -41,7 +41,6 @@ impl Buffer {
 
 impl Drop for Buffer {
     fn drop(&mut self) {
-        self.gpu.borrow().wait_idle().unwrap();
         unsafe {
             self.gpu
                 .borrow()
