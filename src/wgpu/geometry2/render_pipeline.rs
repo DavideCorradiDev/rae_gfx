@@ -63,7 +63,6 @@ impl RenderPipeline {
                 ..Default::default()
             }),
             primitive_topology: core::PrimitiveTopology::TriangleList,
-            // TODO: define alpha blending
             // TODO: define depth-stencil??
             color_states: &[core::ColorStateDescriptor {
                 format: device.color_format(),
@@ -76,7 +75,7 @@ impl RenderPipeline {
             vertex_state: core::VertexStateDescriptor {
                 index_format: core::IndexFormat::Uint16,
                 vertex_buffers: &[core::VertexBufferDescriptor {
-                    stride: 2 as core::BufferAddress,
+                    stride: 8 as core::BufferAddress,
                     step_mode: core::InputStepMode::Vertex,
                     attributes: &[core::VertexAttributeDescriptor {
                         format: core::VertexFormat::Float2,
@@ -85,11 +84,21 @@ impl RenderPipeline {
                     }],
                 }],
             },
-            // TODO: configurable multisampling.
             sample_count: config.sample_count,
             sample_mask: !0,
             alpha_to_coverage_enabled: false,
         });
         Self { pipeline }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn creation() {
+        let device = core::Device::new(&core::DeviceConfig::default(), None).unwrap();
+        let _pipeline = RenderPipeline::new(&device, &RenderPipelineConfig::default());
     }
 }

@@ -1,2 +1,2 @@
-mod pipeline;
-pub use pipeline::*;
+mod render_pipeline;
+pub use render_pipeline::*;
