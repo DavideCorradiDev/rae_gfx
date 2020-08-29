@@ -13,9 +13,8 @@ use super::{
     ShaderModuleSource, Surface, SwapChain, SwapChainDescriptor, TextureFormat,
 };
 
-// TODO: rename to descriptor?
 #[derive(Debug, PartialEq, Eq, Clone, serde::Serialize)]
-pub struct InstanceConfig {
+pub struct InstanceDescriptor {
     pub backend: Backend,
     pub power_preference: PowerPreference,
     pub required_features: Features,
@@ -23,7 +22,7 @@ pub struct InstanceConfig {
     pub required_limits: Limits,
 }
 
-impl InstanceConfig {
+impl InstanceDescriptor {
     pub fn high_performance() -> Self {
         let mut required_limits = Limits::default();
         required_limits.max_push_constant_size = 128;
@@ -37,7 +36,7 @@ impl InstanceConfig {
     }
 }
 
-impl Default for InstanceConfig {
+impl Default for InstanceDescriptor {
     fn default() -> Self {
         let mut required_limits = Limits::default();
         required_limits.max_push_constant_size = 128;
@@ -60,7 +59,7 @@ pub struct Instance {
 }
 
 impl Instance {
-    pub fn new(config: &InstanceConfig) -> Result<Self, InstanceCreationError> {
+    pub fn new(config: &InstanceDescriptor) -> Result<Self, InstanceCreationError> {
         let instance = Self::create_instance(config);
         let adapter = Self::create_adapter(&instance, config, None)?;
         let (device, queue) = Self::create_device_and_queue(&adapter, config)?;
@@ -74,7 +73,7 @@ impl Instance {
 
     // Unsafe: surface creation.
     pub unsafe fn new_with_compatible_window(
-        config: &InstanceConfig,
+        config: &InstanceDescriptor,
         compatible_window: &Window,
     ) -> Result<(Self, Surface), InstanceCreationError> {
         let instance = Self::create_instance(config);
@@ -132,13 +131,13 @@ impl Instance {
         self.queue.submit(command_buffers);
     }
 
-    fn create_instance(config: &InstanceConfig) -> wgpu::Instance {
+    fn create_instance(config: &InstanceDescriptor) -> wgpu::Instance {
         wgpu::Instance::new(config.backend)
     }
 
     fn create_adapter(
         instance: &wgpu::Instance,
-        config: &InstanceConfig,
+        config: &InstanceDescriptor,
         compatible_surface: Option<&Surface>,
     ) -> Result<Adapter, InstanceCreationError> {
         let adapter = match futures::executor::block_on(instance.request_adapter(
@@ -162,7 +161,7 @@ impl Instance {
 
     fn create_device_and_queue(
         adapter: &Adapter,
-        config: &InstanceConfig,
+        config: &InstanceDescriptor,
     ) -> Result<(Device, Queue), InstanceCreationError> {
         let (device, queue) = futures::executor::block_on(adapter.request_device(
             &wgpu::DeviceDescriptor {
@@ -224,13 +223,13 @@ mod tests {
 
     #[test]
     fn default_config() {
-        let instance = Instance::new(&InstanceConfig::default()).unwrap();
+        let instance = Instance::new(&InstanceDescriptor::default()).unwrap();
         println!("{:?}", instance.info());
     }
 
     #[test]
     fn new() {
-        let instance = Instance::new(&InstanceConfig {
+        let instance = Instance::new(&InstanceDescriptor {
             backend: Backend::PRIMARY,
             power_preference: PowerPreference::Default,
             required_features: Features::default(),
@@ -249,7 +248,7 @@ mod tests {
             .build(&event_loop)
             .unwrap();
         let (instance, _surface) = unsafe {
-            Instance::new_with_compatible_window(&InstanceConfig::default(), &window).unwrap()
+            Instance::new_with_compatible_window(&InstanceDescriptor::default(), &window).unwrap()
         };
         println!("{:?}", instance.info());
     }

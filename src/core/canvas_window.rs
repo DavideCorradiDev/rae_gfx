@@ -214,11 +214,11 @@ mod tests {
 
     use rae_app::{event::EventLoopAnyThread, window::WindowBuilder};
 
-    use crate::core::InstanceConfig;
+    use crate::core::InstanceDescriptor;
 
     #[test]
     fn from_window() {
-        let instance = Instance::new(&InstanceConfig::default()).unwrap();
+        let instance = Instance::new(&InstanceDescriptor::default()).unwrap();
         let event_loop = EventLoop::<()>::new_any_thread();
         let window = WindowBuilder::new()
             .with_visible(false)
@@ -235,7 +235,7 @@ mod tests {
             .build(&event_loop)
             .unwrap();
         let (instance, surface) = unsafe {
-            Instance::new_with_compatible_window(&InstanceConfig::default(), &window).unwrap()
+            Instance::new_with_compatible_window(&InstanceDescriptor::default(), &window).unwrap()
         };
         let _canvas_window =
             unsafe { CanvasWindow::from_window_and_surface(&instance, window, surface) };
@@ -243,7 +243,7 @@ mod tests {
 
     #[test]
     fn multiple_windows_with_generic_instance() {
-        let instance = Instance::new(&InstanceConfig::default()).unwrap();
+        let instance = Instance::new(&InstanceDescriptor::default()).unwrap();
         let event_loop = EventLoop::<()>::new_any_thread();
         let window1 = unsafe {
             CanvasWindow::from_window(
@@ -274,7 +274,7 @@ mod tests {
             .build(&event_loop)
             .unwrap();
         let (instance, surface) = unsafe {
-            Instance::new_with_compatible_window(&InstanceConfig::default(), &window1).unwrap()
+            Instance::new_with_compatible_window(&InstanceDescriptor::default(), &window1).unwrap()
         };
         let window1 = unsafe { CanvasWindow::from_window_and_surface(&instance, window1, surface) };
         let window2 = unsafe {
