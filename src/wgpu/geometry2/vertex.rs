@@ -1,7 +1,7 @@
 use rae_math::geometry2;
 
 // TODO serialization for Vertex
-#[derive(Debug, PartialEq, Clone, Copy)]
+#[derive(Debug, PartialEq, Clone, Copy, serde::Serialize, serde::Deserialize)]
 pub struct Vertex {
     pub position: geometry2::Point<f32>,
 }

@@ -13,7 +13,9 @@ vulkan = ["gfx-backend-vulkan"]
 
 [dependencies]
 rae_app = { git = "https://github.com/DavideCorradiDev/rae_app.git", tag = "v0.1.0" }
-rae_math = { git = "https://github.com/DavideCorradiDev/rae_math.git", tag = "v0.1.1" }
+rae_math = { git = "https://github.com/DavideCorradiDev/rae_math.git", tag = "v0.1.1", features = [
+    "serde-serialize"
+] }
 raw-window-handle = { version = "0.3" }
 wgpu = { version = "0.6", features = ["trace", "replay"] }
 serde = { version = "1.0", features = ["derive"] }
