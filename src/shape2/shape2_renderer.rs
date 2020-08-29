@@ -4,7 +4,7 @@ use num_traits::Zero;
 
 use rae_math::{conversion::ToHomogeneous3, geometry2, geometry3};
 
-use crate::wgpu::core;
+use crate::core;
 
 //TODO: move code to another file, rather than a generic mod.rs
 //TODO: rename to something other than geometry2.
@@ -47,12 +47,12 @@ impl Mesh {
         index_list: &[Index],
     ) -> Self {
         let vertex_buffer = instance.create_buffer_init(&core::BufferInitDescriptor {
-            label: Some("geometry2_mesh_vertex_buffer"),
+            label: Some("shape2_mesh_vertex_buffer"),
             contents: bytemuck::cast_slice(vertex_list),
             usage: core::BufferUsage::VERTEX,
         });
         let index_buffer = instance.create_buffer_init(&core::BufferInitDescriptor {
-            label: Some("geometry2_mesh_index_buffer"),
+            label: Some("shape2_mesh_index_buffer"),
             contents: bytemuck::cast_slice(index_list),
             usage: core::BufferUsage::INDEX,
         });
@@ -138,7 +138,7 @@ pub struct RenderPipeline {
 impl RenderPipeline {
     pub fn new(instance: &core::Instance, config: &RenderPipelineConfig) -> Self {
         let pipeline_layout = instance.create_pipeline_layout(&core::PipelineLayoutDescriptor {
-            label: Some("geometry2_pipeline_layout"),
+            label: Some("shape2_pipeline_layout"),
             bind_group_layouts: &[],
             push_constant_ranges: &[core::PushConstantRange {
                 stages: core::ShaderStage::VERTEX,
@@ -146,11 +146,11 @@ impl RenderPipeline {
             }],
         });
         let vs_module = instance
-            .create_shader_module(core::include_spirv!("shaders/gen/spirv/geometry2.vert.spv"));
+            .create_shader_module(core::include_spirv!("shaders/gen/spirv/shape2.vert.spv"));
         let fs_module = instance
-            .create_shader_module(core::include_spirv!("shaders/gen/spirv/geometry2.frag.spv"));
+            .create_shader_module(core::include_spirv!("shaders/gen/spirv/shape2.frag.spv"));
         let pipeline = instance.create_render_pipeline(&core::RenderPipelineDescriptor {
-            label: Some("geometry2_render_pipeline"),
+            label: Some("shape2_render_pipeline"),
             layout: Some(&pipeline_layout),
             vertex_stage: core::ProgrammableStageDescriptor {
                 module: &vs_module,
@@ -194,13 +194,13 @@ impl RenderPipeline {
 }
 
 pub trait Renderer<'a> {
-    fn draw_geometry2(
+    fn draw_shape2(
         &mut self,
         pipeline: &'a RenderPipeline,
         mesh: &'a Mesh,
         constants: &'a PushConstants,
     );
-    fn draw_geometry2_array(
+    fn draw_shape2_array(
         &mut self,
         pipeline: &'a RenderPipeline,
         meshes: &'a [(&'a Mesh, &'a PushConstants)],
@@ -208,7 +208,7 @@ pub trait Renderer<'a> {
 }
 
 impl<'a> Renderer<'a> for core::RenderPass<'a> {
-    fn draw_geometry2(
+    fn draw_shape2(
         &mut self,
         pipeline: &'a RenderPipeline,
         mesh: &'a Mesh,
@@ -221,7 +221,7 @@ impl<'a> Renderer<'a> for core::RenderPass<'a> {
         self.draw_indexed(0..mesh.index_count as u32, 0, 0..1);
     }
 
-    fn draw_geometry2_array(
+    fn draw_shape2_array(
         &mut self,
         pipeline: &'a RenderPipeline,
         meshes: &'a [(&'a Mesh, &'a PushConstants)],

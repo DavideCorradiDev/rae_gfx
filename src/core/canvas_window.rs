@@ -214,7 +214,7 @@ mod tests {
 
     use rae_app::{event::EventLoopAnyThread, window::WindowBuilder};
 
-    use crate::wgpu::core::InstanceConfig;
+    use crate::core::InstanceConfig;
 
     #[test]
     fn from_window() {

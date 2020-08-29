@@ -1,11 +1,7 @@
 extern crate rae_shader;
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
-    let shader_folders = vec![
-        "src/wgpu/geometry2/shaders",
-        "src/geometry2_rendering/shaders",
-        "src/rendering/shaders",
-    ];
+    let shader_folders = vec!["src/shape2/shaders"];
 
     for shader_folder in shader_folders.iter() {
         let in_dir: std::path::PathBuf = [shader_folder, "glsl"].iter().collect();

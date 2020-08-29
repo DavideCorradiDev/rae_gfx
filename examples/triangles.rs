@@ -12,23 +12,23 @@ use rae_math::{
     geometry2::{OrthographicProjection, Point, Projective, Similarity, Translation, UnitComplex},
 };
 
-use rae_gfx::wgpu::{
+use rae_gfx::{
     core::{
         Canvas, CanvasWindow, Color, CommandEncoderDescriptor, Instance, InstanceConfig,
         InstanceCreationError, LoadOp, Operations, RenderPassColorAttachmentDescriptor,
         RenderPassDescriptor,
     },
-    geometry2,
-    geometry2::Renderer as Geometry2Renderer,
+    shape2,
+    shape2::Renderer as Shape2Renderer,
 };
 
 #[derive(Debug)]
 struct ApplicationImpl {
     window: CanvasWindow,
     instance: Instance,
-    pipeline: geometry2::RenderPipeline,
-    triangle_mesh: geometry2::Mesh,
-    saved_triangle_constants: Vec<geometry2::PushConstants>,
+    pipeline: shape2::RenderPipeline,
+    triangle_mesh: shape2::Mesh,
+    saved_triangle_constants: Vec<shape2::PushConstants>,
     projection_transform: Projective<f32>,
     current_position: Point<f32>,
     current_angle: f32,
@@ -37,13 +37,13 @@ struct ApplicationImpl {
 }
 
 impl ApplicationImpl {
-    pub fn generate_push_constant(&self) -> geometry2::PushConstants {
+    pub fn generate_push_constant(&self) -> shape2::PushConstants {
         let object_transform = Similarity::<f32>::from_parts(
             Translation::new(self.current_position.x, self.current_position.y),
             UnitComplex::new(self.current_angle),
             self.current_scaling,
         );
-        geometry2::PushConstants::new(
+        shape2::PushConstants::new(
             &convert(self.projection_transform * object_transform),
             self.current_color,
         )
@@ -69,14 +69,14 @@ impl EventHandler<ApplicationError, ApplicationEvent> for ApplicationImpl {
         };
 
         let pipeline =
-            geometry2::RenderPipeline::new(&instance, &geometry2::RenderPipelineConfig::default());
+            shape2::RenderPipeline::new(&instance, &shape2::RenderPipelineConfig::default());
 
-        let triangle_mesh = geometry2::Mesh::new(
+        let triangle_mesh = shape2::Mesh::new(
             &instance,
             &[
-                geometry2::Vertex::new([-50., 50.]),
-                geometry2::Vertex::new([50., 50.]),
-                geometry2::Vertex::new([0., -50.]),
+                shape2::Vertex::new([-50., 50.]),
+                shape2::Vertex::new([50., 50.]),
+                shape2::Vertex::new([0., -50.]),
             ],
             &[0, 1, 2],
         );
@@ -201,7 +201,7 @@ impl EventHandler<ApplicationError, ApplicationEvent> for ApplicationImpl {
                 }],
                 depth_stencil_attachment: None,
             });
-            rpass.draw_geometry2_array(&self.pipeline, &elements);
+            rpass.draw_shape2_array(&self.pipeline, &elements);
         }
         self.instance.submit(Some(encoder.finish()));
         Ok(ControlFlow::Continue)
