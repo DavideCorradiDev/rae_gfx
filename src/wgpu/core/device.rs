@@ -1,7 +1,13 @@
 use std::default::Default;
 
 pub use wgpu::{
-    AdapterInfo as DeviceInfo, BackendBit as Backend, Features, Limits, PowerPreference,
+    include_spirv, AdapterInfo as DeviceInfo, BackendBit as Backend, BindGroupLayout,
+    BlendDescriptor, BufferAddress, ColorStateDescriptor, ColorWrite, CullMode, Features,
+    FrontFace, IndexFormat, InputStepMode, Limits, PipelineLayout, PipelineLayoutDescriptor,
+    PowerPreference, PrimitiveTopology, ProgrammableStageDescriptor, PushConstantRange,
+    RasterizationStateDescriptor, RenderPipeline, RenderPipelineDescriptor, ShaderModule,
+    ShaderModuleSource, TextureFormat, VertexAttributeDescriptor, VertexBufferDescriptor,
+    VertexFormat, VertexStateDescriptor,
 };
 
 #[derive(Debug, PartialEq, Eq, Clone, serde::Serialize)]
@@ -86,8 +92,24 @@ impl Device {
         })
     }
 
+    pub fn color_format(&self) -> TextureFormat {
+        TextureFormat::Bgra8UnormSrgb
+    }
+
     pub fn info(&self) -> DeviceInfo {
         self.adapter.get_info()
+    }
+
+    pub fn create_shader_module(&self, source: ShaderModuleSource) -> ShaderModule {
+        self.device.create_shader_module(source)
+    }
+
+    pub fn create_pipeline_layout(&self, desc: &PipelineLayoutDescriptor) -> PipelineLayout {
+        self.device.create_pipeline_layout(desc)
+    }
+
+    pub fn create_render_pipeline(&self, desc: &RenderPipelineDescriptor) -> RenderPipeline {
+        self.device.create_render_pipeline(desc)
     }
 }
 
