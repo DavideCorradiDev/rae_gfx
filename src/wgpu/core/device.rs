@@ -4,7 +4,7 @@ pub use wgpu::{
     AdapterInfo as DeviceInfo, BackendBit as Backend, Features, Limits, PowerPreference,
 };
 
-#[derive(Debug, PartialEq, Eq, Clone)]
+#[derive(Debug, PartialEq, Eq, Clone, serde::Serialize)]
 pub struct DeviceConfig {
     pub backend: Backend,
     pub power_preference: PowerPreference,
@@ -36,8 +36,6 @@ impl Default for DeviceConfig {
         }
     }
 }
-
-// TODO: serialization for DeviceConfig.
 
 #[derive(Debug)]
 pub struct Device {
@@ -138,7 +136,7 @@ mod tests {
 
     #[test]
     fn creation() {
-        let _device = futures::executor::block_on(Device::new(
+        let device = futures::executor::block_on(Device::new(
             &DeviceConfig {
                 backend: Backend::PRIMARY,
                 power_preference: PowerPreference::Default,
@@ -149,13 +147,13 @@ mod tests {
             None,
         ))
         .unwrap();
-        println!("{:?}", _device.info());
+        println!("{:?}", device.info());
     }
 
     #[test]
     fn default_config() {
-        let _device =
+        let device =
             futures::executor::block_on(Device::new(&DeviceConfig::default(), None)).unwrap();
-        println!("{:?}", _device.info());
+        println!("{:?}", device.info());
     }
 }
