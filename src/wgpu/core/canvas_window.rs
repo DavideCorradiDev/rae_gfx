@@ -28,6 +28,10 @@ impl CanvasWindow {
 
     pub unsafe fn from_window(instance: &Instance, window: Window) -> Self {
         let surface = instance.create_surface(&window);
+        Self::from_window_and_surface(instance, window, surface)
+    }
+
+    pub fn from_window_and_surface(instance: &Instance, window: Window, surface: Surface) -> Self {
         let surface_size = window.inner_size();
         let swap_chain = Self::create_swap_chain(instance, &surface, &surface_size);
         Self {
@@ -51,15 +55,8 @@ impl CanvasWindow {
         window: Window,
     ) -> Result<(Self, Instance), WindowWithInstanceCreationError> {
         let (instance, surface) = Instance::new_with_surface(instance_config, &window)?;
-        let surface_size = window.inner_size();
-        let swap_chain = Self::create_swap_chain(&instance, &surface, &surface_size);
         Ok((
-            Self {
-                swap_chain,
-                surface,
-                surface_size,
-                window,
-            },
+            Self::from_window_and_surface(&instance, window, surface),
             instance,
         ))
     }
