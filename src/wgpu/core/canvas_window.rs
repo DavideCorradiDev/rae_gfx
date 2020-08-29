@@ -18,9 +18,9 @@ impl CanvasWindow {
     pub unsafe fn new<T: 'static>(
         instance: &Instance,
         event_loop: &EventLoop<T>,
-    ) -> Result<Self, CanvasWindowCreationError> {
+    ) -> Result<Self, OsError> {
         let window = Window::new(event_loop)?;
-        Self::with_window(instance, window)
+        Ok(Self::with_window(instance, window))
     }
 
     pub fn id(&self) -> WindowId {
@@ -35,18 +35,12 @@ impl CanvasWindow {
         self.window.request_redraw()
     }
 
-    pub fn inner_position(
-        &self,
-    ) -> Result<window::PhysicalPosition<i32>, CanvasWindowOperationError> {
-        let pos = self.window.inner_position()?;
-        Ok(pos)
+    pub fn inner_position(&self) -> Result<window::PhysicalPosition<i32>, NotSupportedError> {
+        self.window.inner_position()
     }
 
-    pub fn outer_position(
-        &self,
-    ) -> Result<window::PhysicalPosition<i32>, CanvasWindowOperationError> {
-        let pos = self.window.outer_position()?;
-        Ok(pos)
+    pub fn outer_position(&self) -> Result<window::PhysicalPosition<i32>, NotSupportedError> {
+        self.window.outer_position()
     }
 
     pub fn set_outer_position<P>(&self, position: P)
@@ -139,17 +133,15 @@ impl CanvasWindow {
         self.window.set_cursor_icon(cursor)
     }
 
-    pub fn set_cursor_position<P>(&self, position: P) -> Result<(), CanvasWindowOperationError>
+    pub fn set_cursor_position<P>(&self, position: P) -> Result<(), ExternalError>
     where
         P: Into<window::Position>,
     {
-        self.window.set_cursor_position(position)?;
-        Ok(())
+        self.window.set_cursor_position(position)
     }
 
-    pub fn set_cursor_grab(&self, grab: bool) -> Result<(), CanvasWindowOperationError> {
-        self.window.set_cursor_grab(grab)?;
-        Ok(())
+    pub fn set_cursor_grab(&self, grab: bool) -> Result<(), ExternalError> {
+        self.window.set_cursor_grab(grab)
     }
 
     pub fn set_cursor_visible(&self, visible: bool) {
@@ -164,19 +156,16 @@ impl CanvasWindow {
         }
     }
 
-    unsafe fn with_window(
-        instance: &Instance,
-        window: Window,
-    ) -> Result<Self, CanvasWindowCreationError> {
+    unsafe fn with_window(instance: &Instance, window: Window) -> Self {
         let surface = instance.create_surface(&window);
         let surface_size = window.inner_size();
         let swap_chain = Self::create_swap_chain(instance, &surface, &surface_size);
-        Ok(Self {
+        Self {
             swap_chain,
             surface,
             surface_size,
             window,
-        })
+        }
     }
 
     fn create_swap_chain(
@@ -284,120 +273,11 @@ impl CanvasWindowBuilder {
         self,
         instance: &Instance,
         window_target: &EventLoopWindowTarget<T>,
-    ) -> Result<CanvasWindow, CanvasWindowCreationError>
+    ) -> Result<CanvasWindow, OsError>
     where
         T: 'static,
     {
         let window = self.builder.build(window_target)?;
-        CanvasWindow::with_window(instance, window)
+        Ok(CanvasWindow::with_window(instance, window))
     }
 }
-
-// TODO PartialEq and Clone
-#[derive(Debug)]
-pub enum CanvasWindowCreationError {
-    OsError(OsError),
-    // SurfaceCreationFailed(hal::window::InitError),
-    // SwapchainCreationFailed(hal::window::CreationError),
-    // OutOfMemory(hal::device::OutOfMemory),
-}
-
-impl std::fmt::Display for CanvasWindowCreationError {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match self {
-            CanvasWindowCreationError::OsError(e) => write!(f, "OS Error ({})", e),
-            // CanvasWindowCreationError::SurfaceCreationFailed(e) => {
-            //     write!(f, "Surface creation failed ({})", e)
-            // }
-            // CanvasWindowCreationError::SwapchainCreationFailed(e) => {
-            //     write!(f, "Swapchain configuration failed ({})", e)
-            // }
-            // CanvasWindowCreationError::OutOfMemory(e) => write!(f, "Out of memory ({})", e),
-        }
-    }
-}
-
-impl std::error::Error for CanvasWindowCreationError {
-    fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
-        match self {
-            CanvasWindowCreationError::OsError(e) => Some(e),
-            // CanvasWindowCreationError::SurfaceCreationFailed(e) => Some(e),
-            // CanvasWindowCreationError::SwapchainCreationFailed(e) => Some(e),
-            // CanvasWindowCreationError::OutOfMemory(e) => Some(e),
-        }
-    }
-}
-
-impl From<OsError> for CanvasWindowCreationError {
-    fn from(e: OsError) -> Self {
-        CanvasWindowCreationError::OsError(e)
-    }
-}
-
-// impl From<hal::window::InitError> for CanvasWindowCreationError {
-//     fn from(e: hal::window::InitError) -> Self {
-//         CanvasWindowCreationError::SurfaceCreationFailed(e)
-//     }
-// }
-//
-// impl From<hal::window::CreationError> for CanvasWindowCreationError {
-//     fn from(e: hal::window::CreationError) -> Self {
-//         CanvasWindowCreationError::SwapchainCreationFailed(e)
-//     }
-// }
-//
-// impl From<hal::device::OutOfMemory> for CanvasWindowCreationError {
-//     fn from(e: hal::device::OutOfMemory) -> Self {
-//         CanvasWindowCreationError::OutOfMemory(e)
-//     }
-// }
-
-// TODO PartialEq and Clone
-#[derive(Debug)]
-pub enum CanvasWindowOperationError {
-    UnsupportedOperation(NotSupportedError),
-    ExternalError(ExternalError),
-    // SwapchainConfigurationFailed(hal::window::CreationError),
-}
-
-impl std::fmt::Display for CanvasWindowOperationError {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match self {
-            CanvasWindowOperationError::UnsupportedOperation(e) => {
-                write!(f, "Unsupported operation ({})", e)
-            }
-            CanvasWindowOperationError::ExternalError(e) => write!(f, "External error ({})", e),
-            // CanvasWindowOperationError::SwapchainConfigurationFailed(e) => {
-            //     write!(f, "Swapchain configuration failed ({})", e)
-            // }
-        }
-    }
-}
-
-impl std::error::Error for CanvasWindowOperationError {
-    fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
-        match self {
-            CanvasWindowOperationError::UnsupportedOperation(e) => Some(e),
-            CanvasWindowOperationError::ExternalError(e) => Some(e),
-            // CanvasWindowOperationError::SwapchainConfigurationFailed(e) => Some(e),
-        }
-    }
-}
-
-impl From<NotSupportedError> for CanvasWindowOperationError {
-    fn from(e: NotSupportedError) -> Self {
-        CanvasWindowOperationError::UnsupportedOperation(e)
-    }
-}
-
-impl From<ExternalError> for CanvasWindowOperationError {
-    fn from(e: ExternalError) -> Self {
-        CanvasWindowOperationError::ExternalError(e)
-    }
-}
-
-// impl From<hal::window::CreationError> for CanvasWindowOperationError {
-//     fn from(e: hal::window::CreationError) -> Self {
-//         CanvasWindowOperationError::SwapchainConfigurationFailed(e)
-//     }
-// }
