@@ -11,9 +11,9 @@ use crate::halw;
 
 #[derive(Debug)]
 pub struct Instance {
-    gpu: Rc<RefCell<halw::Gpu>>,
-    adapter: Rc<RefCell<halw::Adapter>>,
     instance: Rc<RefCell<halw::Instance>>,
+    adapter: Rc<RefCell<halw::Adapter>>,
+    gpu: Rc<RefCell<halw::Gpu>>,
 }
 
 impl Instance {
@@ -22,9 +22,9 @@ impl Instance {
         let adapter = Rc::new(RefCell::new(Self::select_adapter(Rc::clone(&instance))?));
         let gpu = Rc::new(RefCell::new(Self::open_device(Rc::clone(&adapter))?));
         Ok(Self {
-            gpu,
-            adapter,
             instance,
+            adapter,
+            gpu,
         })
     }
 

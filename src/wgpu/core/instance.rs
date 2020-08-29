@@ -2,10 +2,12 @@ use std::default::Default;
 
 use wgpu::util::DeviceExt;
 
+use raw_window_handle::HasRawWindowHandle;
+
 use super::{
     Adapter, AdapterInfo, Backend, Buffer, BufferInitDescriptor, Device, Features, Limits,
     PipelineLayout, PipelineLayoutDescriptor, PowerPreference, Queue, RenderPipeline,
-    RenderPipelineDescriptor, ShaderModule, ShaderModuleSource, TextureFormat,
+    RenderPipelineDescriptor, ShaderModule, ShaderModuleSource, Surface, TextureFormat,
 };
 
 #[derive(Debug, PartialEq, Eq, Clone, serde::Serialize)]
@@ -96,6 +98,10 @@ impl Instance {
 
     pub fn info(&self) -> AdapterInfo {
         self.adapter.get_info()
+    }
+
+    pub unsafe fn create_surface<W: HasRawWindowHandle>(&self, window: &W) -> Surface {
+        self.instance.create_surface(window)
     }
 
     pub fn create_shader_module(&self, source: ShaderModuleSource) -> ShaderModule {
