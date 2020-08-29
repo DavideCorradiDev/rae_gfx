@@ -67,14 +67,19 @@ impl Mesh {
 #[derive(Debug, PartialEq, Clone, Copy, serde::Serialize, serde::Deserialize)]
 pub struct PushConstants {
     transform: geometry3::HomogeneousMatrix<f32>,
-    color: core::Color,
+    color: [f32; 4],
 }
 
 impl PushConstants {
     pub fn new(transform: &geometry2::Transform<f32>, color: core::Color) -> Self {
         Self {
             transform: transform.to_homogeneous3(),
-            color,
+            color: [
+                color.r as f32,
+                color.g as f32,
+                color.b as f32,
+                color.a as f32,
+            ],
         }
     }
 
@@ -90,7 +95,7 @@ unsafe impl bytemuck::Zeroable for PushConstants {
     fn zeroed() -> Self {
         Self {
             transform: geometry3::HomogeneousMatrix::zero(),
-            color: core::Color::TRANSPARENT,
+            color: [0., 0., 0., 0.],
         }
     }
 }

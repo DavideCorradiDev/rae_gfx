@@ -5,7 +5,10 @@ use rae_app::{
     window::{WindowBuilder, WindowId},
 };
 
-use rae_math::{conversion::convert, geometry2::OrthographicProjection as OrthographicProjection2};
+use rae_math::{
+    conversion::convert,
+    geometry2::{OrthographicProjection as OrthographicProjection2, Transform as Transform2},
+};
 
 use rae_gfx::wgpu::{
     core::{
@@ -98,15 +101,16 @@ impl EventHandler<ApplicationError, ApplicationEvent> for ApplicationImpl {
         // It seems that frame should be retrieved and be alive the whole time, or bad stuff will happen...
         let frame = self.window.get_current_frame().unwrap();
         let constants = geometry2::PushConstants::new(
-            &convert(
-                OrthographicProjection2::new(
-                    0.,
-                    self.window.inner_size().width as f32,
-                    0.,
-                    self.window.inner_size().height as f32,
-                )
-                .to_projective(),
-            ),
+            // &convert(
+            //     OrthographicProjection2::new(
+            //         0.,
+            //         self.window.inner_size().width as f32,
+            //         0.,
+            //         self.window.inner_size().height as f32,
+            //     )
+            //     .to_projective(),
+            // ),
+            &Transform2::identity(),
             Color::WHITE,
         );
         let mut encoder = self

@@ -25,24 +25,28 @@ pub struct InstanceConfig {
 
 impl InstanceConfig {
     pub fn high_performance() -> Self {
+        let mut required_limits = Limits::default();
+        required_limits.max_push_constant_size = 128;
         Self {
             backend: Backend::PRIMARY,
             power_preference: PowerPreference::HighPerformance,
-            required_features: Features::default(),
+            required_features: Features::default() | Features::PUSH_CONSTANTS,
             optional_features: Features::empty(),
-            required_limits: Limits::default(),
+            required_limits,
         }
     }
 }
 
 impl Default for InstanceConfig {
     fn default() -> Self {
+        let mut required_limits = Limits::default();
+        required_limits.max_push_constant_size = 128;
         Self {
             backend: Backend::PRIMARY,
             power_preference: PowerPreference::Default,
-            required_features: Features::default(),
+            required_features: Features::default() | Features::PUSH_CONSTANTS,
             optional_features: Features::empty(),
-            required_limits: Limits::default(),
+            required_limits,
         }
     }
 }
