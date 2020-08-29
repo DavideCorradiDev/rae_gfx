@@ -40,3 +40,7 @@ rae_shader = { git = "https://github.com/DavideCorradiDev/rae_shader.git", tag =
 [[example]]
 name = "triangle"
 path = "examples/triangle.rs"
+
+[[example]]
+name = "triangles"
+path = "examples/triangles.rs"
