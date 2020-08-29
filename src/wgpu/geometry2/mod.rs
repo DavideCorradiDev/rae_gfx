@@ -7,6 +7,7 @@ use rae_math::{conversion::ToHomogeneous3, geometry2, geometry3};
 use crate::wgpu::core;
 
 //TODO: move code to another file, rather than a generic mod.rs
+//TODO: rename to something other than geometry2.
 
 #[derive(Debug, PartialEq, Clone, Copy, serde::Serialize, serde::Deserialize)]
 pub struct Vertex {

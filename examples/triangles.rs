@@ -1,3 +1,5 @@
+use rand::Rng;
+
 use rae_app::{
     application::Application,
     event::{mouse, ControlFlow, DeviceId, EventHandler, EventLoop},
@@ -7,7 +9,7 @@ use rae_app::{
 
 use rae_math::{
     conversion::convert,
-    geometry2::{OrthographicProjection as OrthographicProjection2, Transform as Transform2},
+    geometry2::{OrthographicProjection, Point, Projective, Similarity, Translation, UnitComplex},
 };
 
 use rae_gfx::wgpu::{
@@ -26,6 +28,26 @@ struct ApplicationImpl {
     instance: Instance,
     pipeline: geometry2::RenderPipeline,
     triangle_mesh: geometry2::Mesh,
+    saved_triangle_constants: Vec<geometry2::PushConstants>,
+    projection_transform: Projective<f32>,
+    current_position: Point<f32>,
+    current_angle: f32,
+    current_scaling: f32,
+    current_color: Color,
+}
+
+impl ApplicationImpl {
+    pub fn generate_push_constant(&self) -> geometry2::PushConstants {
+        let object_transform = Similarity::<f32>::from_parts(
+            Translation::new(self.current_position.x, self.current_position.y),
+            UnitComplex::new(self.current_angle),
+            self.current_scaling,
+        );
+        geometry2::PushConstants::new(
+            &convert(self.projection_transform * object_transform),
+            self.current_color,
+        )
+    }
 }
 
 impl EventHandler<ApplicationError, ApplicationEvent> for ApplicationImpl {
@@ -52,67 +74,112 @@ impl EventHandler<ApplicationError, ApplicationEvent> for ApplicationImpl {
         let triangle_mesh = geometry2::Mesh::new(
             &instance,
             &[
-                geometry2::Vertex::new([-0.5, -0.5]),
-                geometry2::Vertex::new([0.5, -0.5]),
-                geometry2::Vertex::new([0., 0.5]),
+                geometry2::Vertex::new([-50., 50.]),
+                geometry2::Vertex::new([50., 50.]),
+                geometry2::Vertex::new([0., -50.]),
             ],
             &[0, 1, 2],
         );
+
+        let window_size = window.inner_size();
+
+        // This matrix will flip the y axis, so that screen coordinates follow mouse coordinates.
+        let projection_transform = OrthographicProjection::new(
+            0.,
+            window_size.width as f32,
+            window_size.height as f32,
+            0.,
+        )
+        .to_projective();
+
+        let current_position = Point::from([
+            window_size.width as f32 / 2.,
+            window_size.height as f32 / 2.,
+        ]);
 
         Ok(Self {
             window,
             instance,
             pipeline,
             triangle_mesh,
+            saved_triangle_constants: Vec::new(),
+            projection_transform,
+            current_position,
+            current_angle: 0.,
+            current_scaling: 1.,
+            current_color: Color::WHITE,
         })
     }
 
     fn on_resized(
         &mut self,
         wid: WindowId,
-        _size: window::PhysicalSize<u32>,
+        size: window::PhysicalSize<u32>,
     ) -> Result<ControlFlow, Self::Error> {
         if wid == self.window.id() {
             self.window.reconfigure_swap_chain(&self.instance);
+            self.projection_transform = OrthographicProjection::new(
+                0.,
+                1f32.max(size.width as f32),
+                1f32.max(size.height as f32),
+                0.,
+            )
+            .to_projective();
         }
         Ok(ControlFlow::Continue)
     }
 
     fn on_cursor_moved(
         &mut self,
-        _wid: WindowId,
+        wid: WindowId,
         _device_id: DeviceId,
-        _position: window::PhysicalPosition<f64>,
+        position: window::PhysicalPosition<f64>,
     ) -> Result<ControlFlow, Self::Error> {
+        if wid == self.window.id() {
+            self.current_position.x = position.x as f32;
+            self.current_position.y = position.y as f32;
+        }
         Ok(ControlFlow::Continue)
     }
 
     fn on_mouse_button_released(
         &mut self,
-        _wid: WindowId,
+        wid: WindowId,
         _device_id: DeviceId,
-        _button: mouse::Button,
+        button: mouse::Button,
     ) -> Result<ControlFlow, Self::Error> {
+        if wid == self.window.id() {
+            if button == mouse::Button::Left {
+                self.saved_triangle_constants
+                    .push(self.generate_push_constant());
+                let mut rng = rand::thread_rng();
+                self.current_scaling = rng.gen_range(0.25, 4.);
+                self.current_color.r = rng.gen_range(0., 1.);
+                self.current_color.g = rng.gen_range(0., 1.);
+                self.current_color.b = rng.gen_range(0., 1.);
+            }
+        }
         Ok(ControlFlow::Continue)
     }
 
-    fn on_variable_update(&mut self, _dt: std::time::Duration) -> Result<ControlFlow, Self::Error> {
+    fn on_variable_update(&mut self, dt: std::time::Duration) -> Result<ControlFlow, Self::Error> {
+        const ANGULAR_SPEED: f32 = std::f32::consts::PI * 0.25;
+        self.current_angle = self.current_angle + ANGULAR_SPEED * dt.as_secs_f32();
+        while self.current_angle >= std::f32::consts::PI * 2. {
+            self.current_angle = self.current_angle - std::f32::consts::PI * 2.;
+        }
+
+        let mut elements = Vec::new();
+        for triangle_constant in &self.saved_triangle_constants {
+            elements.push((&self.triangle_mesh, triangle_constant));
+        }
+
+        let current_triangle_constant = self.generate_push_constant();
+        elements.push((&self.triangle_mesh, &current_triangle_constant));
+
         // TODO: missing error handling, remove the unwrap call...
         // It seems that frame should be retrieved and be alive the whole time, or bad stuff will happen...
         let frame = self.window.get_current_frame().unwrap();
-        let constants = geometry2::PushConstants::new(
-            // &convert(
-            //     OrthographicProjection2::new(
-            //         0.,
-            //         self.window.inner_size().width as f32,
-            //         0.,
-            //         self.window.inner_size().height as f32,
-            //     )
-            //     .to_projective(),
-            // ),
-            &Transform2::identity(),
-            Color::WHITE,
-        );
         let mut encoder = self
             .instance
             .create_command_encoder(&CommandEncoderDescriptor::default());
@@ -129,7 +196,7 @@ impl EventHandler<ApplicationError, ApplicationEvent> for ApplicationImpl {
                 }],
                 depth_stencil_attachment: None,
             });
-            rpass.draw_geometry2(&self.pipeline, &self.triangle_mesh, &constants);
+            rpass.draw_geometry2_array(&self.pipeline, &elements);
         }
         self.instance.submit(Some(encoder.finish()));
         Ok(ControlFlow::Continue)

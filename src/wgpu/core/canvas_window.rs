@@ -192,8 +192,8 @@ impl CanvasWindow {
             &SwapChainDescriptor {
                 usage: TextureUsage::OUTPUT_ATTACHMENT,
                 format: instance.color_format(),
-                width: size.width,
-                height: size.height,
+                width: size.width.max(1),
+                height: size.height.max(1),
                 present_mode: PresentMode::Mailbox,
             },
         )
