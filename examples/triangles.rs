@@ -2,10 +2,13 @@ use rae_app::{
     application::Application,
     event::{mouse, ControlFlow, DeviceId, EventHandler, EventLoop},
     window,
-    window::{Window, WindowBuilder, WindowId},
+    window::WindowId,
 };
 
-use rae_gfx::wgpu::core::{Instance, InstanceConfig, InstanceCreationError};
+use rae_gfx::wgpu::core::{
+    CanvasWindow, CanvasWindowBuilder, Instance, InstanceConfig, InstanceCreationError,
+    WindowWithInstanceCreationError,
+};
 
 type ApplicationEvent = ();
 
@@ -49,10 +52,23 @@ impl From<InstanceCreationError> for ApplicationError {
     }
 }
 
+impl From<WindowWithInstanceCreationError> for ApplicationError {
+    fn from(e: WindowWithInstanceCreationError) -> Self {
+        match e {
+            WindowWithInstanceCreationError::WindowCreationFailed(e) => {
+                ApplicationError::WindowCreationFailed(e)
+            }
+            WindowWithInstanceCreationError::InstanceCreationFailed(e) => {
+                ApplicationError::InstanceCreationFailed(e)
+            }
+        }
+    }
+}
+
 #[derive(Debug)]
 struct ApplicationImpl {
-    window: Window,
-    device: Instance,
+    window: CanvasWindow,
+    instance: Instance,
 }
 
 impl EventHandler<ApplicationError, ApplicationEvent> for ApplicationImpl {
@@ -60,21 +76,25 @@ impl EventHandler<ApplicationError, ApplicationEvent> for ApplicationImpl {
     type CustomEvent = ApplicationEvent;
 
     fn new(event_loop: &EventLoop<Self::CustomEvent>) -> Result<Self, Self::Error> {
-        let window = WindowBuilder::new()
-            .with_inner_size(window::Size::Physical(window::PhysicalSize {
-                width: 800,
-                height: 800,
-            }))
-            .build(event_loop)?;
-        let device = Instance::new(&InstanceConfig::high_performance(), None)?;
-        Ok(Self { window, device })
+        let (window, instance) = unsafe {
+            CanvasWindowBuilder::new()
+                .with_inner_size(window::Size::Physical(window::PhysicalSize {
+                    width: 800,
+                    height: 800,
+                }))
+                .build_with_instance(&InstanceConfig::high_performance(), event_loop)?
+        };
+        Ok(Self { window, instance })
     }
 
     fn on_resized(
         &mut self,
-        _wid: WindowId,
+        wid: WindowId,
         _size: window::PhysicalSize<u32>,
     ) -> Result<ControlFlow, Self::Error> {
+        if wid == self.window.id() {
+            self.window.reconfigure_swap_chain(&self.instance);
+        }
         Ok(ControlFlow::Continue)
     }
 
