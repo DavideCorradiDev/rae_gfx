@@ -46,19 +46,18 @@ pub struct Device {
 }
 
 impl Device {
-    pub async fn new(
+    pub fn new(
         config: &DeviceConfig,
         compatible_surface: Option<&wgpu::Surface>,
     ) -> Result<Self, DeviceCreationError> {
         let instance = wgpu::Instance::new(config.backend);
 
-        let adapter = match instance
-            .request_adapter(&wgpu::RequestAdapterOptions {
+        let adapter = match futures::executor::block_on(instance.request_adapter(
+            &wgpu::RequestAdapterOptions {
                 power_preference: config.power_preference,
                 compatible_surface,
-            })
-            .await
-        {
+            },
+        )) {
             Some(v) => v,
             None => return Err(DeviceCreationError::AdapterRequestFailed),
         };
@@ -69,17 +68,15 @@ impl Device {
             ));
         }
 
-        let (device, queue) = adapter
-            .request_device(
-                &wgpu::DeviceDescriptor {
-                    features: (config.optional_features & adapter.features())
-                        | config.required_features,
-                    limits: config.required_limits.clone(),
-                    shader_validation: true,
-                },
-                None,
-            )
-            .await?;
+        let (device, queue) = futures::executor::block_on(adapter.request_device(
+            &wgpu::DeviceDescriptor {
+                features: (config.optional_features & adapter.features())
+                    | config.required_features,
+                limits: config.required_limits.clone(),
+                shader_validation: true,
+            },
+            None,
+        ))?;
 
         Ok(Self {
             instance,
@@ -136,7 +133,7 @@ mod tests {
 
     #[test]
     fn creation() {
-        let device = futures::executor::block_on(Device::new(
+        let device = Device::new(
             &DeviceConfig {
                 backend: Backend::PRIMARY,
                 power_preference: PowerPreference::Default,
@@ -145,15 +142,14 @@ mod tests {
                 required_limits: Limits::default(),
             },
             None,
-        ))
+        )
         .unwrap();
         println!("{:?}", device.info());
     }
 
     #[test]
     fn default_config() {
-        let device =
-            futures::executor::block_on(Device::new(&DeviceConfig::default(), None)).unwrap();
+        let device = Device::new(&DeviceConfig::default(), None).unwrap();
         println!("{:?}", device.info());
     }
 }

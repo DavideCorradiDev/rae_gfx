@@ -66,8 +66,7 @@ impl EventHandler<ApplicationError, ApplicationEvent> for ApplicationImpl {
                 height: 800,
             }))
             .build(event_loop)?;
-        let device =
-            futures::executor::block_on(Device::new(&DeviceConfig::high_performance(), None))?;
+        let device = Device::new(&DeviceConfig::high_performance(), None)?;
         Ok(Self { window, device })
     }
 
