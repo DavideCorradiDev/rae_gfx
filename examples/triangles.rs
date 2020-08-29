@@ -44,21 +44,12 @@ impl EventHandler<ApplicationError, ApplicationEvent> for ApplicationImpl {
         let pipeline =
             geometry2::RenderPipeline::new(&instance, &geometry2::RenderPipelineConfig::default());
 
-        // let triangle_mesh = geometry2::Mesh::new(
-        //     &instance,
-        //     &[
-        //         geometry2::Vertex::new(-0.5, -0.5),
-        //         geometry2::Vertex::new(0., 0.5),
-        //         geometry2::Vertex::new(0.5, -0.5),
-        //     ],
-        //     &[0, 1, 2],
-        // );
         let triangle_mesh = geometry2::Mesh::new(
             &instance,
             &[
-                geometry2::Vertex::new(-10., -10.),
-                geometry2::Vertex::new(0., 10.),
-                geometry2::Vertex::new(10., -10.),
+                geometry2::Vertex::new(-0.5, -0.5),
+                geometry2::Vertex::new(0.5, -0.5),
+                geometry2::Vertex::new(0., 0.5),
             ],
             &[0, 1, 2],
         );
