@@ -34,6 +34,7 @@ pub struct Mesh {
     index_count: u32,
 }
 
+// TODO: add static methods to create common shapes and shape outlines.
 impl Mesh {
     pub fn new<'a>(
         instance: &core::Instance,
@@ -151,6 +152,7 @@ impl RenderPipeline {
 
 pub trait Renderer<'a> {
     fn draw_geometry2(&mut self, pipeline: &'a RenderPipeline, mesh: &'a Mesh);
+    fn draw_geometry2_array(&mut self, pipeline: &'a RenderPipeline, meshes: &'a [&'a Mesh]);
 }
 
 impl<'a> Renderer<'a> for core::RenderPass<'a> {
@@ -159,6 +161,15 @@ impl<'a> Renderer<'a> for core::RenderPass<'a> {
         self.set_index_buffer(mesh.index_buffer.slice(..));
         self.set_vertex_buffer(0, mesh.vertex_buffer.slice(..));
         self.draw_indexed(0..mesh.index_count as u32, 0, 0..1);
+    }
+
+    fn draw_geometry2_array(&mut self, pipeline: &'a RenderPipeline, meshes: &'a [&'a Mesh]) {
+        self.set_pipeline(&pipeline.pipeline);
+        for mesh in meshes.iter() {
+            self.set_index_buffer(mesh.index_buffer.slice(..));
+            self.set_vertex_buffer(0, mesh.vertex_buffer.slice(..));
+            self.draw_indexed(0..mesh.index_count as u32, 0, 0..1);
+        }
     }
 }
 
