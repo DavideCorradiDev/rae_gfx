@@ -5,6 +5,8 @@ use rae_app::{
     window::{WindowBuilder, WindowId},
 };
 
+use rae_math::{conversion::convert, geometry2::OrthographicProjection as OrthographicProjection2};
+
 use rae_gfx::wgpu::{
     core::{
         Canvas, CanvasWindow, Color, CommandEncoderDescriptor, Instance, InstanceConfig,
@@ -47,9 +49,9 @@ impl EventHandler<ApplicationError, ApplicationEvent> for ApplicationImpl {
         let triangle_mesh = geometry2::Mesh::new(
             &instance,
             &[
-                geometry2::Vertex::new(-0.5, -0.5),
-                geometry2::Vertex::new(0.5, -0.5),
-                geometry2::Vertex::new(0., 0.5),
+                geometry2::Vertex::new([-0.5, -0.5]),
+                geometry2::Vertex::new([0.5, -0.5]),
+                geometry2::Vertex::new([0., 0.5]),
             ],
             &[0, 1, 2],
         );
@@ -92,8 +94,21 @@ impl EventHandler<ApplicationError, ApplicationEvent> for ApplicationImpl {
     }
 
     fn on_variable_update(&mut self, _dt: std::time::Duration) -> Result<ControlFlow, Self::Error> {
-        // TODO: error handling
+        // TODO: missing error handling, remove the unwrap call...
+        // It seems that frame should be retrieved and be alive the whole time, or bad stuff will happen...
         let frame = self.window.get_current_frame().unwrap();
+        let constants = geometry2::PushConstants::new(
+            &convert(
+                OrthographicProjection2::new(
+                    0.,
+                    self.window.inner_size().width as f32,
+                    0.,
+                    self.window.inner_size().height as f32,
+                )
+                .to_projective(),
+            ),
+            Color::WHITE,
+        );
         let mut encoder = self
             .instance
             .create_command_encoder(&CommandEncoderDescriptor::default());
@@ -104,18 +119,13 @@ impl EventHandler<ApplicationError, ApplicationEvent> for ApplicationImpl {
                     attachment: &frame.output.view,
                     resolve_target: None,
                     ops: Operations {
-                        load: LoadOp::Clear(Color {
-                            r: 0.1,
-                            g: 0.2,
-                            b: 0.3,
-                            a: 1.0,
-                        }),
+                        load: LoadOp::Clear(Color::BLACK),
                         store: true,
                     },
                 }],
                 depth_stencil_attachment: None,
             });
-            rpass.draw_geometry2(&self.pipeline, &self.triangle_mesh);
+            rpass.draw_geometry2(&self.pipeline, &self.triangle_mesh, &constants);
         }
         self.instance.submit(Some(encoder.finish()));
         Ok(ControlFlow::Continue)

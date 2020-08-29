@@ -20,6 +20,7 @@ raw-window-handle = { version = "0.3" }
 wgpu = { version = "0.6", features = ["trace", "replay"] }
 serde = { version = "1.0", features = ["derive"] }
 futures = { version = "0.3" }
+num-traits = { version = "0.2" }
 bytemuck = { version = "1.4" }
 gfx-hal = { version = "0.5" }
 gfx-backend-empty = { version = "0.5", optional = true }

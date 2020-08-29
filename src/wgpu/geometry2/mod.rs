@@ -1,8 +1,12 @@
 use std::default::Default;
 
-use rae_math::geometry2;
+use num_traits::Zero;
+
+use rae_math::{conversion::ToHomogeneous3, geometry2, geometry3};
 
 use crate::wgpu::core;
+
+//TODO: move code to another file, rather than a generic mod.rs
 
 #[derive(Debug, PartialEq, Clone, Copy, serde::Serialize, serde::Deserialize)]
 pub struct Vertex {
@@ -10,16 +14,16 @@ pub struct Vertex {
 }
 
 impl Vertex {
-    pub fn new(x: f32, y: f32) -> Self {
+    pub fn new(position: [f32; 2]) -> Self {
         Self {
-            position: geometry2::Point::from([x, y]),
+            position: geometry2::Point::from(position),
         }
     }
 }
 
 unsafe impl bytemuck::Zeroable for Vertex {
     fn zeroed() -> Self {
-        Self::new(0., 0.)
+        Self::new([0., 0.])
     }
 }
 
@@ -60,6 +64,39 @@ impl Mesh {
     }
 }
 
+#[derive(Debug, PartialEq, Clone, Copy, serde::Serialize, serde::Deserialize)]
+pub struct PushConstants {
+    transform: geometry3::HomogeneousMatrix<f32>,
+    color: core::Color,
+}
+
+impl PushConstants {
+    pub fn new(transform: &geometry2::Transform<f32>, color: core::Color) -> Self {
+        Self {
+            transform: transform.to_homogeneous3(),
+            color,
+        }
+    }
+
+    fn as_slice(&self) -> &[u32] {
+        let pc: *const PushConstants = self;
+        let pc: *const u8 = pc as *const u8;
+        let data = unsafe { std::slice::from_raw_parts(pc, std::mem::size_of::<PushConstants>()) };
+        bytemuck::cast_slice(&data)
+    }
+}
+
+unsafe impl bytemuck::Zeroable for PushConstants {
+    fn zeroed() -> Self {
+        Self {
+            transform: geometry3::HomogeneousMatrix::zero(),
+            color: core::Color::TRANSPARENT,
+        }
+    }
+}
+
+unsafe impl bytemuck::Pod for PushConstants {}
+
 #[derive(Debug, PartialEq, Clone, serde::Serialize, serde::Deserialize)]
 pub struct RenderPipelineConfig {
     pub color_blend: core::BlendDescriptor,
@@ -95,10 +132,12 @@ pub struct RenderPipeline {
 impl RenderPipeline {
     pub fn new(instance: &core::Instance, config: &RenderPipelineConfig) -> Self {
         let pipeline_layout = instance.create_pipeline_layout(&core::PipelineLayoutDescriptor {
-            // TODO: define proper push constant / uniform layouts.
             label: Some("geometry2_pipeline_layout"),
             bind_group_layouts: &[],
-            push_constant_ranges: &[],
+            push_constant_ranges: &[core::PushConstantRange {
+                stages: core::ShaderStage::VERTEX,
+                range: 0..std::mem::size_of::<PushConstants>() as u32,
+            }],
         });
         let vs_module = instance
             .create_shader_module(core::include_spirv!("shaders/gen/spirv/geometry2.vert.spv"));
@@ -121,7 +160,6 @@ impl RenderPipeline {
                 ..Default::default()
             }),
             primitive_topology: core::PrimitiveTopology::TriangleList,
-            // TODO: define depth-stencil??
             color_states: &[core::ColorStateDescriptor {
                 format: instance.color_format(),
                 color_blend: config.color_blend.clone(),
@@ -129,7 +167,6 @@ impl RenderPipeline {
                 write_mask: config.write_mask,
             }],
             depth_stencil_state: None,
-            // TODO: define proper vertex buffer state
             vertex_state: core::VertexStateDescriptor {
                 index_format: core::IndexFormat::Uint16,
                 vertex_buffers: &[core::VertexBufferDescriptor {
@@ -151,23 +188,43 @@ impl RenderPipeline {
 }
 
 pub trait Renderer<'a> {
-    fn draw_geometry2(&mut self, pipeline: &'a RenderPipeline, mesh: &'a Mesh);
-    fn draw_geometry2_array(&mut self, pipeline: &'a RenderPipeline, meshes: &'a [&'a Mesh]);
+    fn draw_geometry2(
+        &mut self,
+        pipeline: &'a RenderPipeline,
+        mesh: &'a Mesh,
+        constants: &'a PushConstants,
+    );
+    fn draw_geometry2_array(
+        &mut self,
+        pipeline: &'a RenderPipeline,
+        meshes: &'a [(&'a Mesh, &'a PushConstants)],
+    );
 }
 
 impl<'a> Renderer<'a> for core::RenderPass<'a> {
-    fn draw_geometry2(&mut self, pipeline: &'a RenderPipeline, mesh: &'a Mesh) {
+    fn draw_geometry2(
+        &mut self,
+        pipeline: &'a RenderPipeline,
+        mesh: &'a Mesh,
+        constants: &'a PushConstants,
+    ) {
         self.set_pipeline(&pipeline.pipeline);
         self.set_index_buffer(mesh.index_buffer.slice(..));
         self.set_vertex_buffer(0, mesh.vertex_buffer.slice(..));
+        self.set_push_constants(core::ShaderStage::VERTEX, 0, constants.as_slice());
         self.draw_indexed(0..mesh.index_count as u32, 0, 0..1);
     }
 
-    fn draw_geometry2_array(&mut self, pipeline: &'a RenderPipeline, meshes: &'a [&'a Mesh]) {
+    fn draw_geometry2_array(
+        &mut self,
+        pipeline: &'a RenderPipeline,
+        meshes: &'a [(&'a Mesh, &'a PushConstants)],
+    ) {
         self.set_pipeline(&pipeline.pipeline);
-        for mesh in meshes.iter() {
+        for (mesh, constants) in meshes.iter() {
             self.set_index_buffer(mesh.index_buffer.slice(..));
             self.set_vertex_buffer(0, mesh.vertex_buffer.slice(..));
+            self.set_push_constants(core::ShaderStage::VERTEX, 0, constants.as_slice());
             self.draw_indexed(0..mesh.index_count as u32, 0, 0..1);
         }
     }
