@@ -1,4 +1,8 @@
-pub use wgpu::{BackendBit as Backend, Features, Limits, PowerPreference};
+use std::default::Default;
+
+pub use wgpu::{
+    AdapterInfo as DeviceInfo, BackendBit as Backend, Features, Limits, PowerPreference,
+};
 
 #[derive(Debug, Clone)]
 pub struct DeviceConfig<'a> {
@@ -9,6 +13,22 @@ pub struct DeviceConfig<'a> {
     pub optional_features: Features,
     pub required_limits: Limits,
 }
+
+impl<'a> Default for DeviceConfig<'a> {
+    fn default() -> Self {
+        Self {
+            backend: Backend::PRIMARY,
+            power_preference: PowerPreference::Default,
+            compatible_surface: None,
+            required_features: Features::default(),
+            optional_features: Features::empty(),
+            required_limits: Limits::default(),
+        }
+    }
+}
+
+// TODO: implement default for DeviceConfig.
+// TODO: serialization for DeviceConfig.
 
 #[derive(Debug)]
 pub struct Device {
@@ -57,6 +77,10 @@ impl Device {
             device,
             queue,
         })
+    }
+
+    pub fn info(&self) -> DeviceInfo {
+        self.adapter.get_info()
     }
 }
 
@@ -111,5 +135,12 @@ mod tests {
             required_limits: Limits::default(),
         }))
         .unwrap();
+        println!("{:?}", _device.info());
+    }
+
+    #[test]
+    fn default_config() {
+        let _device = futures::executor::block_on(Device::new(&DeviceConfig::default())).unwrap();
+        println!("{:?}", _device.info());
     }
 }
