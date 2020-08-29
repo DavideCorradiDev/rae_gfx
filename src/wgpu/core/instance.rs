@@ -1,5 +1,7 @@
 use std::default::Default;
 
+use rae_app::window::Window;
+
 use wgpu::util::DeviceExt;
 
 use raw_window_handle::HasRawWindowHandle;
@@ -46,53 +48,46 @@ impl Default for InstanceConfig {
 
 #[derive(Debug)]
 pub struct Instance {
-    instance: wgpu::Instance,
-    adapter: Adapter,
-    device: Device,
     queue: Queue,
+    device: Device,
+    adapter: Adapter,
+    instance: wgpu::Instance,
 }
 
 impl Instance {
     pub fn new(
         config: &InstanceConfig,
-        compatible_surface: Option<&wgpu::Surface>,
+        compatible_surface: Option<&Surface>,
     ) -> Result<Self, InstanceCreationError> {
-        let instance = wgpu::Instance::new(config.backend);
-
-        let adapter = match futures::executor::block_on(instance.request_adapter(
-            &wgpu::RequestAdapterOptions {
-                power_preference: config.power_preference,
-                compatible_surface,
-            },
-        )) {
-            Some(v) => v,
-            None => return Err(InstanceCreationError::AdapterRequestFailed),
-        };
-
-        if !adapter.features().contains(config.required_features) {
-            return Err(InstanceCreationError::FeaturesNotAvailable(
-                config.required_features - adapter.features(),
-            ));
-        }
-
-        let (device, queue) = futures::executor::block_on(adapter.request_device(
-            &wgpu::DeviceDescriptor {
-                features: (config.optional_features & adapter.features())
-                    | config.required_features,
-                limits: config.required_limits.clone(),
-                shader_validation: true,
-            },
-            None,
-        ))?;
-
+        let instance = Self::create_instance(config);
+        let adapter = Self::create_adapter(&instance, config, compatible_surface)?;
+        let (device, queue) = Self::create_device_and_queue(&adapter, config)?;
         Ok(Self {
-            instance,
+            queue,
             adapter,
             device,
-            queue,
+            instance,
         })
     }
 
+    pub unsafe fn new_with_surface(
+        config: &InstanceConfig,
+        compatible_window: &Window,
+    ) -> Result<(Self, Surface), InstanceCreationError> {
+        let instance = Self::create_instance(config);
+        let surface = instance.create_surface(compatible_window);
+        let adapter = Self::create_adapter(&instance, config, Some(&surface))?;
+        let (device, queue) = Self::create_device_and_queue(&adapter, config)?;
+        Ok((
+            Self {
+                queue,
+                adapter,
+                device,
+                instance,
+            },
+            surface,
+        ))
+    }
     pub fn color_format(&self) -> TextureFormat {
         TextureFormat::Bgra8UnormSrgb
     }
@@ -123,6 +118,50 @@ impl Instance {
 
     pub fn create_buffer_init(&self, desc: &BufferInitDescriptor) -> Buffer {
         self.device.create_buffer_init(desc)
+    }
+
+    fn create_instance(config: &InstanceConfig) -> wgpu::Instance {
+        wgpu::Instance::new(config.backend)
+    }
+
+    fn create_adapter(
+        instance: &wgpu::Instance,
+        config: &InstanceConfig,
+        compatible_surface: Option<&Surface>,
+    ) -> Result<Adapter, InstanceCreationError> {
+        let adapter = match futures::executor::block_on(instance.request_adapter(
+            &wgpu::RequestAdapterOptions {
+                power_preference: config.power_preference,
+                compatible_surface,
+            },
+        )) {
+            Some(v) => v,
+            None => return Err(InstanceCreationError::AdapterRequestFailed),
+        };
+
+        if !adapter.features().contains(config.required_features) {
+            return Err(InstanceCreationError::FeaturesNotAvailable(
+                config.required_features - adapter.features(),
+            ));
+        }
+
+        Ok(adapter)
+    }
+
+    fn create_device_and_queue(
+        adapter: &Adapter,
+        config: &InstanceConfig,
+    ) -> Result<(Device, Queue), InstanceCreationError> {
+        let (device, queue) = futures::executor::block_on(adapter.request_device(
+            &wgpu::DeviceDescriptor {
+                features: (config.optional_features & adapter.features())
+                    | config.required_features,
+                limits: config.required_limits.clone(),
+                shader_validation: true,
+            },
+            None,
+        ))?;
+        Ok((device, queue))
     }
 }
 
@@ -166,8 +205,19 @@ impl From<wgpu::RequestDeviceError> for InstanceCreationError {
 mod tests {
     use super::*;
 
+    use rae_app::{
+        event::{EventLoop, EventLoopAnyThread},
+        window::WindowBuilder,
+    };
+
     #[test]
-    fn creation() {
+    fn default_config() {
+        let instance = Instance::new(&InstanceConfig::default(), None).unwrap();
+        println!("{:?}", instance.info());
+    }
+
+    #[test]
+    fn new() {
         let instance = Instance::new(
             &InstanceConfig {
                 backend: Backend::PRIMARY,
@@ -183,8 +233,14 @@ mod tests {
     }
 
     #[test]
-    fn default_config() {
-        let instance = Instance::new(&InstanceConfig::default(), None).unwrap();
+    fn new_with_surface() {
+        let event_loop = EventLoop::<()>::new_any_thread();
+        let window = WindowBuilder::new()
+            .with_visible(false)
+            .build(&event_loop)
+            .unwrap();
+        let (instance, _surface) =
+            unsafe { Instance::new_with_surface(&InstanceConfig::default(), &window).unwrap() };
         println!("{:?}", instance.info());
     }
 }

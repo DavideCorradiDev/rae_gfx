@@ -4,7 +4,10 @@ use rae_app::{
     window::{ExternalError, NotSupportedError, OsError, Window, WindowBuilder, WindowId},
 };
 
-use super::{Instance, PresentMode, Surface, SwapChain, SwapChainDescriptor, TextureUsage};
+use super::{
+    Instance, InstanceConfig, InstanceCreationError, PresentMode, Surface, SwapChain,
+    SwapChainDescriptor, TextureUsage,
+};
 
 #[derive(Debug)]
 pub struct CanvasWindow {
@@ -20,7 +23,53 @@ impl CanvasWindow {
         event_loop: &EventLoop<T>,
     ) -> Result<Self, OsError> {
         let window = Window::new(event_loop)?;
-        Ok(Self::with_window(instance, window))
+        Ok(Self::from_window(instance, window))
+    }
+
+    pub unsafe fn from_window(instance: &Instance, window: Window) -> Self {
+        let surface = instance.create_surface(&window);
+        let surface_size = window.inner_size();
+        let swap_chain = Self::create_swap_chain(instance, &surface, &surface_size);
+        Self {
+            swap_chain,
+            surface,
+            surface_size,
+            window,
+        }
+    }
+
+    pub unsafe fn new_with_instance<T: 'static>(
+        instance_config: &InstanceConfig,
+        event_loop: &EventLoop<T>,
+    ) -> Result<(Self, Instance), WindowWithInstanceCreationError> {
+        let window = Window::new(event_loop)?;
+        Self::from_window_with_instance(instance_config, window)
+    }
+
+    pub unsafe fn from_window_with_instance(
+        instance_config: &InstanceConfig,
+        window: Window,
+    ) -> Result<(Self, Instance), WindowWithInstanceCreationError> {
+        let (instance, surface) = Instance::new_with_surface(instance_config, &window)?;
+        let surface_size = window.inner_size();
+        let swap_chain = Self::create_swap_chain(&instance, &surface, &surface_size);
+        Ok((
+            Self {
+                swap_chain,
+                surface,
+                surface_size,
+                window,
+            },
+            instance,
+        ))
+    }
+
+    pub fn reconfigure_swap_chain(&mut self, instance: &Instance) {
+        let current_size = self.inner_size();
+        if self.surface_size != current_size {
+            self.swap_chain = Self::create_swap_chain(instance, &self.surface, &current_size);
+            self.surface_size = current_size;
+        }
     }
 
     pub fn id(&self) -> WindowId {
@@ -148,26 +197,6 @@ impl CanvasWindow {
         self.window.set_cursor_visible(visible)
     }
 
-    pub fn reconfigure_swap_chain(&mut self, instance: &Instance) {
-        let current_size = self.inner_size();
-        if self.surface_size != current_size {
-            self.swap_chain = Self::create_swap_chain(instance, &self.surface, &current_size);
-            self.surface_size = current_size;
-        }
-    }
-
-    unsafe fn with_window(instance: &Instance, window: Window) -> Self {
-        let surface = instance.create_surface(&window);
-        let surface_size = window.inner_size();
-        let swap_chain = Self::create_swap_chain(instance, &surface, &surface_size);
-        Self {
-            swap_chain,
-            surface,
-            surface_size,
-            window,
-        }
-    }
-
     fn create_swap_chain(
         instance: &Instance,
         surface: &Surface,
@@ -278,6 +307,88 @@ impl CanvasWindowBuilder {
         T: 'static,
     {
         let window = self.builder.build(window_target)?;
-        Ok(CanvasWindow::with_window(instance, window))
+        Ok(CanvasWindow::from_window(instance, window))
+    }
+
+    pub unsafe fn build_with_instance<T: 'static>(
+        self,
+        instance_config: &InstanceConfig,
+        window_target: &EventLoopWindowTarget<T>,
+    ) -> Result<(CanvasWindow, Instance), WindowWithInstanceCreationError> {
+        let window = self.builder.build(window_target)?;
+        CanvasWindow::from_window_with_instance(instance_config, window)
+    }
+}
+
+// TODO: PartialEq and Clone
+#[derive(Debug)]
+pub enum WindowWithInstanceCreationError {
+    InstanceCreationFailed(InstanceCreationError),
+    WindowCreationFailed(OsError),
+}
+
+impl std::fmt::Display for WindowWithInstanceCreationError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            WindowWithInstanceCreationError::InstanceCreationFailed(e) => {
+                write!(f, "Instance creation failed ({})", e)
+            }
+            WindowWithInstanceCreationError::WindowCreationFailed(e) => {
+                write!(f, "Window creation failed ({})", e)
+            }
+        }
+    }
+}
+
+impl std::error::Error for WindowWithInstanceCreationError {
+    fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
+        match self {
+            WindowWithInstanceCreationError::InstanceCreationFailed(e) => Some(e),
+            WindowWithInstanceCreationError::WindowCreationFailed(e) => Some(e),
+        }
+    }
+}
+
+impl From<InstanceCreationError> for WindowWithInstanceCreationError {
+    fn from(e: InstanceCreationError) -> Self {
+        WindowWithInstanceCreationError::InstanceCreationFailed(e)
+    }
+}
+
+impl From<OsError> for WindowWithInstanceCreationError {
+    fn from(e: OsError) -> Self {
+        WindowWithInstanceCreationError::WindowCreationFailed(e)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use galvanic_assert::{matchers::*, *};
+
+    use super::*;
+
+    use rae_app::event::EventLoopAnyThread;
+
+    #[test]
+    fn window_builder() {
+        let instance = Instance::new(&InstanceConfig::default(), None).unwrap();
+        let event_loop = EventLoop::<()>::new_any_thread();
+        let _window = unsafe {
+            CanvasWindowBuilder::new()
+                .with_visible(false)
+                .build(&instance, &event_loop)
+                .unwrap()
+        };
+    }
+
+    #[test]
+    fn window_builder_with_instance() {
+        let event_loop = EventLoop::<()>::new_any_thread();
+        let (_window, _instance) = unsafe {
+            CanvasWindowBuilder::new()
+                .with_visible(false)
+                .build_with_instance(&InstanceConfig::default(), &event_loop)
+                .unwrap()
+        };
     }
 }
