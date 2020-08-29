@@ -3,10 +3,10 @@ pub use wgpu::{
     BindGroupLayout, BlendDescriptor, BlendFactor, BlendOperation, Buffer, BufferAddress,
     BufferUsage, ColorStateDescriptor, ColorWrite, CullMode, Device, Features, FrontFace,
     IndexFormat, InputStepMode, Limits, PipelineLayout, PipelineLayoutDescriptor, PowerPreference,
-    PrimitiveTopology, ProgrammableStageDescriptor, PushConstantRange, Queue,
+    PresentMode, PrimitiveTopology, ProgrammableStageDescriptor, PushConstantRange, Queue,
     RasterizationStateDescriptor, RenderPipeline, RenderPipelineDescriptor, ShaderModule,
-    ShaderModuleSource, Surface, TextureFormat, VertexAttributeDescriptor, VertexBufferDescriptor,
-    VertexFormat, VertexStateDescriptor,
+    ShaderModuleSource, Surface, SwapChain, SwapChainDescriptor, TextureFormat, TextureUsage,
+    VertexAttributeDescriptor, VertexBufferDescriptor, VertexFormat, VertexStateDescriptor,
 };
 
 mod canvas;

@@ -7,7 +7,8 @@ use raw_window_handle::HasRawWindowHandle;
 use super::{
     Adapter, AdapterInfo, Backend, Buffer, BufferInitDescriptor, Device, Features, Limits,
     PipelineLayout, PipelineLayoutDescriptor, PowerPreference, Queue, RenderPipeline,
-    RenderPipelineDescriptor, ShaderModule, ShaderModuleSource, Surface, TextureFormat,
+    RenderPipelineDescriptor, ShaderModule, ShaderModuleSource, Surface, SwapChain,
+    SwapChainDescriptor, TextureFormat,
 };
 
 #[derive(Debug, PartialEq, Eq, Clone, serde::Serialize)]
@@ -102,6 +103,10 @@ impl Instance {
 
     pub unsafe fn create_surface<W: HasRawWindowHandle>(&self, window: &W) -> Surface {
         self.instance.create_surface(window)
+    }
+
+    pub fn create_swap_chain(&self, surface: &Surface, desc: &SwapChainDescriptor) -> SwapChain {
+        self.device.create_swap_chain(surface, desc)
     }
 
     pub fn create_shader_module(&self, source: ShaderModuleSource) -> ShaderModule {

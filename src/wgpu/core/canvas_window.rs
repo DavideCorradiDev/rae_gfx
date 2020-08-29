@@ -4,10 +4,11 @@ use rae_app::{
     window::{ExternalError, NotSupportedError, OsError, Window, WindowBuilder, WindowId},
 };
 
-use super::{Instance, Surface};
+use super::{Instance, PresentMode, Surface, SwapChain, SwapChainDescriptor, TextureUsage};
 
 #[derive(Debug)]
 pub struct CanvasWindow {
+    swap_chain: SwapChain,
     surface: Surface,
     window: Window,
 }
@@ -178,7 +179,29 @@ impl CanvasWindow {
         window: Window,
     ) -> Result<Self, CanvasWindowCreationError> {
         let surface = instance.create_surface(&window);
-        Ok(Self { surface, window })
+        let swap_chain = Self::create_swap_chain(instance, &surface, &window.inner_size());
+        Ok(Self {
+            swap_chain,
+            surface,
+            window,
+        })
+    }
+
+    fn create_swap_chain(
+        instance: &Instance,
+        surface: &Surface,
+        size: &window::PhysicalSize<u32>,
+    ) -> SwapChain {
+        instance.create_swap_chain(
+            surface,
+            &SwapChainDescriptor {
+                usage: TextureUsage::OUTPUT_ATTACHMENT,
+                format: instance.color_format(),
+                width: size.width,
+                height: size.height,
+                present_mode: PresentMode::Mailbox,
+            },
+        )
     }
 }
 
@@ -337,6 +360,7 @@ impl From<OsError> for CanvasWindowCreationError {
 //     }
 // }
 
+// TODO PartialEq and Clone
 #[derive(Debug)]
 pub enum CanvasWindowOperationError {
     UnsupportedOperation(NotSupportedError),
