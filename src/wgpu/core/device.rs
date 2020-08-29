@@ -4,22 +4,20 @@ pub use wgpu::{
     AdapterInfo as DeviceInfo, BackendBit as Backend, Features, Limits, PowerPreference,
 };
 
-#[derive(Debug, Clone)]
-pub struct DeviceConfig<'a> {
+#[derive(Debug, PartialEq, Eq, Clone)]
+pub struct DeviceConfig {
     pub backend: Backend,
     pub power_preference: PowerPreference,
-    pub compatible_surface: Option<&'a wgpu::Surface>,
     pub required_features: Features,
     pub optional_features: Features,
     pub required_limits: Limits,
 }
 
-impl<'a> Default for DeviceConfig<'a> {
-    fn default() -> Self {
+impl DeviceConfig {
+    pub fn high_performance() -> Self {
         Self {
             backend: Backend::PRIMARY,
-            power_preference: PowerPreference::Default,
-            compatible_surface: None,
+            power_preference: PowerPreference::HighPerformance,
             required_features: Features::default(),
             optional_features: Features::empty(),
             required_limits: Limits::default(),
@@ -27,7 +25,18 @@ impl<'a> Default for DeviceConfig<'a> {
     }
 }
 
-// TODO: implement default for DeviceConfig.
+impl Default for DeviceConfig {
+    fn default() -> Self {
+        Self {
+            backend: Backend::PRIMARY,
+            power_preference: PowerPreference::Default,
+            required_features: Features::default(),
+            optional_features: Features::empty(),
+            required_limits: Limits::default(),
+        }
+    }
+}
+
 // TODO: serialization for DeviceConfig.
 
 #[derive(Debug)]
@@ -39,13 +48,16 @@ pub struct Device {
 }
 
 impl Device {
-    pub async fn new(config: &DeviceConfig<'_>) -> Result<Self, DeviceCreationError> {
+    pub async fn new(
+        config: &DeviceConfig,
+        compatible_surface: Option<&wgpu::Surface>,
+    ) -> Result<Self, DeviceCreationError> {
         let instance = wgpu::Instance::new(config.backend);
 
         let adapter = match instance
             .request_adapter(&wgpu::RequestAdapterOptions {
                 power_preference: config.power_preference,
-                compatible_surface: config.compatible_surface,
+                compatible_surface,
             })
             .await
         {
@@ -126,21 +138,24 @@ mod tests {
 
     #[test]
     fn creation() {
-        let _device = futures::executor::block_on(Device::new(&DeviceConfig {
-            backend: Backend::PRIMARY,
-            power_preference: PowerPreference::Default,
-            compatible_surface: None,
-            required_features: Features::default(),
-            optional_features: Features::empty(),
-            required_limits: Limits::default(),
-        }))
+        let _device = futures::executor::block_on(Device::new(
+            &DeviceConfig {
+                backend: Backend::PRIMARY,
+                power_preference: PowerPreference::Default,
+                required_features: Features::default(),
+                optional_features: Features::empty(),
+                required_limits: Limits::default(),
+            },
+            None,
+        ))
         .unwrap();
         println!("{:?}", _device.info());
     }
 
     #[test]
     fn default_config() {
-        let _device = futures::executor::block_on(Device::new(&DeviceConfig::default())).unwrap();
+        let _device =
+            futures::executor::block_on(Device::new(&DeviceConfig::default(), None)).unwrap();
         println!("{:?}", _device.info());
     }
 }
