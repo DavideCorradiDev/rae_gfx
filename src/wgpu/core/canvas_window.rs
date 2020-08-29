@@ -1,13 +1,10 @@
 use rae_app::{
-    event::{EventLoop, EventLoopWindowTarget},
+    event::EventLoop,
     window,
-    window::{ExternalError, NotSupportedError, OsError, Window, WindowBuilder, WindowId},
+    window::{ExternalError, NotSupportedError, OsError, Window, WindowId},
 };
 
-use super::{
-    Instance, InstanceConfig, InstanceCreationError, PresentMode, Surface, SwapChain,
-    SwapChainDescriptor, TextureUsage,
-};
+use super::{Instance, PresentMode, Surface, SwapChain, SwapChainDescriptor, TextureUsage};
 
 #[derive(Debug)]
 pub struct CanvasWindow {
@@ -40,25 +37,6 @@ impl CanvasWindow {
             surface_size,
             window,
         }
-    }
-
-    pub unsafe fn new_with_instance<T: 'static>(
-        instance_config: &InstanceConfig,
-        event_loop: &EventLoop<T>,
-    ) -> Result<(Self, Instance), WindowWithInstanceCreationError> {
-        let window = Window::new(event_loop)?;
-        Self::from_window_with_instance(instance_config, window)
-    }
-
-    pub unsafe fn from_window_with_instance(
-        instance_config: &InstanceConfig,
-        window: Window,
-    ) -> Result<(Self, Instance), WindowWithInstanceCreationError> {
-        let (instance, surface) = Instance::new_with_surface(instance_config, &window)?;
-        Ok((
-            Self::from_window_and_surface(&instance, window, surface),
-            instance,
-        ))
     }
 
     pub fn reconfigure_swap_chain(&mut self, instance: &Instance) {
@@ -212,198 +190,60 @@ impl CanvasWindow {
     }
 }
 
-pub struct CanvasWindowBuilder {
-    builder: WindowBuilder,
-}
-
-impl CanvasWindowBuilder {
-    pub fn new() -> Self {
-        CanvasWindowBuilder {
-            builder: window::WindowBuilder::new(),
-        }
-    }
-
-    pub fn with_inner_size<S: Into<window::Size>>(self, size: S) -> Self {
-        CanvasWindowBuilder {
-            builder: self.builder.with_inner_size(size),
-        }
-    }
-
-    pub fn with_min_inner_size<S: Into<window::Size>>(self, size: S) -> Self {
-        CanvasWindowBuilder {
-            builder: self.builder.with_min_inner_size(size),
-        }
-    }
-
-    pub fn with_max_inner_size<S: Into<window::Size>>(self, size: S) -> Self {
-        CanvasWindowBuilder {
-            builder: self.builder.with_max_inner_size(size),
-        }
-    }
-
-    pub fn with_title<T: Into<String>>(self, title: T) -> Self {
-        CanvasWindowBuilder {
-            builder: self.builder.with_title(title),
-        }
-    }
-
-    pub fn with_window_icon(self, icon: Option<window::Icon>) -> Self {
-        CanvasWindowBuilder {
-            builder: self.builder.with_window_icon(icon),
-        }
-    }
-
-    pub fn with_fullscreen(self, monitor: Option<window::Fullscreen>) -> Self {
-        CanvasWindowBuilder {
-            builder: self.builder.with_fullscreen(monitor),
-        }
-    }
-
-    pub fn with_resizable(self, resizable: bool) -> Self {
-        CanvasWindowBuilder {
-            builder: self.builder.with_resizable(resizable),
-        }
-    }
-
-    pub fn with_maximized(self, maximized: bool) -> Self {
-        CanvasWindowBuilder {
-            builder: self.builder.with_maximized(maximized),
-        }
-    }
-
-    pub fn with_visible(self, visible: bool) -> Self {
-        CanvasWindowBuilder {
-            builder: self.builder.with_visible(visible),
-        }
-    }
-
-    pub fn with_transparent(self, transparent: bool) -> Self {
-        CanvasWindowBuilder {
-            builder: self.builder.with_transparent(transparent),
-        }
-    }
-
-    pub fn with_decorations(self, decorations: bool) -> Self {
-        CanvasWindowBuilder {
-            builder: self.builder.with_decorations(decorations),
-        }
-    }
-
-    pub fn with_always_on_top(self, always_on_top: bool) -> Self {
-        CanvasWindowBuilder {
-            builder: self.builder.with_always_on_top(always_on_top),
-        }
-    }
-
-    pub unsafe fn build<T>(
-        self,
-        instance: &Instance,
-        window_target: &EventLoopWindowTarget<T>,
-    ) -> Result<CanvasWindow, OsError>
-    where
-        T: 'static,
-    {
-        let window = self.builder.build(window_target)?;
-        Ok(CanvasWindow::from_window(instance, window))
-    }
-
-    pub unsafe fn build_with_instance<T: 'static>(
-        self,
-        instance_config: &InstanceConfig,
-        window_target: &EventLoopWindowTarget<T>,
-    ) -> Result<(CanvasWindow, Instance), WindowWithInstanceCreationError> {
-        let window = self.builder.build(window_target)?;
-        CanvasWindow::from_window_with_instance(instance_config, window)
-    }
-}
-
-// TODO: PartialEq and Clone
-#[derive(Debug)]
-pub enum WindowWithInstanceCreationError {
-    InstanceCreationFailed(InstanceCreationError),
-    WindowCreationFailed(OsError),
-}
-
-impl std::fmt::Display for WindowWithInstanceCreationError {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match self {
-            WindowWithInstanceCreationError::InstanceCreationFailed(e) => {
-                write!(f, "Instance creation failed ({})", e)
-            }
-            WindowWithInstanceCreationError::WindowCreationFailed(e) => {
-                write!(f, "Window creation failed ({})", e)
-            }
-        }
-    }
-}
-
-impl std::error::Error for WindowWithInstanceCreationError {
-    fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
-        match self {
-            WindowWithInstanceCreationError::InstanceCreationFailed(e) => Some(e),
-            WindowWithInstanceCreationError::WindowCreationFailed(e) => Some(e),
-        }
-    }
-}
-
-impl From<InstanceCreationError> for WindowWithInstanceCreationError {
-    fn from(e: InstanceCreationError) -> Self {
-        WindowWithInstanceCreationError::InstanceCreationFailed(e)
-    }
-}
-
-impl From<OsError> for WindowWithInstanceCreationError {
-    fn from(e: OsError) -> Self {
-        WindowWithInstanceCreationError::WindowCreationFailed(e)
-    }
-}
-
 #[cfg(test)]
 mod tests {
-    use galvanic_assert::{matchers::*, *};
-
     use super::*;
 
-    use rae_app::event::EventLoopAnyThread;
+    use galvanic_assert::{matchers::*, *};
+
+    use rae_app::{event::EventLoopAnyThread, window::WindowBuilder};
+
+    use crate::wgpu::core::InstanceConfig;
 
     #[test]
-    fn window_builder() {
-        let instance = Instance::new(&InstanceConfig::default(), None).unwrap();
+    fn from_window() {
+        let instance = Instance::new(&InstanceConfig::default()).unwrap();
         let event_loop = EventLoop::<()>::new_any_thread();
-        let _window = unsafe {
-            CanvasWindowBuilder::new()
-                .with_visible(false)
-                .build(&instance, &event_loop)
-                .unwrap()
-        };
+        let window = WindowBuilder::new()
+            .with_visible(false)
+            .build(&event_loop)
+            .unwrap();
+        let _canvas_window = unsafe { CanvasWindow::from_window(&instance, window) };
     }
 
     #[test]
-    fn window_builder_with_instance() {
+    fn from_window_and_surface() {
         let event_loop = EventLoop::<()>::new_any_thread();
-        let (_window, _instance) = unsafe {
-            CanvasWindowBuilder::new()
-                .with_visible(false)
-                .build_with_instance(&InstanceConfig::default(), &event_loop)
-                .unwrap()
-        };
+        let window = WindowBuilder::new()
+            .with_visible(false)
+            .build(&event_loop)
+            .unwrap();
+        let (instance, surface) =
+            unsafe { Instance::new_with_surface(&InstanceConfig::default(), &window).unwrap() };
+        let _canvas_window = CanvasWindow::from_window_and_surface(&instance, window, surface);
     }
 
     #[test]
     fn multiple_windows_with_generic_instance() {
-        let instance = Instance::new(&InstanceConfig::default(), None).unwrap();
+        let instance = Instance::new(&InstanceConfig::default()).unwrap();
         let event_loop = EventLoop::<()>::new_any_thread();
         let window1 = unsafe {
-            CanvasWindowBuilder::new()
-                .with_visible(false)
-                .build(&instance, &event_loop)
-                .unwrap()
+            CanvasWindow::from_window(
+                &instance,
+                WindowBuilder::new()
+                    .with_visible(false)
+                    .build(&event_loop)
+                    .unwrap(),
+            )
         };
         let window2 = unsafe {
-            CanvasWindowBuilder::new()
-                .with_visible(false)
-                .build(&instance, &event_loop)
-                .unwrap()
+            CanvasWindow::from_window(
+                &instance,
+                WindowBuilder::new()
+                    .with_visible(false)
+                    .build(&event_loop)
+                    .unwrap(),
+            )
         };
         expect_that!(&window1.id(), not(eq(window2.id())));
     }
@@ -411,25 +251,22 @@ mod tests {
     #[test]
     fn multiple_windows_with_compatible_instance() {
         let event_loop = EventLoop::<()>::new_any_thread();
-        let (window1, instance) = unsafe {
-            CanvasWindowBuilder::new()
-                .with_visible(false)
-                .build_with_instance(&InstanceConfig::default(), &event_loop)
-                .unwrap()
-        };
+        let window1 = WindowBuilder::new()
+            .with_visible(false)
+            .build(&event_loop)
+            .unwrap();
+        let (instance, surface) =
+            unsafe { Instance::new_with_surface(&InstanceConfig::default(), &window1).unwrap() };
+        let window1 = CanvasWindow::from_window_and_surface(&instance, window1, surface);
         let window2 = unsafe {
-            CanvasWindowBuilder::new()
-                .with_visible(false)
-                .build(&instance, &event_loop)
-                .unwrap()
+            CanvasWindow::from_window(
+                &instance,
+                WindowBuilder::new()
+                    .with_visible(false)
+                    .build(&event_loop)
+                    .unwrap(),
+            )
         };
         expect_that!(&window1.id(), not(eq(window2.id())));
     }
-
-    // #[test]
-    // fn image_count() {
-    //     let tf = TestFixture::setup();
-    //     let window = tf.new_window();
-    //     expect_that!(&window.image_count(), eq(3));
-    // }
 }

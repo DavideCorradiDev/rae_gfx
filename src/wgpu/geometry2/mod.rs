@@ -152,7 +152,7 @@ mod tests {
 
     #[test]
     fn creation() {
-        let instance = core::Instance::new(&core::InstanceConfig::default(), None).unwrap();
+        let instance = core::Instance::new(&core::InstanceConfig::default()).unwrap();
         let _pipeline = RenderPipeline::new(&instance, &RenderPipelineConfig::default());
     }
 }

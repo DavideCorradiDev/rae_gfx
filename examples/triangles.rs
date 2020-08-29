@@ -2,7 +2,7 @@ use rae_app::{
     application::Application,
     event::{mouse, ControlFlow, DeviceId, EventHandler, EventLoop},
     window,
-    window::WindowId,
+    window::{WindowBuilder, WindowId},
 };
 
 use rae_gfx::wgpu::core::{
@@ -21,14 +21,15 @@ impl EventHandler<ApplicationError, ApplicationEvent> for ApplicationImpl {
     type CustomEvent = ApplicationEvent;
 
     fn new(event_loop: &EventLoop<Self::CustomEvent>) -> Result<Self, Self::Error> {
-        let (window, instance) = unsafe {
-            CanvasWindowBuilder::new()
-                .with_inner_size(window::Size::Physical(window::PhysicalSize {
-                    width: 800,
-                    height: 800,
-                }))
-                .build_with_instance(&InstanceConfig::high_performance(), event_loop)?
-        };
+        let window = WindowBuilder::new()
+            .with_inner_size(window::Size::Physical(window::PhysicalSize {
+                width: 800,
+                height: 800,
+            }))
+            .build(event_loop)?;
+        let (instance, surface) =
+            unsafe { Instance::new_with_surface(&InstanceConfig::high_performance(), &window)? };
+        let window = CanvasWindow::from_window_and_surface(&instance, window, surface);
         Ok(Self { window, instance })
     }
 
