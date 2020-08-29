@@ -10,6 +10,7 @@ use super::{Instance, PresentMode, Surface, SwapChain, SwapChainDescriptor, Text
 pub struct CanvasWindow {
     swap_chain: SwapChain,
     surface: Surface,
+    surface_size: window::PhysicalSize<u32>,
     window: Window,
 }
 
@@ -63,37 +64,28 @@ impl CanvasWindow {
         self.window.outer_size()
     }
 
-    pub fn set_inner_size<S>(&mut self, size: S) -> Result<(), CanvasWindowOperationError>
+    pub fn set_inner_size<S>(&mut self, instance: &Instance, size: S)
     where
         S: Into<window::Size>,
     {
         self.window.set_inner_size(size);
-        // self.resize_canvas_if_necessary()?;
-        Ok(())
+        self.reconfigure_swap_chain(instance);
     }
 
-    pub fn set_min_inner_size<S>(
-        &mut self,
-        min_size: Option<S>,
-    ) -> Result<(), CanvasWindowOperationError>
+    pub fn set_min_inner_size<S>(&mut self, instance: &Instance, min_size: Option<S>)
     where
         S: Into<window::Size>,
     {
         self.window.set_min_inner_size(min_size);
-        // self.resize_canvas_if_necessary()?;
-        Ok(())
+        self.reconfigure_swap_chain(instance);
     }
 
-    pub fn set_max_inner_size<S>(
-        &mut self,
-        max_size: Option<S>,
-    ) -> Result<(), CanvasWindowOperationError>
+    pub fn set_max_inner_size<S>(&mut self, instance: &Instance, max_size: Option<S>)
     where
         S: Into<window::Size>,
     {
         self.window.set_max_inner_size(max_size);
-        // self.resize_canvas_if_necessary()?;
-        Ok(())
+        self.reconfigure_swap_chain(instance);
     }
 
     pub fn set_title(&self, title: &str) {
@@ -164,25 +156,25 @@ impl CanvasWindow {
         self.window.set_cursor_visible(visible)
     }
 
-    // pub fn resize_canvas_if_necessary(&mut self) -> Result<(), CanvasWindowOperationError> {
-    //     let current_size = self.inner_size();
-    //     if self.surface_extent.width != current_size.width
-    //         || self.surface_extent.height != current_size.height
-    //     {
-    //         self.configure_swapchain()?;
-    //     }
-    //     Ok(())
-    // }
+    pub fn reconfigure_swap_chain(&mut self, instance: &Instance) {
+        let current_size = self.inner_size();
+        if self.surface_size != current_size {
+            self.swap_chain = Self::create_swap_chain(instance, &self.surface, &current_size);
+            self.surface_size = current_size;
+        }
+    }
 
     unsafe fn with_window(
         instance: &Instance,
         window: Window,
     ) -> Result<Self, CanvasWindowCreationError> {
         let surface = instance.create_surface(&window);
-        let swap_chain = Self::create_swap_chain(instance, &surface, &window.inner_size());
+        let surface_size = window.inner_size();
+        let swap_chain = Self::create_swap_chain(instance, &surface, &surface_size);
         Ok(Self {
             swap_chain,
             surface,
+            surface_size,
             window,
         })
     }
