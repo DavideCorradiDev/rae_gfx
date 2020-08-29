@@ -1,4 +1,33 @@
+use std::default::Default;
+
 use crate::wgpu::core;
+
+#[derive(Debug, PartialEq, Clone, serde::Serialize, serde::Deserialize)]
+pub struct RenderPipelineConfig {
+    pub color_blend: core::BlendDescriptor,
+    pub alpha_blend: core::BlendDescriptor,
+    pub write_mask: core::ColorWrite,
+    pub sample_count: u32,
+}
+
+impl Default for RenderPipelineConfig {
+    fn default() -> Self {
+        Self {
+            color_blend: core::BlendDescriptor {
+                src_factor: core::BlendFactor::SrcAlpha,
+                dst_factor: core::BlendFactor::OneMinusSrcAlpha,
+                operation: core::BlendOperation::Add,
+            },
+            alpha_blend: core::BlendDescriptor {
+                src_factor: core::BlendFactor::One,
+                dst_factor: core::BlendFactor::One,
+                operation: core::BlendOperation::Max,
+            },
+            write_mask: core::ColorWrite::ALL,
+            sample_count: 1,
+        }
+    }
+}
 
 #[derive(Debug)]
 pub struct RenderPipeline {
@@ -6,7 +35,7 @@ pub struct RenderPipeline {
 }
 
 impl RenderPipeline {
-    pub fn new(device: &core::Device) -> Self {
+    pub fn new(device: &core::Device, config: &RenderPipelineConfig) -> Self {
         let pipeline_layout = device.create_pipeline_layout(&core::PipelineLayoutDescriptor {
             // TODO: define proper push constant / uniform layouts.
             label: Some("geometry2_pipeline_layout"),
@@ -38,9 +67,9 @@ impl RenderPipeline {
             // TODO: define depth-stencil??
             color_states: &[core::ColorStateDescriptor {
                 format: device.color_format(),
-                color_blend: core::BlendDescriptor::REPLACE,
-                alpha_blend: core::BlendDescriptor::REPLACE,
-                write_mask: core::ColorWrite::ALL,
+                color_blend: config.color_blend.clone(),
+                alpha_blend: config.alpha_blend.clone(),
+                write_mask: config.write_mask,
             }],
             depth_stencil_state: None,
             // TODO: define proper vertex buffer state
@@ -57,7 +86,7 @@ impl RenderPipeline {
                 }],
             },
             // TODO: configurable multisampling.
-            sample_count: 1,
+            sample_count: config.sample_count,
             sample_mask: !0,
             alpha_to_coverage_enabled: false,
         });
