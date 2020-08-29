@@ -106,7 +106,7 @@ impl std::fmt::Display for DeviceCreationError {
         match self {
             DeviceCreationError::AdapterRequestFailed => write!(f, "Adapter request failed"),
             DeviceCreationError::FeaturesNotAvailable(features) => {
-                write!(f, "Required features are not available: {:?}", features)
+                write!(f, "Required features are not available ({:?})", features)
             }
             DeviceCreationError::DeviceRequestFailed(e) => {
                 write!(f, "Device request failed ({})", e)
