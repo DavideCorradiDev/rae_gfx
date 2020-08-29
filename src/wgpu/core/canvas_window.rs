@@ -391,4 +391,48 @@ mod tests {
                 .unwrap()
         };
     }
+
+    #[test]
+    fn multiple_windows_with_generic_instance() {
+        let instance = Instance::new(&InstanceConfig::default(), None).unwrap();
+        let event_loop = EventLoop::<()>::new_any_thread();
+        let window1 = unsafe {
+            CanvasWindowBuilder::new()
+                .with_visible(false)
+                .build(&instance, &event_loop)
+                .unwrap()
+        };
+        let window2 = unsafe {
+            CanvasWindowBuilder::new()
+                .with_visible(false)
+                .build(&instance, &event_loop)
+                .unwrap()
+        };
+        expect_that!(&window1.id(), not(eq(window2.id())));
+    }
+
+    #[test]
+    fn multiple_windows_with_compatible_instance() {
+        let event_loop = EventLoop::<()>::new_any_thread();
+        let (window1, instance) = unsafe {
+            CanvasWindowBuilder::new()
+                .with_visible(false)
+                .build_with_instance(&InstanceConfig::default(), &event_loop)
+                .unwrap()
+        };
+        let window2 = unsafe {
+            CanvasWindowBuilder::new()
+                .with_visible(false)
+                .build(&instance, &event_loop)
+                .unwrap()
+        };
+        expect_that!(&window1.id(), not(eq(window2.id())));
+    }
+
+    // #[test]
+    // fn image_count() {
+    //     let tf = TestFixture::setup();
+    //     let window = tf.new_window();
+    //     expect_that!(&window.image_count(), eq(3));
+    // }
 }
