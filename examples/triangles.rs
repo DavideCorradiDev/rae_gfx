@@ -14,8 +14,8 @@ use rae_math::{
 
 use rae_gfx::{
     core::{
-        Canvas, CanvasWindow, Color, CommandEncoderDescriptor, Instance, InstanceConfig,
-        InstanceCreationError, LoadOp, Operations, RenderPassColorAttachmentDescriptor,
+        Canvas, CanvasWindow, Color, CommandEncoderDescriptor, Instance, InstanceCreationError,
+        InstanceDescriptor, LoadOp, Operations, RenderPassColorAttachmentDescriptor,
         RenderPassDescriptor,
     },
     shape2,
@@ -62,14 +62,16 @@ impl EventHandler<ApplicationError, ApplicationEvent> for ApplicationImpl {
             }))
             .build(event_loop)?;
         let (window, instance) = unsafe {
-            let (instance, surface) =
-                Instance::new_with_compatible_window(&InstanceConfig::high_performance(), &window)?;
+            let (instance, surface) = Instance::new_with_compatible_window(
+                &InstanceDescriptor::high_performance(),
+                &window,
+            )?;
             let window = CanvasWindow::from_window_and_surface(&instance, window, surface);
             (window, instance)
         };
 
         let pipeline =
-            shape2::RenderPipeline::new(&instance, &shape2::RenderPipelineConfig::default());
+            shape2::RenderPipeline::new(&instance, &shape2::RenderPipelineDescriptor::default());
 
         let triangle_mesh = shape2::Mesh::new(
             &instance,
