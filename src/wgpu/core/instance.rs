@@ -67,7 +67,8 @@ impl Instance {
         })
     }
 
-    pub unsafe fn new_with_surface(
+    // Unsafe: surface creation.
+    pub unsafe fn new_with_compatible_window(
         config: &InstanceConfig,
         compatible_window: &Window,
     ) -> Result<(Self, Surface), InstanceCreationError> {
@@ -93,6 +94,7 @@ impl Instance {
         self.adapter.get_info()
     }
 
+    // Unsafe: surface creation.
     pub unsafe fn create_surface<W: HasRawWindowHandle>(&self, window: &W) -> Surface {
         self.instance.create_surface(window)
     }
@@ -227,14 +229,15 @@ mod tests {
     }
 
     #[test]
-    fn new_with_surface() {
+    fn new_with_compatible_window() {
         let event_loop = EventLoop::<()>::new_any_thread();
         let window = WindowBuilder::new()
             .with_visible(false)
             .build(&event_loop)
             .unwrap();
-        let (instance, _surface) =
-            unsafe { Instance::new_with_surface(&InstanceConfig::default(), &window).unwrap() };
+        let (instance, _surface) = unsafe {
+            Instance::new_with_compatible_window(&InstanceConfig::default(), &window).unwrap()
+        };
         println!("{:?}", instance.info());
     }
 }

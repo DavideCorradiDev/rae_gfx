@@ -5,10 +5,7 @@ use rae_app::{
     window::{WindowBuilder, WindowId},
 };
 
-use rae_gfx::wgpu::core::{
-    CanvasWindow, CanvasWindowBuilder, Instance, InstanceConfig, InstanceCreationError,
-    WindowWithInstanceCreationError,
-};
+use rae_gfx::wgpu::core::{CanvasWindow, Instance, InstanceConfig, InstanceCreationError};
 
 #[derive(Debug)]
 struct ApplicationImpl {
@@ -27,9 +24,12 @@ impl EventHandler<ApplicationError, ApplicationEvent> for ApplicationImpl {
                 height: 800,
             }))
             .build(event_loop)?;
-        let (instance, surface) =
-            unsafe { Instance::new_with_surface(&InstanceConfig::high_performance(), &window)? };
-        let window = CanvasWindow::from_window_and_surface(&instance, window, surface);
+        let (window, instance) = unsafe {
+            let (instance, surface) =
+                Instance::new_with_compatible_window(&InstanceConfig::high_performance(), &window)?;
+            let window = CanvasWindow::from_window_and_surface(&instance, window, surface);
+            (window, instance)
+        };
         Ok(Self { window, instance })
     }
 
@@ -106,19 +106,6 @@ impl From<window::OsError> for ApplicationError {
 impl From<InstanceCreationError> for ApplicationError {
     fn from(e: InstanceCreationError) -> Self {
         ApplicationError::InstanceCreationFailed(e)
-    }
-}
-
-impl From<WindowWithInstanceCreationError> for ApplicationError {
-    fn from(e: WindowWithInstanceCreationError) -> Self {
-        match e {
-            WindowWithInstanceCreationError::WindowCreationFailed(e) => {
-                ApplicationError::WindowCreationFailed(e)
-            }
-            WindowWithInstanceCreationError::InstanceCreationFailed(e) => {
-                ApplicationError::InstanceCreationFailed(e)
-            }
-        }
     }
 }
 

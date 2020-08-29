@@ -15,6 +15,7 @@ pub struct CanvasWindow {
 }
 
 impl CanvasWindow {
+    // Unsafe: surface creation.
     pub unsafe fn new<T: 'static>(
         instance: &Instance,
         event_loop: &EventLoop<T>,
@@ -23,12 +24,18 @@ impl CanvasWindow {
         Ok(Self::from_window(instance, window))
     }
 
+    // Unsafe: surface creation.
     pub unsafe fn from_window(instance: &Instance, window: Window) -> Self {
         let surface = instance.create_surface(&window);
         Self::from_window_and_surface(instance, window, surface)
     }
 
-    pub fn from_window_and_surface(instance: &Instance, window: Window, surface: Surface) -> Self {
+    // Unsafe: surface must correspond to the window.
+    pub unsafe fn from_window_and_surface(
+        instance: &Instance,
+        window: Window,
+        surface: Surface,
+    ) -> Self {
         let surface_size = window.inner_size();
         let swap_chain = Self::create_swap_chain(instance, &surface, &surface_size);
         Self {
@@ -218,9 +225,11 @@ mod tests {
             .with_visible(false)
             .build(&event_loop)
             .unwrap();
-        let (instance, surface) =
-            unsafe { Instance::new_with_surface(&InstanceConfig::default(), &window).unwrap() };
-        let _canvas_window = CanvasWindow::from_window_and_surface(&instance, window, surface);
+        let (instance, surface) = unsafe {
+            Instance::new_with_compatible_window(&InstanceConfig::default(), &window).unwrap()
+        };
+        let _canvas_window =
+            unsafe { CanvasWindow::from_window_and_surface(&instance, window, surface) };
     }
 
     #[test]
@@ -255,9 +264,10 @@ mod tests {
             .with_visible(false)
             .build(&event_loop)
             .unwrap();
-        let (instance, surface) =
-            unsafe { Instance::new_with_surface(&InstanceConfig::default(), &window1).unwrap() };
-        let window1 = CanvasWindow::from_window_and_surface(&instance, window1, surface);
+        let (instance, surface) = unsafe {
+            Instance::new_with_compatible_window(&InstanceConfig::default(), &window1).unwrap()
+        };
+        let window1 = unsafe { CanvasWindow::from_window_and_surface(&instance, window1, surface) };
         let window2 = unsafe {
             CanvasWindow::from_window(
                 &instance,
