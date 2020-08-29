@@ -2,6 +2,8 @@ use std::default::Default;
 
 use crate::wgpu::core;
 
+use super::Vertex;
+
 #[derive(Debug, PartialEq, Clone, serde::Serialize, serde::Deserialize)]
 pub struct RenderPipelineConfig {
     pub color_blend: core::BlendDescriptor,
@@ -75,7 +77,7 @@ impl RenderPipeline {
             vertex_state: core::VertexStateDescriptor {
                 index_format: core::IndexFormat::Uint16,
                 vertex_buffers: &[core::VertexBufferDescriptor {
-                    stride: 8 as core::BufferAddress,
+                    stride: std::mem::size_of::<Vertex>() as core::BufferAddress,
                     step_mode: core::InputStepMode::Vertex,
                     attributes: &[core::VertexAttributeDescriptor {
                         format: core::VertexFormat::Float2,

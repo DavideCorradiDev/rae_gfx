@@ -1,5 +1,5 @@
 mod render_pipeline;
 pub use render_pipeline::*;
 
-mod mesh;
-pub use mesh::*;
+mod vertex;
+pub use vertex::*;
