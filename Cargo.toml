@@ -15,6 +15,7 @@ vulkan = ["gfx-backend-vulkan"]
 rae_app = { git = "https://github.com/DavideCorradiDev/rae_app.git", tag = "v0.1.0" }
 rae_math = { git = "https://github.com/DavideCorradiDev/rae_math.git", tag = "v0.1.1" }
 raw-window-handle = "0.3.3"
+wgpu = "0.6"
 gfx-hal = "0.5"
 gfx-backend-empty = { version = "0.5", optional = true }
 
