@@ -5,12 +5,17 @@ use rae_app::{
     window::{WindowBuilder, WindowId},
 };
 
-use rae_gfx::wgpu::core::{CanvasWindow, Instance, InstanceConfig, InstanceCreationError};
+use rae_gfx::wgpu::{
+    core::{CanvasWindow, Instance, InstanceConfig, InstanceCreationError},
+    geometry2,
+};
 
 #[derive(Debug)]
 struct ApplicationImpl {
     window: CanvasWindow,
     instance: Instance,
+    pipeline: geometry2::RenderPipeline,
+    triangle_mesh: geometry2::Mesh,
 }
 
 impl EventHandler<ApplicationError, ApplicationEvent> for ApplicationImpl {
@@ -30,7 +35,26 @@ impl EventHandler<ApplicationError, ApplicationEvent> for ApplicationImpl {
             let window = CanvasWindow::from_window_and_surface(&instance, window, surface);
             (window, instance)
         };
-        Ok(Self { window, instance })
+
+        let pipeline =
+            geometry2::RenderPipeline::new(&instance, &geometry2::RenderPipelineConfig::default());
+
+        let triangle_mesh = geometry2::Mesh::new(
+            &instance,
+            &[
+                geometry2::Vertex::new(-0.5, -0.5),
+                geometry2::Vertex::new(0., 0.5),
+                geometry2::Vertex::new(0.5, -0.5),
+            ],
+            &[0, 1, 2],
+        );
+
+        Ok(Self {
+            window,
+            instance,
+            pipeline,
+            triangle_mesh,
+        })
     }
 
     fn on_resized(
