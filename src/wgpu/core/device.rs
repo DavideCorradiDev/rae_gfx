@@ -1,9 +1,11 @@
 use std::default::Default;
 
+use wgpu::util::DeviceExt;
+
 use super::{
-    Backend, DeviceInfo, Features, Limits, PipelineLayout, PipelineLayoutDescriptor,
-    PowerPreference, RenderPipeline, RenderPipelineDescriptor, ShaderModule, ShaderModuleSource,
-    TextureFormat,
+    Backend, Buffer, BufferInitDescriptor, DeviceInfo, Features, Limits, PipelineLayout,
+    PipelineLayoutDescriptor, PowerPreference, RenderPipeline, RenderPipelineDescriptor,
+    ShaderModule, ShaderModuleSource, TextureFormat,
 };
 
 #[derive(Debug, PartialEq, Eq, Clone, serde::Serialize)]
@@ -106,6 +108,10 @@ impl Device {
 
     pub fn create_render_pipeline(&self, desc: &RenderPipelineDescriptor) -> RenderPipeline {
         self.device.create_render_pipeline(desc)
+    }
+
+    pub fn create_buffer_init(&self, desc: &BufferInitDescriptor) -> Buffer {
+        self.device.create_buffer_init(desc)
     }
 }
 

@@ -4,6 +4,8 @@ use rae_math::geometry2;
 
 use crate::wgpu::core;
 
+//TODO: add label to parameters
+
 #[derive(Debug, PartialEq, Clone, Copy, serde::Serialize, serde::Deserialize)]
 pub struct Vertex {
     pub position: geometry2::Point<f32>,
@@ -13,6 +15,41 @@ impl Vertex {
     pub fn new(x: f32, y: f32) -> Self {
         Self {
             position: geometry2::Point::from([x, y]),
+        }
+    }
+}
+
+unsafe impl bytemuck::Zeroable for Vertex {
+    fn zeroed() -> Self {
+        Self::new(0., 0.)
+    }
+}
+
+unsafe impl bytemuck::Pod for Vertex {}
+
+pub type Index = u16;
+
+#[derive(Debug)]
+pub struct Mesh {
+    vertex_buffer: core::Buffer,
+    element_buffer: core::Buffer,
+}
+
+impl Mesh {
+    pub fn new<'a>(device: &core::Device, vertex_list: &[Vertex], index_list: &[Index]) -> Self {
+        let vertex_buffer = device.create_buffer_init(&core::BufferInitDescriptor {
+            label: Some("geometry2_mesh_vertex_buffer"),
+            contents: bytemuck::cast_slice(vertex_list),
+            usage: core::BufferUsage::VERTEX,
+        });
+        let element_buffer = device.create_buffer_init(&core::BufferInitDescriptor {
+            label: Some("geometry2_mesh_index_buffer"),
+            contents: bytemuck::cast_slice(index_list),
+            usage: core::BufferUsage::INDEX,
+        });
+        Self {
+            vertex_buffer,
+            element_buffer,
         }
     }
 }
