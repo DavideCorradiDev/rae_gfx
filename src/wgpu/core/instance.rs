@@ -55,12 +55,9 @@ pub struct Instance {
 }
 
 impl Instance {
-    pub fn new(
-        config: &InstanceConfig,
-        compatible_surface: Option<&Surface>,
-    ) -> Result<Self, InstanceCreationError> {
+    pub fn new(config: &InstanceConfig) -> Result<Self, InstanceCreationError> {
         let instance = Self::create_instance(config);
-        let adapter = Self::create_adapter(&instance, config, compatible_surface)?;
+        let adapter = Self::create_adapter(&instance, config, None)?;
         let (device, queue) = Self::create_device_and_queue(&adapter, config)?;
         Ok(Self {
             queue,
@@ -212,22 +209,19 @@ mod tests {
 
     #[test]
     fn default_config() {
-        let instance = Instance::new(&InstanceConfig::default(), None).unwrap();
+        let instance = Instance::new(&InstanceConfig::default()).unwrap();
         println!("{:?}", instance.info());
     }
 
     #[test]
     fn new() {
-        let instance = Instance::new(
-            &InstanceConfig {
-                backend: Backend::PRIMARY,
-                power_preference: PowerPreference::Default,
-                required_features: Features::default(),
-                optional_features: Features::empty(),
-                required_limits: Limits::default(),
-            },
-            None,
-        )
+        let instance = Instance::new(&InstanceConfig {
+            backend: Backend::PRIMARY,
+            power_preference: PowerPreference::Default,
+            required_features: Features::default(),
+            optional_features: Features::empty(),
+            required_limits: Limits::default(),
+        })
         .unwrap();
         println!("{:?}", instance.info());
     }

@@ -10,61 +10,6 @@ use rae_gfx::wgpu::core::{
     WindowWithInstanceCreationError,
 };
 
-type ApplicationEvent = ();
-
-#[derive(Debug)]
-enum ApplicationError {
-    WindowCreationFailed(window::OsError),
-    InstanceCreationFailed(InstanceCreationError),
-}
-
-impl std::fmt::Display for ApplicationError {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match self {
-            ApplicationError::WindowCreationFailed(e) => {
-                write!(f, "Window creation failed ({})", e)
-            }
-            ApplicationError::InstanceCreationFailed(e) => {
-                write!(f, "Instance creation failed ({})", e)
-            }
-        }
-    }
-}
-
-impl std::error::Error for ApplicationError {
-    fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
-        match self {
-            ApplicationError::WindowCreationFailed(e) => Some(e),
-            ApplicationError::InstanceCreationFailed(e) => Some(e),
-        }
-    }
-}
-
-impl From<window::OsError> for ApplicationError {
-    fn from(e: window::OsError) -> Self {
-        ApplicationError::WindowCreationFailed(e)
-    }
-}
-
-impl From<InstanceCreationError> for ApplicationError {
-    fn from(e: InstanceCreationError) -> Self {
-        ApplicationError::InstanceCreationFailed(e)
-    }
-}
-
-impl From<WindowWithInstanceCreationError> for ApplicationError {
-    fn from(e: WindowWithInstanceCreationError) -> Self {
-        match e {
-            WindowWithInstanceCreationError::WindowCreationFailed(e) => {
-                ApplicationError::WindowCreationFailed(e)
-            }
-            WindowWithInstanceCreationError::InstanceCreationFailed(e) => {
-                ApplicationError::InstanceCreationFailed(e)
-            }
-        }
-    }
-}
-
 #[derive(Debug)]
 struct ApplicationImpl {
     window: CanvasWindow,
@@ -118,6 +63,61 @@ impl EventHandler<ApplicationError, ApplicationEvent> for ApplicationImpl {
 
     fn on_variable_update(&mut self, _dt: std::time::Duration) -> Result<ControlFlow, Self::Error> {
         Ok(ControlFlow::Continue)
+    }
+}
+
+type ApplicationEvent = ();
+
+#[derive(Debug)]
+enum ApplicationError {
+    WindowCreationFailed(window::OsError),
+    InstanceCreationFailed(InstanceCreationError),
+}
+
+impl std::fmt::Display for ApplicationError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            ApplicationError::WindowCreationFailed(e) => {
+                write!(f, "Window creation failed ({})", e)
+            }
+            ApplicationError::InstanceCreationFailed(e) => {
+                write!(f, "Instance creation failed ({})", e)
+            }
+        }
+    }
+}
+
+impl std::error::Error for ApplicationError {
+    fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
+        match self {
+            ApplicationError::WindowCreationFailed(e) => Some(e),
+            ApplicationError::InstanceCreationFailed(e) => Some(e),
+        }
+    }
+}
+
+impl From<window::OsError> for ApplicationError {
+    fn from(e: window::OsError) -> Self {
+        ApplicationError::WindowCreationFailed(e)
+    }
+}
+
+impl From<InstanceCreationError> for ApplicationError {
+    fn from(e: InstanceCreationError) -> Self {
+        ApplicationError::InstanceCreationFailed(e)
+    }
+}
+
+impl From<WindowWithInstanceCreationError> for ApplicationError {
+    fn from(e: WindowWithInstanceCreationError) -> Self {
+        match e {
+            WindowWithInstanceCreationError::WindowCreationFailed(e) => {
+                ApplicationError::WindowCreationFailed(e)
+            }
+            WindowWithInstanceCreationError::InstanceCreationFailed(e) => {
+                ApplicationError::InstanceCreationFailed(e)
+            }
+        }
     }
 }
 
