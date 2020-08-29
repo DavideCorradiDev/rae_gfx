@@ -6,9 +6,6 @@ use rae_math::{conversion::ToHomogeneous3, geometry2, geometry3};
 
 use crate::core;
 
-//TODO: move code to another file, rather than a generic mod.rs
-//TODO: rename to something other than geometry2.
-
 #[derive(Debug, PartialEq, Clone, Copy, serde::Serialize, serde::Deserialize)]
 pub struct Vertex {
     pub position: geometry2::Point<f32>,
@@ -104,14 +101,14 @@ unsafe impl bytemuck::Zeroable for PushConstants {
 unsafe impl bytemuck::Pod for PushConstants {}
 
 #[derive(Debug, PartialEq, Clone, serde::Serialize, serde::Deserialize)]
-pub struct RenderPipelineConfig {
+pub struct RenderPipelineDescriptor {
     pub color_blend: core::BlendDescriptor,
     pub alpha_blend: core::BlendDescriptor,
     pub write_mask: core::ColorWrite,
     pub sample_count: u32,
 }
 
-impl Default for RenderPipelineConfig {
+impl Default for RenderPipelineDescriptor {
     fn default() -> Self {
         Self {
             color_blend: core::BlendDescriptor {
@@ -136,7 +133,7 @@ pub struct RenderPipeline {
 }
 
 impl RenderPipeline {
-    pub fn new(instance: &core::Instance, config: &RenderPipelineConfig) -> Self {
+    pub fn new(instance: &core::Instance, config: &RenderPipelineDescriptor) -> Self {
         let pipeline_layout = instance.create_pipeline_layout(&core::PipelineLayoutDescriptor {
             label: Some("shape2_pipeline_layout"),
             bind_group_layouts: &[],
@@ -243,6 +240,6 @@ mod tests {
     #[test]
     fn creation() {
         let instance = core::Instance::new(&core::InstanceDescriptor::default()).unwrap();
-        let _pipeline = RenderPipeline::new(&instance, &RenderPipelineConfig::default());
+        let _pipeline = RenderPipeline::new(&instance, &RenderPipelineDescriptor::default());
     }
 }

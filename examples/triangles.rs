@@ -71,7 +71,7 @@ impl EventHandler<ApplicationError, ApplicationEvent> for ApplicationImpl {
         };
 
         let pipeline =
-            shape2::RenderPipeline::new(&instance, &shape2::RenderPipelineConfig::default());
+            shape2::RenderPipeline::new(&instance, &shape2::RenderPipelineDescriptor::default());
 
         let triangle_mesh = shape2::Mesh::new(
             &instance,
