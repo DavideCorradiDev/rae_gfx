@@ -107,7 +107,12 @@ impl EventHandler<ApplicationError, ApplicationEvent> for ApplicationImpl {
             current_position,
             current_angle: 0.,
             current_scaling: 1.,
-            current_color: Color::WHITE,
+            current_color: Color {
+                r: 1.,
+                g: 1.,
+                b: 1.,
+                a: 0.75,
+            },
         })
     }
 
