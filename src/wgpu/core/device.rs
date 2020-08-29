@@ -30,19 +30,19 @@ impl Device {
             .await
         {
             Some(v) => v,
-            None => return Err(DeviceCreationError::NoSuitableAdapter),
+            None => return Err(DeviceCreationError::AdapterRequestFailed),
         };
 
-        let available_features = adapter.features();
-        // TODO: write what features are missing in the error.
-        if !available_features.contains(config.required_features) {
-            return Err(DeviceCreationError::NoSuitableAdapter);
+        if !adapter.features().contains(config.required_features) {
+            return Err(DeviceCreationError::FeaturesNotAvailable(
+                config.required_features - adapter.features(),
+            ));
         }
 
         let (device, queue) = adapter
             .request_device(
                 &wgpu::DeviceDescriptor {
-                    features: (config.optional_features & available_features)
+                    features: (config.optional_features & adapter.features())
                         | config.required_features,
                     limits: config.required_limits.clone(),
                     shader_validation: true,
@@ -62,14 +62,18 @@ impl Device {
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum DeviceCreationError {
-    NoSuitableAdapter,
+    AdapterRequestFailed,
+    FeaturesNotAvailable(Features),
     DeviceRequestFailed(wgpu::RequestDeviceError),
 }
 
 impl std::fmt::Display for DeviceCreationError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            DeviceCreationError::NoSuitableAdapter => write!(f, "No suitable adapter"),
+            DeviceCreationError::AdapterRequestFailed => write!(f, "Adapter request failed"),
+            DeviceCreationError::FeaturesNotAvailable(features) => {
+                write!(f, "Required features are not available: {:?}", features)
+            }
             DeviceCreationError::DeviceRequestFailed(e) => {
                 write!(f, "Device request failed ({})", e)
             }
