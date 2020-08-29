@@ -45,6 +45,9 @@ jobs:
     - name: Build tests
       shell: bash
       run: cargo test --no-run --verbose $OPTIONS -- --nocapture
+    - name: Build examples
+      shell: bash
+      run: cargo build --examples --verbose $OPTIONS
     - name: Run tests
       shell: bash
       if: matrix.platform.run_tests
