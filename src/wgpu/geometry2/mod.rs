@@ -30,7 +30,8 @@ pub type Index = u16;
 #[derive(Debug)]
 pub struct Mesh {
     vertex_buffer: core::Buffer,
-    element_buffer: core::Buffer,
+    index_buffer: core::Buffer,
+    index_count: u32,
 }
 
 impl Mesh {
@@ -44,14 +45,16 @@ impl Mesh {
             contents: bytemuck::cast_slice(vertex_list),
             usage: core::BufferUsage::VERTEX,
         });
-        let element_buffer = instance.create_buffer_init(&core::BufferInitDescriptor {
+        let index_buffer = instance.create_buffer_init(&core::BufferInitDescriptor {
             label: Some("geometry2_mesh_index_buffer"),
             contents: bytemuck::cast_slice(index_list),
             usage: core::BufferUsage::INDEX,
         });
+        let index_count = index_list.len() as u32;
         Self {
             vertex_buffer,
-            element_buffer,
+            index_buffer,
+            index_count,
         }
     }
 }
@@ -143,6 +146,19 @@ impl RenderPipeline {
             alpha_to_coverage_enabled: false,
         });
         Self { pipeline }
+    }
+}
+
+pub trait Renderer<'a> {
+    fn draw_geometry2(&mut self, pipeline: &'a RenderPipeline, mesh: &'a Mesh);
+}
+
+impl<'a> Renderer<'a> for core::RenderPass<'a> {
+    fn draw_geometry2(&mut self, pipeline: &'a RenderPipeline, mesh: &'a Mesh) {
+        self.set_pipeline(&pipeline.pipeline);
+        self.set_index_buffer(mesh.index_buffer.slice(..));
+        self.set_vertex_buffer(0, mesh.vertex_buffer.slice(..));
+        self.draw_indexed(0..mesh.index_count as u32, 0, 0..1);
     }
 }
 

@@ -13,6 +13,7 @@ use super::{
     ShaderModuleSource, Surface, SwapChain, SwapChainDescriptor, TextureFormat,
 };
 
+// TODO: rename to descriptor?
 #[derive(Debug, PartialEq, Eq, Clone, serde::Serialize)]
 pub struct InstanceConfig {
     pub backend: Backend,

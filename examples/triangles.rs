@@ -7,9 +7,12 @@ use rae_app::{
 
 use rae_gfx::wgpu::{
     core::{
-        CanvasWindow, CommandEncoderDescriptor, Instance, InstanceConfig, InstanceCreationError,
+        Canvas, CanvasWindow, Color, CommandEncoderDescriptor, Instance, InstanceConfig,
+        InstanceCreationError, LoadOp, Operations, RenderPassColorAttachmentDescriptor,
+        RenderPassDescriptor,
     },
     geometry2,
+    geometry2::Renderer as Geometry2Renderer,
 };
 
 #[derive(Debug)]
@@ -41,12 +44,21 @@ impl EventHandler<ApplicationError, ApplicationEvent> for ApplicationImpl {
         let pipeline =
             geometry2::RenderPipeline::new(&instance, &geometry2::RenderPipelineConfig::default());
 
+        // let triangle_mesh = geometry2::Mesh::new(
+        //     &instance,
+        //     &[
+        //         geometry2::Vertex::new(-0.5, -0.5),
+        //         geometry2::Vertex::new(0., 0.5),
+        //         geometry2::Vertex::new(0.5, -0.5),
+        //     ],
+        //     &[0, 1, 2],
+        // );
         let triangle_mesh = geometry2::Mesh::new(
             &instance,
             &[
-                geometry2::Vertex::new(-0.5, -0.5),
-                geometry2::Vertex::new(0., 0.5),
-                geometry2::Vertex::new(0.5, -0.5),
+                geometry2::Vertex::new(-10., -10.),
+                geometry2::Vertex::new(0., 10.),
+                geometry2::Vertex::new(10., -10.),
             ],
             &[0, 1, 2],
         );
@@ -89,9 +101,31 @@ impl EventHandler<ApplicationError, ApplicationEvent> for ApplicationImpl {
     }
 
     fn on_variable_update(&mut self, _dt: std::time::Duration) -> Result<ControlFlow, Self::Error> {
-        let encoder = self
+        // TODO: error handling
+        let frame = self.window.get_current_frame().unwrap();
+        let mut encoder = self
             .instance
             .create_command_encoder(&CommandEncoderDescriptor::default());
+        {
+            // TODO: simplify this a little bit by implementing a trait for encoder taking a Canvas?
+            let mut rpass = encoder.begin_render_pass(&RenderPassDescriptor {
+                color_attachments: &[RenderPassColorAttachmentDescriptor {
+                    attachment: &frame.output.view,
+                    resolve_target: None,
+                    ops: Operations {
+                        load: LoadOp::Clear(Color {
+                            r: 0.1,
+                            g: 0.2,
+                            b: 0.3,
+                            a: 1.0,
+                        }),
+                        store: true,
+                    },
+                }],
+                depth_stencil_attachment: None,
+            });
+            rpass.draw_geometry2(&self.pipeline, &self.triangle_mesh);
+        }
         self.instance.submit(Some(encoder.finish()));
         Ok(ControlFlow::Continue)
     }
