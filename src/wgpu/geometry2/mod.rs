@@ -4,8 +4,6 @@ use rae_math::geometry2;
 
 use crate::wgpu::core;
 
-//TODO: add label to parameters
-
 #[derive(Debug, PartialEq, Clone, Copy, serde::Serialize, serde::Deserialize)]
 pub struct Vertex {
     pub position: geometry2::Point<f32>,
@@ -36,13 +34,17 @@ pub struct Mesh {
 }
 
 impl Mesh {
-    pub fn new<'a>(device: &core::Device, vertex_list: &[Vertex], index_list: &[Index]) -> Self {
-        let vertex_buffer = device.create_buffer_init(&core::BufferInitDescriptor {
+    pub fn new<'a>(
+        instance: &core::Instance,
+        vertex_list: &[Vertex],
+        index_list: &[Index],
+    ) -> Self {
+        let vertex_buffer = instance.create_buffer_init(&core::BufferInitDescriptor {
             label: Some("geometry2_mesh_vertex_buffer"),
             contents: bytemuck::cast_slice(vertex_list),
             usage: core::BufferUsage::VERTEX,
         });
-        let element_buffer = device.create_buffer_init(&core::BufferInitDescriptor {
+        let element_buffer = instance.create_buffer_init(&core::BufferInitDescriptor {
             label: Some("geometry2_mesh_index_buffer"),
             contents: bytemuck::cast_slice(index_list),
             usage: core::BufferUsage::INDEX,
@@ -87,18 +89,18 @@ pub struct RenderPipeline {
 }
 
 impl RenderPipeline {
-    pub fn new(device: &core::Device, config: &RenderPipelineConfig) -> Self {
-        let pipeline_layout = device.create_pipeline_layout(&core::PipelineLayoutDescriptor {
+    pub fn new(instance: &core::Instance, config: &RenderPipelineConfig) -> Self {
+        let pipeline_layout = instance.create_pipeline_layout(&core::PipelineLayoutDescriptor {
             // TODO: define proper push constant / uniform layouts.
             label: Some("geometry2_pipeline_layout"),
             bind_group_layouts: &[],
             push_constant_ranges: &[],
         });
-        let vs_module = device
+        let vs_module = instance
             .create_shader_module(core::include_spirv!("shaders/gen/spirv/geometry2.vert.spv"));
-        let fs_module = device
+        let fs_module = instance
             .create_shader_module(core::include_spirv!("shaders/gen/spirv/geometry2.frag.spv"));
-        let pipeline = device.create_render_pipeline(&core::RenderPipelineDescriptor {
+        let pipeline = instance.create_render_pipeline(&core::RenderPipelineDescriptor {
             label: Some("geometry2_render_pipeline"),
             layout: Some(&pipeline_layout),
             vertex_stage: core::ProgrammableStageDescriptor {
@@ -117,7 +119,7 @@ impl RenderPipeline {
             primitive_topology: core::PrimitiveTopology::TriangleList,
             // TODO: define depth-stencil??
             color_states: &[core::ColorStateDescriptor {
-                format: device.color_format(),
+                format: instance.color_format(),
                 color_blend: config.color_blend.clone(),
                 alpha_blend: config.alpha_blend.clone(),
                 write_mask: config.write_mask,
@@ -150,7 +152,7 @@ mod tests {
 
     #[test]
     fn creation() {
-        let device = core::Device::new(&core::DeviceConfig::default(), None).unwrap();
-        let _pipeline = RenderPipeline::new(&device, &RenderPipelineConfig::default());
+        let instance = core::Instance::new(&core::InstanceConfig::default(), None).unwrap();
+        let _pipeline = RenderPipeline::new(&instance, &RenderPipelineConfig::default());
     }
 }

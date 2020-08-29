@@ -5,14 +5,14 @@ use rae_app::{
     window::{Window, WindowBuilder, WindowId},
 };
 
-use rae_gfx::wgpu::core::{Device, DeviceConfig, DeviceCreationError};
+use rae_gfx::wgpu::core::{Instance, InstanceConfig, InstanceCreationError};
 
 type ApplicationEvent = ();
 
 #[derive(Debug)]
 enum ApplicationError {
     WindowCreationFailed(window::OsError),
-    DeviceCreationFailed(DeviceCreationError),
+    InstanceCreationFailed(InstanceCreationError),
 }
 
 impl std::fmt::Display for ApplicationError {
@@ -21,8 +21,8 @@ impl std::fmt::Display for ApplicationError {
             ApplicationError::WindowCreationFailed(e) => {
                 write!(f, "Window creation failed ({})", e)
             }
-            ApplicationError::DeviceCreationFailed(e) => {
-                write!(f, "Device creation failed ({})", e)
+            ApplicationError::InstanceCreationFailed(e) => {
+                write!(f, "Instance creation failed ({})", e)
             }
         }
     }
@@ -32,7 +32,7 @@ impl std::error::Error for ApplicationError {
     fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
         match self {
             ApplicationError::WindowCreationFailed(e) => Some(e),
-            ApplicationError::DeviceCreationFailed(e) => Some(e),
+            ApplicationError::InstanceCreationFailed(e) => Some(e),
         }
     }
 }
@@ -43,16 +43,16 @@ impl From<window::OsError> for ApplicationError {
     }
 }
 
-impl From<DeviceCreationError> for ApplicationError {
-    fn from(e: DeviceCreationError) -> Self {
-        ApplicationError::DeviceCreationFailed(e)
+impl From<InstanceCreationError> for ApplicationError {
+    fn from(e: InstanceCreationError) -> Self {
+        ApplicationError::InstanceCreationFailed(e)
     }
 }
 
 #[derive(Debug)]
 struct ApplicationImpl {
     window: Window,
-    device: Device,
+    device: Instance,
 }
 
 impl EventHandler<ApplicationError, ApplicationEvent> for ApplicationImpl {
@@ -66,7 +66,7 @@ impl EventHandler<ApplicationError, ApplicationEvent> for ApplicationImpl {
                 height: 800,
             }))
             .build(event_loop)?;
-        let device = Device::new(&DeviceConfig::high_performance(), None)?;
+        let device = Instance::new(&InstanceConfig::high_performance(), None)?;
         Ok(Self { window, device })
     }
 

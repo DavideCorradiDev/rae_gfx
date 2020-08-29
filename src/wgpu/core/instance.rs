@@ -3,13 +3,13 @@ use std::default::Default;
 use wgpu::util::DeviceExt;
 
 use super::{
-    Backend, Buffer, BufferInitDescriptor, DeviceInfo, Features, Limits, PipelineLayout,
-    PipelineLayoutDescriptor, PowerPreference, RenderPipeline, RenderPipelineDescriptor,
-    ShaderModule, ShaderModuleSource, TextureFormat,
+    Adapter, AdapterInfo, Backend, Buffer, BufferInitDescriptor, Device, Features, Limits,
+    PipelineLayout, PipelineLayoutDescriptor, PowerPreference, Queue, RenderPipeline,
+    RenderPipelineDescriptor, ShaderModule, ShaderModuleSource, TextureFormat,
 };
 
 #[derive(Debug, PartialEq, Eq, Clone, serde::Serialize)]
-pub struct DeviceConfig {
+pub struct InstanceConfig {
     pub backend: Backend,
     pub power_preference: PowerPreference,
     pub required_features: Features,
@@ -17,7 +17,7 @@ pub struct DeviceConfig {
     pub required_limits: Limits,
 }
 
-impl DeviceConfig {
+impl InstanceConfig {
     pub fn high_performance() -> Self {
         Self {
             backend: Backend::PRIMARY,
@@ -29,7 +29,7 @@ impl DeviceConfig {
     }
 }
 
-impl Default for DeviceConfig {
+impl Default for InstanceConfig {
     fn default() -> Self {
         Self {
             backend: Backend::PRIMARY,
@@ -42,18 +42,18 @@ impl Default for DeviceConfig {
 }
 
 #[derive(Debug)]
-pub struct Device {
+pub struct Instance {
     instance: wgpu::Instance,
-    adapter: wgpu::Adapter,
-    device: wgpu::Device,
-    queue: wgpu::Queue,
+    adapter: Adapter,
+    device: Device,
+    queue: Queue,
 }
 
-impl Device {
+impl Instance {
     pub fn new(
-        config: &DeviceConfig,
+        config: &InstanceConfig,
         compatible_surface: Option<&wgpu::Surface>,
-    ) -> Result<Self, DeviceCreationError> {
+    ) -> Result<Self, InstanceCreationError> {
         let instance = wgpu::Instance::new(config.backend);
 
         let adapter = match futures::executor::block_on(instance.request_adapter(
@@ -63,11 +63,11 @@ impl Device {
             },
         )) {
             Some(v) => v,
-            None => return Err(DeviceCreationError::AdapterRequestFailed),
+            None => return Err(InstanceCreationError::AdapterRequestFailed),
         };
 
         if !adapter.features().contains(config.required_features) {
-            return Err(DeviceCreationError::FeaturesNotAvailable(
+            return Err(InstanceCreationError::FeaturesNotAvailable(
                 config.required_features - adapter.features(),
             ));
         }
@@ -94,7 +94,7 @@ impl Device {
         TextureFormat::Bgra8UnormSrgb
     }
 
-    pub fn info(&self) -> DeviceInfo {
+    pub fn info(&self) -> AdapterInfo {
         self.adapter.get_info()
     }
 
@@ -116,38 +116,38 @@ impl Device {
 }
 
 #[derive(Debug, Clone, PartialEq)]
-pub enum DeviceCreationError {
+pub enum InstanceCreationError {
     AdapterRequestFailed,
     FeaturesNotAvailable(Features),
     DeviceRequestFailed(wgpu::RequestDeviceError),
 }
 
-impl std::fmt::Display for DeviceCreationError {
+impl std::fmt::Display for InstanceCreationError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            DeviceCreationError::AdapterRequestFailed => write!(f, "Adapter request failed"),
-            DeviceCreationError::FeaturesNotAvailable(features) => {
+            InstanceCreationError::AdapterRequestFailed => write!(f, "Adapter request failed"),
+            InstanceCreationError::FeaturesNotAvailable(features) => {
                 write!(f, "Required features are not available ({:?})", features)
             }
-            DeviceCreationError::DeviceRequestFailed(e) => {
+            InstanceCreationError::DeviceRequestFailed(e) => {
                 write!(f, "Device request failed ({})", e)
             }
         }
     }
 }
 
-impl std::error::Error for DeviceCreationError {
+impl std::error::Error for InstanceCreationError {
     fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
         match self {
-            DeviceCreationError::DeviceRequestFailed(e) => Some(e),
+            InstanceCreationError::DeviceRequestFailed(e) => Some(e),
             _ => None,
         }
     }
 }
 
-impl From<wgpu::RequestDeviceError> for DeviceCreationError {
+impl From<wgpu::RequestDeviceError> for InstanceCreationError {
     fn from(e: wgpu::RequestDeviceError) -> Self {
-        DeviceCreationError::DeviceRequestFailed(e)
+        InstanceCreationError::DeviceRequestFailed(e)
     }
 }
 
@@ -157,8 +157,8 @@ mod tests {
 
     #[test]
     fn creation() {
-        let device = Device::new(
-            &DeviceConfig {
+        let instance = Instance::new(
+            &InstanceConfig {
                 backend: Backend::PRIMARY,
                 power_preference: PowerPreference::Default,
                 required_features: Features::default(),
@@ -168,12 +168,12 @@ mod tests {
             None,
         )
         .unwrap();
-        println!("{:?}", device.info());
+        println!("{:?}", instance.info());
     }
 
     #[test]
     fn default_config() {
-        let device = Device::new(&DeviceConfig::default(), None).unwrap();
-        println!("{:?}", device.info());
+        let instance = Instance::new(&InstanceConfig::default(), None).unwrap();
+        println!("{:?}", instance.info());
     }
 }

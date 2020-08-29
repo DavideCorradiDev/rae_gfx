@@ -1,13 +1,19 @@
 pub use wgpu::{
-    include_spirv, util::BufferInitDescriptor, AdapterInfo as DeviceInfo, BackendBit as Backend,
+    include_spirv, util::BufferInitDescriptor, Adapter, AdapterInfo, BackendBit as Backend,
     BindGroupLayout, BlendDescriptor, BlendFactor, BlendOperation, Buffer, BufferAddress,
-    BufferUsage, ColorStateDescriptor, ColorWrite, CullMode, Features, FrontFace, IndexFormat,
-    InputStepMode, Limits, PipelineLayout, PipelineLayoutDescriptor, PowerPreference,
-    PrimitiveTopology, ProgrammableStageDescriptor, PushConstantRange,
+    BufferUsage, ColorStateDescriptor, ColorWrite, CullMode, Device, Features, FrontFace,
+    IndexFormat, InputStepMode, Limits, PipelineLayout, PipelineLayoutDescriptor, PowerPreference,
+    PrimitiveTopology, ProgrammableStageDescriptor, PushConstantRange, Queue,
     RasterizationStateDescriptor, RenderPipeline, RenderPipelineDescriptor, ShaderModule,
-    ShaderModuleSource, TextureFormat, VertexAttributeDescriptor, VertexBufferDescriptor,
+    ShaderModuleSource, Surface, TextureFormat, VertexAttributeDescriptor, VertexBufferDescriptor,
     VertexFormat, VertexStateDescriptor,
 };
 
-mod device;
-pub use device::*;
+mod canvas;
+pub use canvas::*;
+
+mod canvas_window;
+pub use canvas_window::*;
+
+mod instance;
+pub use instance::*;
