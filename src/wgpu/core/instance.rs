@@ -7,10 +7,10 @@ use wgpu::util::DeviceExt;
 use raw_window_handle::HasRawWindowHandle;
 
 use super::{
-    Adapter, AdapterInfo, Backend, Buffer, BufferInitDescriptor, Device, Features, Limits,
-    PipelineLayout, PipelineLayoutDescriptor, PowerPreference, Queue, RenderPipeline,
-    RenderPipelineDescriptor, ShaderModule, ShaderModuleSource, Surface, SwapChain,
-    SwapChainDescriptor, TextureFormat,
+    Adapter, AdapterInfo, Backend, Buffer, BufferInitDescriptor, CommandBuffer, CommandEncoder,
+    CommandEncoderDescriptor, Device, Features, Limits, PipelineLayout, PipelineLayoutDescriptor,
+    PowerPreference, Queue, RenderPipeline, RenderPipelineDescriptor, ShaderModule,
+    ShaderModuleSource, Surface, SwapChain, SwapChainDescriptor, TextureFormat,
 };
 
 #[derive(Debug, PartialEq, Eq, Clone, serde::Serialize)]
@@ -117,6 +117,14 @@ impl Instance {
 
     pub fn create_buffer_init(&self, desc: &BufferInitDescriptor) -> Buffer {
         self.device.create_buffer_init(desc)
+    }
+
+    pub fn create_command_encoder(&self, desc: &CommandEncoderDescriptor) -> CommandEncoder {
+        self.device.create_command_encoder(desc)
+    }
+
+    pub fn submit<I: IntoIterator<Item = CommandBuffer>>(&self, command_buffers: I) {
+        self.queue.submit(command_buffers);
     }
 
     fn create_instance(config: &InstanceConfig) -> wgpu::Instance {

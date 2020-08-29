@@ -6,7 +6,9 @@ use rae_app::{
 };
 
 use rae_gfx::wgpu::{
-    core::{CanvasWindow, Instance, InstanceConfig, InstanceCreationError},
+    core::{
+        CanvasWindow, CommandEncoderDescriptor, Instance, InstanceConfig, InstanceCreationError,
+    },
     geometry2,
 };
 
@@ -87,6 +89,10 @@ impl EventHandler<ApplicationError, ApplicationEvent> for ApplicationImpl {
     }
 
     fn on_variable_update(&mut self, _dt: std::time::Duration) -> Result<ControlFlow, Self::Error> {
+        let encoder = self
+            .instance
+            .create_command_encoder(&CommandEncoderDescriptor::default());
+        self.instance.submit(Some(encoder.finish()));
         Ok(ControlFlow::Continue)
     }
 }

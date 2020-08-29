@@ -4,7 +4,10 @@ use rae_app::{
     window::{ExternalError, NotSupportedError, OsError, Window, WindowId},
 };
 
-use super::{Instance, PresentMode, Surface, SwapChain, SwapChainDescriptor, TextureUsage};
+use super::{
+    Canvas, Instance, PresentMode, Surface, SwapChain, SwapChainDescriptor, SwapChainError,
+    SwapChainFrame, TextureUsage,
+};
 
 #[derive(Debug)]
 pub struct CanvasWindow {
@@ -194,6 +197,12 @@ impl CanvasWindow {
                 present_mode: PresentMode::Mailbox,
             },
         )
+    }
+}
+
+impl Canvas for CanvasWindow {
+    fn get_current_frame(&mut self) -> Result<SwapChainFrame, SwapChainError> {
+        self.swap_chain.get_current_frame()
     }
 }
 
