@@ -13,9 +13,9 @@ use super::{
 
 #[derive(Debug, PartialEq, Clone, Copy, serde::Serialize, serde::Deserialize)]
 pub struct RenderFrameDescriptor {
-    color_operations: Operations<Color>,
-    depth_operations: Option<Operations<f32>>,
-    stencil_operations: Option<Operations<f32>>,
+    pub color_operations: Operations<Color>,
+    pub depth_operations: Option<Operations<f32>>,
+    pub stencil_operations: Option<Operations<f32>>,
 }
 
 impl Default for RenderFrameDescriptor {
