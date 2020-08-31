@@ -13,7 +13,7 @@ use super::{
     ShaderModuleSource, Surface, SwapChain, SwapChainDescriptor, TextureFormat,
 };
 
-#[derive(Debug, PartialEq, Eq, Clone, serde::Serialize)]
+#[derive(Debug, PartialEq, Eq, Clone, serde::Serialize, serde::Deserialize)]
 pub struct InstanceDescriptor {
     pub backend: Backend,
     pub power_preference: PowerPreference,

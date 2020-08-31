@@ -1,4 +1,6 @@
 use std::{
+    default::Default,
+    iter,
     mem::ManuallyDrop,
     ops::{Deref, DerefMut},
 };
@@ -8,6 +10,26 @@ use super::{
     Operations, RenderPass, RenderPassColorAttachmentDescriptor, RenderPassDescriptor,
     RenderPipeline, ShaderStage, SwapChainError, SwapChainTexture, TextureView,
 };
+
+#[derive(Debug, PartialEq, Clone, Copy, serde::Serialize, serde::Deserialize)]
+pub struct RenderFrameDescriptor {
+    color_operations: Operations<Color>,
+    depth_operations: Option<Operations<f32>>,
+    stencil_operations: Option<Operations<f32>>,
+}
+
+impl Default for RenderFrameDescriptor {
+    fn default() -> Self {
+        Self {
+            color_operations: Operations {
+                load: LoadOp::Clear(Color::BLACK),
+                store: true,
+            },
+            depth_operations: None,
+            stencil_operations: None,
+        }
+    }
+}
 
 #[derive(Debug)]
 pub struct RenderFrame<'a> {
@@ -23,15 +45,22 @@ impl<'a> RenderFrame<'a> {
     pub fn from_canvas<CanvasType: Canvas>(
         instance: &Instance,
         canvas: &mut CanvasType,
+        desc: &RenderFrameDescriptor,
     ) -> Result<Self, SwapChainError> {
         let frame = canvas.get_current_frame()?;
-        Ok(Self::from_texture_views(instance, Some(frame.output), None))
+        Ok(Self::from_texture_views(
+            instance,
+            Some(frame.output),
+            None,
+            desc,
+        ))
     }
 
     pub fn from_texture_views(
         instance: &Instance,
         swap_chain_texture: Option<SwapChainTexture>,
         texture_view: Option<TextureView>,
+        desc: &RenderFrameDescriptor,
     ) -> Self {
         let mut command_encoder =
             Box::new(instance.create_command_encoder(&CommandEncoderDescriptor::default()));
@@ -70,10 +99,7 @@ impl<'a> RenderFrame<'a> {
                 color_attachments: &[RenderPassColorAttachmentDescriptor {
                     attachment: attachment_ref,
                     resolve_target: resolve_target_ref,
-                    ops: Operations {
-                        load: LoadOp::Clear(Color::BLACK),
-                        store: true,
-                    },
+                    ops: desc.color_operations,
                 }],
                 depth_stencil_attachment: None,
             })
@@ -91,7 +117,7 @@ impl<'a> RenderFrame<'a> {
         // The render pass must be dropped before the command encoder is finished, because it will
         // add some commands to it during the drop call.
         unsafe { ManuallyDrop::drop(&mut self.render_pass) };
-        instance.submit(std::iter::once(self.command_encoder.finish()))
+        instance.submit(iter::once(self.command_encoder.finish()))
     }
 
     pub fn render_pass(&self) -> &RenderPass {
