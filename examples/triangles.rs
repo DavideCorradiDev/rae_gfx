@@ -15,7 +15,7 @@ use rae_math::{
 use rae_gfx::{
     core::{
         Canvas, CanvasWindow, Color, CommandEncoderDescriptor, Instance, InstanceCreationError,
-        InstanceDescriptor, LoadOp, Operations, RenderPassColorAttachmentDescriptor,
+        InstanceDescriptor, LoadOp, Operations, RenderFrame, RenderPassColorAttachmentDescriptor,
         RenderPassDescriptor,
     },
     shape2,
@@ -188,26 +188,14 @@ impl EventHandler<ApplicationError, ApplicationEvent> for ApplicationImpl {
 
         // TODO: missing error handling, remove the unwrap call...
         // It seems that frame should be retrieved and be alive the whole time, or bad stuff will happen...
-        let frame = self.window.get_current_frame().unwrap();
-        let mut encoder = self
-            .instance
-            .create_command_encoder(&CommandEncoderDescriptor::default());
         {
-            // TODO: simplify this a little bit by implementing a trait for encoder taking a Canvas?
-            let mut rpass = encoder.begin_render_pass(&RenderPassDescriptor {
-                color_attachments: &[RenderPassColorAttachmentDescriptor {
-                    attachment: &frame.output.view,
-                    resolve_target: None,
-                    ops: Operations {
-                        load: LoadOp::Clear(Color::BLACK),
-                        store: true,
-                    },
-                }],
-                depth_stencil_attachment: None,
-            });
-            rpass.draw_shape2_array(&self.pipeline, &elements);
+            let mut frame = RenderFrame::from_canvas(&self.instance, &mut self.window).unwrap();
+            {
+                let rpass = frame.render_pass_mut();
+                rpass.draw_shape2_array(&self.pipeline, &elements);
+            }
         }
-        self.instance.submit(Some(encoder.finish()));
+        // frame.submit(&self.instance);
         Ok(ControlFlow::Continue)
     }
 }

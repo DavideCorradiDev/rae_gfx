@@ -83,6 +83,10 @@ impl<'a> RenderFrame<'a> {
         }
     }
 
+    pub fn submit(self, instance: &Instance) {
+        instance.submit(std::iter::once(self.command_encoder.finish()))
+    }
+
     pub fn render_pass(&self) -> &RenderPass {
         &self.render_pass
     }
