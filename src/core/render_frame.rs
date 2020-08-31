@@ -1,9 +1,9 @@
 use std::ops::{Deref, DerefMut};
 
 use super::{
-    Canvas, Color, CommandEncoder, CommandEncoderDescriptor, Instance, LoadOp, Operations,
-    RenderPass, RenderPassColorAttachmentDescriptor, RenderPassDescriptor, SwapChainError,
-    SwapChainTexture, TextureView,
+    BufferSlice, Canvas, Color, CommandEncoder, CommandEncoderDescriptor, Instance, LoadOp,
+    Operations, RenderPass, RenderPassColorAttachmentDescriptor, RenderPassDescriptor,
+    RenderPipeline, ShaderStage, SwapChainError, SwapChainTexture, TextureView,
 };
 
 #[derive(Debug)]
@@ -93,5 +93,31 @@ impl<'a> RenderFrame<'a> {
 
     pub fn render_pass_mut(&mut self) -> &'a mut RenderPass {
         &mut self.render_pass
+    }
+
+    pub fn set_pipeline(&mut self, pipeline: &'a RenderPipeline) {
+        self.render_pass.set_pipeline(pipeline);
+    }
+
+    pub fn set_index_buffer(&mut self, buffer_slice: BufferSlice<'a>) {
+        self.render_pass.set_index_buffer(buffer_slice)
+    }
+
+    pub fn set_vertex_buffer(&mut self, slot: u32, buffer_slice: BufferSlice<'a>) {
+        self.render_pass.set_vertex_buffer(slot, buffer_slice)
+    }
+
+    pub fn set_push_constants(&mut self, stages: ShaderStage, offset: u32, data: &[u32]) {
+        self.render_pass.set_push_constants(stages, offset, data)
+    }
+
+    pub fn draw_indexed(
+        &mut self,
+        indices: core::ops::Range<u32>,
+        base_vertex: i32,
+        instances: core::ops::Range<u32>,
+    ) {
+        self.render_pass
+            .draw_indexed(indices, base_vertex, instances)
     }
 }

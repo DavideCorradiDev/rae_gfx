@@ -13,11 +13,7 @@ use rae_math::{
 };
 
 use rae_gfx::{
-    core::{
-        Canvas, CanvasWindow, Color, CommandEncoderDescriptor, Instance, InstanceCreationError,
-        InstanceDescriptor, LoadOp, Operations, RenderFrame, RenderPassColorAttachmentDescriptor,
-        RenderPassDescriptor,
-    },
+    core::{CanvasWindow, Color, Instance, InstanceCreationError, InstanceDescriptor, RenderFrame},
     shape2,
     shape2::Renderer as Shape2Renderer,
 };
@@ -188,13 +184,9 @@ impl EventHandler<ApplicationError, ApplicationEvent> for ApplicationImpl {
 
         // TODO: missing error handling, remove the unwrap call...
         // It seems that frame should be retrieved and be alive the whole time, or bad stuff will happen...
-        {
-            let mut frame = RenderFrame::from_canvas(&self.instance, &mut self.window).unwrap();
-            {
-                let rpass = frame.render_pass_mut();
-                rpass.draw_shape2_array(&self.pipeline, &elements);
-            }
-        }
+        let mut frame = RenderFrame::from_canvas(&self.instance, &mut self.window).unwrap();
+        frame.draw_shape2_array(&self.pipeline, &elements);
+        frame.submit(&self.instance);
         // frame.submit(&self.instance);
         Ok(ControlFlow::Continue)
     }
