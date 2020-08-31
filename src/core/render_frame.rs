@@ -39,7 +39,8 @@ pub struct RenderFrame<'a> {
     texture_view: Option<Box<TextureView>>,
 }
 
-// TODO: specify clear to color operations.
+// TODO: framebuffer obtained from Canvas. Add a method to retrieve the framebuffer from the canvas and in case add the required config info.
+// TODO: depth and stencil buffer. Add a method to canvas to retrieve if they exist or not and in case add the required config info.
 
 impl<'a> RenderFrame<'a> {
     pub fn from_canvas<CanvasType: Canvas>(
