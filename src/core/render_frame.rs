@@ -1,4 +1,7 @@
-use std::ops::{Deref, DerefMut};
+use std::{
+    mem::ManuallyDrop,
+    ops::{Deref, DerefMut},
+};
 
 use super::{
     BufferSlice, Canvas, Color, CommandEncoder, CommandEncoderDescriptor, Instance, LoadOp,
@@ -8,7 +11,7 @@ use super::{
 
 #[derive(Debug)]
 pub struct RenderFrame<'a> {
-    render_pass: RenderPass<'a>,
+    render_pass: ManuallyDrop<RenderPass<'a>>,
     command_encoder: Box<CommandEncoder>,
     swap_chain_texture: Option<Box<SwapChainTexture>>,
     texture_view: Option<Box<TextureView>>,
@@ -45,7 +48,7 @@ impl<'a> RenderFrame<'a> {
         // The render pass will hold a reference to the command encoder and the texture views.
         // Since it will store them inside a Box, on the heap, their addresses should be stable.
         // Additional borrowing of the resources is prevented by keeping these resources hidden inside the struct.
-        let render_pass = unsafe {
+        let render_pass = ManuallyDrop::new(unsafe {
             let command_encoder_ref = &mut *(command_encoder.deref_mut() as *mut CommandEncoder);
 
             let (attachment_ref, resolve_target_ref) = match &texture_view {
@@ -73,7 +76,7 @@ impl<'a> RenderFrame<'a> {
                 }],
                 depth_stencil_attachment: None,
             })
-        };
+        });
 
         Self {
             render_pass,
@@ -83,7 +86,9 @@ impl<'a> RenderFrame<'a> {
         }
     }
 
-    pub fn submit(self, instance: &Instance) {
+    pub fn submit(mut self, instance: &Instance) {
+        // The render pass must be dropped before the command encoder is finished, because it will add some commands to it during the drop call.
+        unsafe { ManuallyDrop::drop(&mut self.render_pass) };
         instance.submit(std::iter::once(self.command_encoder.finish()))
     }
 
