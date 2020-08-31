@@ -8,9 +8,12 @@ pub use wgpu::{
     RasterizationStateDescriptor, RenderPass, RenderPassColorAttachmentDescriptor,
     RenderPassDescriptor, RenderPipeline, RenderPipelineDescriptor, ShaderModule,
     ShaderModuleSource, ShaderStage, Surface, SwapChain, SwapChainDescriptor, SwapChainError,
-    SwapChainFrame, SwapChainTexture, TextureFormat, TextureUsage, VertexAttributeDescriptor,
-    VertexBufferDescriptor, VertexFormat, VertexStateDescriptor,
+    SwapChainFrame, SwapChainTexture, TextureFormat, TextureUsage, TextureView,
+    VertexAttributeDescriptor, VertexBufferDescriptor, VertexFormat, VertexStateDescriptor,
 };
+
+mod instance;
+pub use instance::*;
 
 mod canvas;
 pub use canvas::*;
@@ -18,5 +21,5 @@ pub use canvas::*;
 mod canvas_window;
 pub use canvas_window::*;
 
-mod instance;
-pub use instance::*;
+mod render_frame;
+pub use render_frame::*;
