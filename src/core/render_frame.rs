@@ -87,7 +87,8 @@ impl<'a> RenderFrame<'a> {
     }
 
     pub fn submit(mut self, instance: &Instance) {
-        // The render pass must be dropped before the command encoder is finished, because it will add some commands to it during the drop call.
+        // The render pass must be dropped before the command encoder is finished, because it will
+        // add some commands to it during the drop call.
         unsafe { ManuallyDrop::drop(&mut self.render_pass) };
         instance.submit(std::iter::once(self.command_encoder.finish()))
     }
