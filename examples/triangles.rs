@@ -13,7 +13,10 @@ use rae_math::{
 };
 
 use rae_gfx::{
-    core::{CanvasWindow, Color, Instance, InstanceCreationError, InstanceDescriptor, RenderFrame},
+    core::{
+        CanvasWindow, Color, Instance, InstanceCreationError, InstanceDescriptor, RenderFrame,
+        SwapChainError,
+    },
     shape2,
     shape2::Renderer as Shape2Renderer,
 };
@@ -182,12 +185,9 @@ impl EventHandler<ApplicationError, ApplicationEvent> for ApplicationImpl {
         let current_triangle_constant = self.generate_push_constant();
         elements.push((&self.triangle_mesh, &current_triangle_constant));
 
-        // TODO: missing error handling, remove the unwrap call...
-        // It seems that frame should be retrieved and be alive the whole time, or bad stuff will happen...
-        let mut frame = RenderFrame::from_canvas(&self.instance, &mut self.window).unwrap();
+        let mut frame = RenderFrame::from_canvas(&self.instance, &mut self.window)?;
         frame.draw_shape2_array(&self.pipeline, &elements);
         frame.submit(&self.instance);
-        // frame.submit(&self.instance);
         Ok(ControlFlow::Continue)
     }
 }
@@ -198,6 +198,7 @@ type ApplicationEvent = ();
 enum ApplicationError {
     WindowCreationFailed(window::OsError),
     InstanceCreationFailed(InstanceCreationError),
+    RenderFrameCreationFailed(SwapChainError),
 }
 
 impl std::fmt::Display for ApplicationError {
@@ -209,6 +210,9 @@ impl std::fmt::Display for ApplicationError {
             ApplicationError::InstanceCreationFailed(e) => {
                 write!(f, "Instance creation failed ({})", e)
             }
+            ApplicationError::RenderFrameCreationFailed(e) => {
+                write!(f, "Render frame creation failed ({})", e)
+            }
         }
     }
 }
@@ -218,6 +222,7 @@ impl std::error::Error for ApplicationError {
         match self {
             ApplicationError::WindowCreationFailed(e) => Some(e),
             ApplicationError::InstanceCreationFailed(e) => Some(e),
+            ApplicationError::RenderFrameCreationFailed(e) => Some(e),
         }
     }
 }
@@ -231,6 +236,12 @@ impl From<window::OsError> for ApplicationError {
 impl From<InstanceCreationError> for ApplicationError {
     fn from(e: InstanceCreationError) -> Self {
         ApplicationError::InstanceCreationFailed(e)
+    }
+}
+
+impl From<SwapChainError> for ApplicationError {
+    fn from(e: SwapChainError) -> Self {
+        ApplicationError::RenderFrameCreationFailed(e)
     }
 }
 

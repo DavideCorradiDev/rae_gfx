@@ -47,7 +47,8 @@ impl<'a> RenderFrame<'a> {
 
         // The render pass will hold a reference to the command encoder and the texture views.
         // Since it will store them inside a Box, on the heap, their addresses should be stable.
-        // Additional borrowing of the resources is prevented by keeping these resources hidden inside the struct.
+        // Additional borrowing of the resources is prevented by keeping these resources hidden
+        // inside the struct.
         let render_pass = ManuallyDrop::new(unsafe {
             let command_encoder_ref = &mut *(command_encoder.deref_mut() as *mut CommandEncoder);
 
