@@ -1,8 +1,4 @@
-use std::{
-    default::Default,
-    iter,
-    ops::{Deref, DerefMut},
-};
+use std::{default::Default, iter, ops::DerefMut};
 
 use super::{
     BufferSlice, Canvas, Color, CommandEncoder, CommandEncoderDescriptor, Instance, LoadOp,
@@ -35,7 +31,7 @@ pub struct RenderFrame<'a> {
     render_pass: Option<RenderPass<'a>>,
     command_encoder: Box<CommandEncoder>,
     swap_chain_texture: Option<Box<SwapChainTexture>>,
-    texture_view: Option<Box<TextureView>>,
+    texture_view: Option<&'a TextureView>,
 }
 
 // TODO: framebuffer obtained from Canvas. Add a method to retrieve the framebuffer from the canvas and in case add the required config info.
@@ -59,17 +55,13 @@ impl<'a> RenderFrame<'a> {
     pub fn from_texture_views(
         instance: &Instance,
         swap_chain_texture: Option<SwapChainTexture>,
-        texture_view: Option<TextureView>,
+        texture_view: Option<&'a TextureView>,
         desc: &RenderFrameDescriptor,
     ) -> Self {
         let mut command_encoder =
             Box::new(instance.create_command_encoder(&CommandEncoderDescriptor::default()));
 
         let swap_chain_texture = match swap_chain_texture {
-            Some(v) => Some(Box::new(v)),
-            None => None,
-        };
-        let texture_view = match texture_view {
             Some(v) => Some(Box::new(v)),
             None => None,
         };
@@ -81,13 +73,10 @@ impl<'a> RenderFrame<'a> {
         let render_pass = Some(unsafe {
             let command_encoder_ref = &mut *(command_encoder.deref_mut() as *mut CommandEncoder);
 
-            let (attachment_ref, resolve_target_ref) = match &texture_view {
+            let (attachment_ref, resolve_target_ref) = match texture_view {
                 Some(tv) => match &swap_chain_texture {
-                    Some(sct) => (
-                        &*(tv.deref() as *const TextureView),
-                        Some(&*(&sct.view as *const TextureView)),
-                    ),
-                    None => (&*(tv.deref() as *const TextureView), None),
+                    Some(sct) => (tv, Some(&*(&sct.view as *const TextureView))),
+                    None => (tv, None),
                 },
                 None => match &swap_chain_texture {
                     Some(sct) => (&*(&sct.view as *const TextureView), None),
