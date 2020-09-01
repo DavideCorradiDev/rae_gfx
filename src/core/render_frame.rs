@@ -55,24 +55,28 @@ impl<'a> RenderFrame<'a> {
         let command_encoder_ref =
             unsafe { &mut *(command_encoder.deref_mut() as *mut CommandEncoder) };
 
-        let color_attachment = unsafe {
-            let (color_attachment_ref, color_resolve_target_ref) = match color_buffer {
+        let color_attachments = unsafe {
+            let color_attachment_refs = match color_buffer {
                 Some(cv) => match &swap_chain_texture {
-                    Some(sct) => (cv, Some(&*(&sct.view as *const TextureView))),
-                    None => (cv, None),
+                    Some(sct) => Some((cv, Some(&*(&sct.view as *const TextureView)))),
+                    None => Some((cv, None)),
                 },
                 None => match &swap_chain_texture {
-                    Some(sct) => (&*(&sct.view as *const TextureView), None),
-                    None => panic!("No main attachment specified when creating render frame."),
+                    Some(sct) => Some((&*(&sct.view as *const TextureView), None)),
+                    None => None,
                 },
             };
-            RenderPassColorAttachmentDescriptor {
-                attachment: color_attachment_ref,
-                resolve_target: color_resolve_target_ref,
-                ops: Operations {
-                    load: LoadOp::Clear(Color::BLACK),
-                    store: true,
-                },
+
+            match color_attachment_refs {
+                Some(color_attachment_refs) => vec![RenderPassColorAttachmentDescriptor {
+                    attachment: color_attachment_refs.0,
+                    resolve_target: color_attachment_refs.1,
+                    ops: Operations {
+                        load: LoadOp::Clear(Color::BLACK),
+                        store: true,
+                    },
+                }],
+                None => Vec::new(),
             }
         };
 
@@ -87,7 +91,7 @@ impl<'a> RenderFrame<'a> {
 
         let render_pass = Some(
             command_encoder_ref.begin_render_pass(&RenderPassDescriptor {
-                color_attachments: &[color_attachment],
+                color_attachments: color_attachments.as_slice(),
                 depth_stencil_attachment,
             }),
         );
