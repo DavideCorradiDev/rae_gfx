@@ -6,26 +6,6 @@ use super::{
     RenderPipeline, ShaderStage, SwapChainError, SwapChainFrame, SwapChainTexture, TextureView,
 };
 
-#[derive(Debug, PartialEq, Clone, Copy, serde::Serialize, serde::Deserialize)]
-pub struct RenderFrameDescriptor {
-    pub color_operations: Operations<Color>,
-    pub depth_operations: Option<Operations<f32>>,
-    pub stencil_operations: Option<Operations<f32>>,
-}
-
-impl Default for RenderFrameDescriptor {
-    fn default() -> Self {
-        Self {
-            color_operations: Operations {
-                load: LoadOp::Clear(Color::BLACK),
-                store: true,
-            },
-            depth_operations: None,
-            stencil_operations: None,
-        }
-    }
-}
-
 #[derive(Debug)]
 pub struct RenderFrame<'a> {
     render_pass: Option<RenderPass<'a>>,
@@ -34,24 +14,24 @@ pub struct RenderFrame<'a> {
     color_buffer: Option<&'a TextureView>,
 }
 
+// TODO: rething / remove render frame descriptor
+// TODO: array of color buffers.
 // TODO: depth and stencil buffer. Add a method to canvas to retrieve if they exist or not and in case add the required config info.
 
 impl<'a> RenderFrame<'a> {
     pub fn from_canvas<CanvasType: Canvas>(
         instance: &Instance,
         canvas: &'a mut CanvasType,
-        desc: &RenderFrameDescriptor,
     ) -> Result<Self, SwapChainError> {
         let frame = canvas.get_swap_chain_frame()?;
         let framebuffer = canvas.get_color_buffer();
-        Ok(Self::from_texture_views(instance, frame, framebuffer, desc))
+        Ok(Self::from_buffers(instance, frame, framebuffer))
     }
 
-    pub fn from_texture_views(
+    pub fn from_buffers(
         instance: &Instance,
         swap_chain_frame: Option<SwapChainFrame>,
         color_buffer: Option<&'a TextureView>,
-        desc: &RenderFrameDescriptor,
     ) -> Self {
         let mut command_encoder =
             Box::new(instance.create_command_encoder(&CommandEncoderDescriptor::default()));
@@ -83,7 +63,10 @@ impl<'a> RenderFrame<'a> {
                 color_attachments: &[RenderPassColorAttachmentDescriptor {
                     attachment: color_attachment_ref,
                     resolve_target: color_resolve_target_ref,
-                    ops: desc.color_operations,
+                    ops: Operations {
+                        load: LoadOp::Clear(Color::BLACK),
+                        store: true,
+                    },
                 }],
                 depth_stencil_attachment: None,
             })
