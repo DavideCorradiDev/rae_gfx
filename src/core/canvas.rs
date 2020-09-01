@@ -1,6 +1,5 @@
 use super::{Color, Operations, SwapChainError, SwapChainFrame, TextureView};
 
-// TODO: check if get_swap_chain_frame can be immutable.
 pub trait Canvas {
     fn get_swap_chain_frame(&mut self) -> Result<Option<SwapChainFrame>, SwapChainError>;
     fn get_color_buffer(&self) -> Option<&TextureView>;
