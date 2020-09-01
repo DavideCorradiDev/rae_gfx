@@ -206,7 +206,11 @@ impl Canvas for CanvasWindow {
         Ok(Some(swap_chain))
     }
 
-    fn get_framebuffer(&self) -> Option<&TextureView> {
+    fn get_color_buffer(&self) -> Option<&TextureView> {
+        None
+    }
+
+    fn get_depth_stencil_buffer(&self) -> Option<&TextureView> {
         None
     }
 }

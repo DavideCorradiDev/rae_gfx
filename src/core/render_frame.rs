@@ -31,10 +31,9 @@ pub struct RenderFrame<'a> {
     render_pass: Option<RenderPass<'a>>,
     command_encoder: Box<CommandEncoder>,
     swap_chain_texture: Option<Box<SwapChainTexture>>,
-    texture_view: Option<&'a TextureView>,
+    color_buffer: Option<&'a TextureView>,
 }
 
-// TODO: framebuffer obtained from Canvas. Add a method to retrieve the framebuffer from the canvas and in case add the required config info.
 // TODO: depth and stencil buffer. Add a method to canvas to retrieve if they exist or not and in case add the required config info.
 
 impl<'a> RenderFrame<'a> {
@@ -44,14 +43,14 @@ impl<'a> RenderFrame<'a> {
         desc: &RenderFrameDescriptor,
     ) -> Result<Self, SwapChainError> {
         let frame = canvas.get_swap_chain_frame()?;
-        let framebuffer = canvas.get_framebuffer();
+        let framebuffer = canvas.get_color_buffer();
         Ok(Self::from_texture_views(instance, frame, framebuffer, desc))
     }
 
     pub fn from_texture_views(
         instance: &Instance,
         swap_chain_frame: Option<SwapChainFrame>,
-        texture_view: Option<&'a TextureView>,
+        color_buffer: Option<&'a TextureView>,
         desc: &RenderFrameDescriptor,
     ) -> Self {
         let mut command_encoder =
@@ -69,22 +68,21 @@ impl<'a> RenderFrame<'a> {
         let render_pass = Some(unsafe {
             let command_encoder_ref = &mut *(command_encoder.deref_mut() as *mut CommandEncoder);
 
-            let (attachment_ref, resolve_target_ref) = match texture_view {
-                Some(tv) => match &swap_chain_texture {
-                    Some(sct) => (tv, Some(&*(&sct.view as *const TextureView))),
-                    None => (tv, None),
+            let (color_attachment_ref, color_resolve_target_ref) = match color_buffer {
+                Some(cv) => match &swap_chain_texture {
+                    Some(sct) => (cv, Some(&*(&sct.view as *const TextureView))),
+                    None => (cv, None),
                 },
                 None => match &swap_chain_texture {
                     Some(sct) => (&*(&sct.view as *const TextureView), None),
-                    // TODO: improve message
-                    None => panic!("No main attachment specified when creating a render frame."),
+                    None => panic!("No main attachment specified when creating render frame."),
                 },
             };
 
             command_encoder_ref.begin_render_pass(&RenderPassDescriptor {
                 color_attachments: &[RenderPassColorAttachmentDescriptor {
-                    attachment: attachment_ref,
-                    resolve_target: resolve_target_ref,
+                    attachment: color_attachment_ref,
+                    resolve_target: color_resolve_target_ref,
                     ops: desc.color_operations,
                 }],
                 depth_stencil_attachment: None,
@@ -95,7 +93,7 @@ impl<'a> RenderFrame<'a> {
             render_pass,
             command_encoder,
             swap_chain_texture,
-            texture_view,
+            color_buffer,
         }
     }
 
