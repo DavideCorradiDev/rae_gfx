@@ -11,7 +11,6 @@ pub struct RenderFrame<'a> {
     render_pass: Option<RenderPass<'a>>,
     command_encoder: Box<CommandEncoder>,
     swap_chain_texture: Option<Box<SwapChainTexture>>,
-    color_buffer: Option<&'a TextureView>,
 }
 
 // TODO: rething / remove render frame descriptor
@@ -76,7 +75,6 @@ impl<'a> RenderFrame<'a> {
             render_pass,
             command_encoder,
             swap_chain_texture,
-            color_buffer,
         }
     }
 
