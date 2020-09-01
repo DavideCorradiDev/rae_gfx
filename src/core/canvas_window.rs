@@ -6,7 +6,7 @@ use rae_app::{
 
 use super::{
     Canvas, Instance, PresentMode, Surface, SwapChain, SwapChainDescriptor, SwapChainError,
-    SwapChainFrame, TextureUsage,
+    SwapChainFrame, TextureUsage, TextureView,
 };
 
 #[derive(Debug)]
@@ -201,8 +201,13 @@ impl CanvasWindow {
 }
 
 impl Canvas for CanvasWindow {
-    fn get_current_frame(&mut self) -> Result<SwapChainFrame, SwapChainError> {
-        self.swap_chain.get_current_frame()
+    fn get_swap_chain_frame(&mut self) -> Result<Option<SwapChainFrame>, SwapChainError> {
+        let swap_chain = self.swap_chain.get_current_frame()?;
+        Ok(Some(swap_chain))
+    }
+
+    fn get_framebuffer(&self) -> Option<&TextureView> {
+        None
     }
 }
 

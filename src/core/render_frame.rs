@@ -3,7 +3,7 @@ use std::{default::Default, iter, ops::DerefMut};
 use super::{
     BufferSlice, Canvas, Color, CommandEncoder, CommandEncoderDescriptor, Instance, LoadOp,
     Operations, RenderPass, RenderPassColorAttachmentDescriptor, RenderPassDescriptor,
-    RenderPipeline, ShaderStage, SwapChainError, SwapChainTexture, TextureView,
+    RenderPipeline, ShaderStage, SwapChainError, SwapChainFrame, SwapChainTexture, TextureView,
 };
 
 #[derive(Debug, PartialEq, Clone, Copy, serde::Serialize, serde::Deserialize)]
@@ -40,29 +40,25 @@ pub struct RenderFrame<'a> {
 impl<'a> RenderFrame<'a> {
     pub fn from_canvas<CanvasType: Canvas>(
         instance: &Instance,
-        canvas: &mut CanvasType,
+        canvas: &'a mut CanvasType,
         desc: &RenderFrameDescriptor,
     ) -> Result<Self, SwapChainError> {
-        let frame = canvas.get_current_frame()?;
-        Ok(Self::from_texture_views(
-            instance,
-            Some(frame.output),
-            None,
-            desc,
-        ))
+        let frame = canvas.get_swap_chain_frame()?;
+        let framebuffer = canvas.get_framebuffer();
+        Ok(Self::from_texture_views(instance, frame, framebuffer, desc))
     }
 
     pub fn from_texture_views(
         instance: &Instance,
-        swap_chain_texture: Option<SwapChainTexture>,
+        swap_chain_frame: Option<SwapChainFrame>,
         texture_view: Option<&'a TextureView>,
         desc: &RenderFrameDescriptor,
     ) -> Self {
         let mut command_encoder =
             Box::new(instance.create_command_encoder(&CommandEncoderDescriptor::default()));
 
-        let swap_chain_texture = match swap_chain_texture {
-            Some(v) => Some(Box::new(v)),
+        let swap_chain_texture = match swap_chain_frame {
+            Some(v) => Some(Box::new(v.output)),
             None => None,
         };
 
