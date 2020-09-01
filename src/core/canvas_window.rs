@@ -6,14 +6,15 @@ use rae_app::{
 
 use super::{
     Canvas, Instance, PresentMode, Surface, SwapChain, SwapChainDescriptor, SwapChainError,
-    SwapChainFrame, TextureUsage, TextureView,
+    SwapChainFrame, TextureFormat, TextureUsage, TextureView,
 };
 
 #[derive(Debug)]
 pub struct CanvasWindow {
+    color_buffer_format: TextureFormat,
+    surface_size: window::PhysicalSize<u32>,
     swap_chain: SwapChain,
     surface: Surface,
-    surface_size: window::PhysicalSize<u32>,
     window: Window,
 }
 
@@ -40,11 +41,14 @@ impl CanvasWindow {
         surface: Surface,
     ) -> Self {
         let surface_size = window.inner_size();
-        let swap_chain = Self::create_swap_chain(instance, &surface, &surface_size);
+        let color_buffer_format = instance.color_format();
+        let swap_chain =
+            Self::create_swap_chain(instance, &surface, &surface_size, color_buffer_format);
         Self {
+            color_buffer_format,
+            surface_size,
             swap_chain,
             surface,
-            surface_size,
             window,
         }
     }
@@ -52,7 +56,12 @@ impl CanvasWindow {
     pub fn reconfigure_swap_chain(&mut self, instance: &Instance) {
         let current_size = self.inner_size();
         if self.surface_size != current_size {
-            self.swap_chain = Self::create_swap_chain(instance, &self.surface, &current_size);
+            self.swap_chain = Self::create_swap_chain(
+                instance,
+                &self.surface,
+                &current_size,
+                self.color_buffer_format,
+            );
             self.surface_size = current_size;
         }
     }
@@ -186,12 +195,13 @@ impl CanvasWindow {
         instance: &Instance,
         surface: &Surface,
         size: &window::PhysicalSize<u32>,
+        color_buffer_format: TextureFormat,
     ) -> SwapChain {
         instance.create_swap_chain(
             surface,
             &SwapChainDescriptor {
                 usage: TextureUsage::OUTPUT_ATTACHMENT,
-                format: instance.color_format(),
+                format: color_buffer_format,
                 width: size.width,
                 height: size.height,
                 present_mode: PresentMode::Mailbox,
@@ -211,6 +221,14 @@ impl Canvas for CanvasWindow {
     }
 
     fn get_depth_stencil_buffer(&self) -> Option<&TextureView> {
+        None
+    }
+
+    fn get_color_format(&self) -> Option<TextureFormat> {
+        Some(self.color_buffer_format)
+    }
+
+    fn get_depth_stencil_format(&self) -> Option<TextureFormat> {
         None
     }
 }
