@@ -1,7 +1,6 @@
 use std::{
     default::Default,
     iter,
-    mem::ManuallyDrop,
     ops::{Deref, DerefMut},
 };
 
@@ -33,7 +32,7 @@ impl Default for RenderFrameDescriptor {
 
 #[derive(Debug)]
 pub struct RenderFrame<'a> {
-    render_pass: ManuallyDrop<RenderPass<'a>>,
+    render_pass: Option<RenderPass<'a>>,
     command_encoder: Box<CommandEncoder>,
     swap_chain_texture: Option<Box<SwapChainTexture>>,
     texture_view: Option<Box<TextureView>>,
@@ -79,7 +78,7 @@ impl<'a> RenderFrame<'a> {
         // Since it will store them inside a Box, on the heap, their addresses should be stable.
         // Additional borrowing of the resources is prevented by keeping these resources hidden
         // inside the struct.
-        let render_pass = ManuallyDrop::new(unsafe {
+        let render_pass = Some(unsafe {
             let command_encoder_ref = &mut *(command_encoder.deref_mut() as *mut CommandEncoder);
 
             let (attachment_ref, resolve_target_ref) = match &texture_view {
@@ -92,6 +91,7 @@ impl<'a> RenderFrame<'a> {
                 },
                 None => match &swap_chain_texture {
                     Some(sct) => (&*(&sct.view as *const TextureView), None),
+                    // TODO: improve message
                     None => panic!("No main attachment specified when creating a render frame."),
                 },
             };
@@ -117,32 +117,32 @@ impl<'a> RenderFrame<'a> {
     pub fn submit(mut self, instance: &Instance) {
         // The render pass must be dropped before the command encoder is finished, because it will
         // add some commands to it during the drop call.
-        unsafe { ManuallyDrop::drop(&mut self.render_pass) };
+        self.render_pass = None;
         instance.submit(iter::once(self.command_encoder.finish()))
     }
 
-    pub fn render_pass(&self) -> &RenderPass {
-        &self.render_pass
-    }
-
-    pub fn render_pass_mut(&mut self) -> &'a mut RenderPass {
-        &mut self.render_pass
+    fn render_pass_mut(&mut self) -> &mut RenderPass<'a> {
+        match &mut self.render_pass {
+            Some(v) => v,
+            None => panic!("Invalid render frame access"),
+        }
     }
 
     pub fn set_pipeline(&mut self, pipeline: &'a RenderPipeline) {
-        self.render_pass.set_pipeline(pipeline);
+        self.render_pass_mut().set_pipeline(pipeline);
     }
 
     pub fn set_index_buffer(&mut self, buffer_slice: BufferSlice<'a>) {
-        self.render_pass.set_index_buffer(buffer_slice)
+        self.render_pass_mut().set_index_buffer(buffer_slice)
     }
 
     pub fn set_vertex_buffer(&mut self, slot: u32, buffer_slice: BufferSlice<'a>) {
-        self.render_pass.set_vertex_buffer(slot, buffer_slice)
+        self.render_pass_mut().set_vertex_buffer(slot, buffer_slice)
     }
 
     pub fn set_push_constants(&mut self, stages: ShaderStage, offset: u32, data: &[u32]) {
-        self.render_pass.set_push_constants(stages, offset, data)
+        self.render_pass_mut()
+            .set_push_constants(stages, offset, data)
     }
 
     pub fn draw_indexed(
@@ -151,7 +151,7 @@ impl<'a> RenderFrame<'a> {
         base_vertex: i32,
         instances: core::ops::Range<u32>,
     ) {
-        self.render_pass
+        self.render_pass_mut()
             .draw_indexed(indices, base_vertex, instances)
     }
 }

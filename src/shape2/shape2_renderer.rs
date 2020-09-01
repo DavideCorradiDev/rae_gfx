@@ -36,7 +36,6 @@ pub struct Mesh {
     index_count: u32,
 }
 
-// TODO: add static methods to create common shapes and shape outlines.
 impl Mesh {
     pub fn new<'a>(
         instance: &core::Instance,
