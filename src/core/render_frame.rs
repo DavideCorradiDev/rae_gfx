@@ -1,10 +1,10 @@
 use std::{default::Default, iter, ops::DerefMut};
 
 use super::{
-    BufferSlice, Canvas, Color, CommandEncoder, CommandEncoderDescriptor, Instance, LoadOp,
-    Operations, RenderPass, RenderPassColorAttachmentDescriptor,
-    RenderPassDepthStencilAttachmentDescriptor, RenderPassDescriptor, RenderPipeline, ShaderStage,
-    SwapChainError, SwapChainFrame, SwapChainTexture, TextureView,
+    BufferSlice, Canvas, Color, CommandEncoder, CommandEncoderDescriptor, Instance, Operations,
+    RenderPass, RenderPassColorAttachmentDescriptor, RenderPassDepthStencilAttachmentDescriptor,
+    RenderPassDescriptor, RenderPipeline, ShaderStage, SwapChainError, SwapChainFrame,
+    SwapChainTexture, TextureView,
 };
 
 #[derive(Debug)]
@@ -14,23 +14,20 @@ pub struct RenderFrame<'a> {
     swap_chain_texture: Option<Box<SwapChainTexture>>,
 }
 
-// TODO: rething / remove render frame descriptor
-// TODO: array of color buffers.
-// TODO: depth and stencil buffer. Add a method to canvas to retrieve if they exist or not and in case add the required config info.
-
 impl<'a> RenderFrame<'a> {
     pub fn from_canvas<CanvasType: Canvas>(
         instance: &Instance,
         canvas: &'a mut CanvasType,
     ) -> Result<Self, SwapChainError> {
-        let frame = canvas.get_swap_chain_frame()?;
-        let color_buffer = canvas.get_color_buffer();
-        let depth_stencil_buffer = canvas.get_depth_stencil_buffer();
+        let swap_chain_frame = canvas.get_swap_chain_frame()?;
         Ok(Self::from_buffers(
             instance,
-            frame,
-            color_buffer,
-            depth_stencil_buffer,
+            swap_chain_frame,
+            canvas.get_color_buffer(),
+            canvas.get_depth_stencil_buffer(),
+            canvas.get_color_operations(),
+            canvas.get_depth_operations(),
+            canvas.get_stencil_operations(),
         ))
     }
 
@@ -39,6 +36,9 @@ impl<'a> RenderFrame<'a> {
         swap_chain_frame: Option<SwapChainFrame>,
         color_buffer: Option<&'a TextureView>,
         depth_stencil_buffer: Option<&'a TextureView>,
+        color_ops: Option<Operations<Color>>,
+        depth_ops: Option<Operations<f32>>,
+        stencil_ops: Option<Operations<u32>>,
     ) -> Self {
         let mut command_encoder =
             Box::new(instance.create_command_encoder(&CommandEncoderDescriptor::default()));
@@ -55,8 +55,8 @@ impl<'a> RenderFrame<'a> {
         let command_encoder_ref =
             unsafe { &mut *(command_encoder.deref_mut() as *mut CommandEncoder) };
 
-        let color_attachments = unsafe {
-            let color_attachment_refs = match color_buffer {
+        let color_attachment_refs = unsafe {
+            match color_buffer {
                 Some(cv) => match &swap_chain_texture {
                     Some(sct) => Some((cv, Some(&*(&sct.view as *const TextureView)))),
                     None => Some((cv, None)),
@@ -65,26 +65,29 @@ impl<'a> RenderFrame<'a> {
                     Some(sct) => Some((&*(&sct.view as *const TextureView), None)),
                     None => None,
                 },
-            };
+            }
+        };
 
-            match color_attachment_refs {
-                Some(color_attachment_refs) => vec![RenderPassColorAttachmentDescriptor {
+        let color_attachments = match color_attachment_refs {
+            Some(color_attachment_refs) => {
+                let ops = match color_ops {
+                    Some(co) => co,
+                    None => Operations::<Color>::default(),
+                };
+                vec![RenderPassColorAttachmentDescriptor {
                     attachment: color_attachment_refs.0,
                     resolve_target: color_attachment_refs.1,
-                    ops: Operations {
-                        load: LoadOp::Clear(Color::BLACK),
-                        store: true,
-                    },
-                }],
-                None => Vec::new(),
+                    ops,
+                }]
             }
+            None => Vec::new(),
         };
 
         let depth_stencil_attachment = match depth_stencil_buffer {
             Some(dsb) => Some(RenderPassDepthStencilAttachmentDescriptor {
                 attachment: dsb,
-                depth_ops: None,
-                stencil_ops: None,
+                depth_ops: depth_ops,
+                stencil_ops: stencil_ops,
             }),
             None => None,
         };

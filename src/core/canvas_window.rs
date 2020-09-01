@@ -5,8 +5,8 @@ use rae_app::{
 };
 
 use super::{
-    Canvas, Instance, PresentMode, Surface, SwapChain, SwapChainDescriptor, SwapChainError,
-    SwapChainFrame, TextureFormat, TextureUsage, TextureView,
+    Canvas, Color, Instance, LoadOp, Operations, PresentMode, Surface, SwapChain,
+    SwapChainDescriptor, SwapChainError, SwapChainFrame, TextureFormat, TextureUsage, TextureView,
 };
 
 #[derive(Debug)]
@@ -229,6 +229,21 @@ impl Canvas for CanvasWindow {
     }
 
     fn get_depth_stencil_format(&self) -> Option<TextureFormat> {
+        None
+    }
+
+    fn get_color_operations(&self) -> Option<Operations<Color>> {
+        Some(Operations {
+            load: LoadOp::Clear(Color::BLACK),
+            store: true,
+        })
+    }
+
+    fn get_depth_operations(&self) -> Option<Operations<f32>> {
+        None
+    }
+
+    fn get_stencil_operations(&self) -> Option<Operations<u32>> {
         None
     }
 }

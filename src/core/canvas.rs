@@ -1,9 +1,13 @@
-use super::{SwapChainError, SwapChainFrame, TextureFormat, TextureView};
+use super::{Color, Operations, SwapChainError, SwapChainFrame, TextureFormat, TextureView};
 
+// TODO: check if get_swap_chain_frame can be immutable.
 pub trait Canvas {
     fn get_swap_chain_frame(&mut self) -> Result<Option<SwapChainFrame>, SwapChainError>;
     fn get_color_buffer(&self) -> Option<&TextureView>;
     fn get_depth_stencil_buffer(&self) -> Option<&TextureView>;
     fn get_color_format(&self) -> Option<TextureFormat>;
     fn get_depth_stencil_format(&self) -> Option<TextureFormat>;
+    fn get_color_operations(&self) -> Option<Operations<Color>>;
+    fn get_depth_operations(&self) -> Option<Operations<f32>>;
+    fn get_stencil_operations(&self) -> Option<Operations<u32>>;
 }
