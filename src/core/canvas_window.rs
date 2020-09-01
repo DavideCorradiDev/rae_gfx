@@ -224,14 +224,6 @@ impl Canvas for CanvasWindow {
         None
     }
 
-    fn get_color_format(&self) -> Option<TextureFormat> {
-        Some(self.color_buffer_format)
-    }
-
-    fn get_depth_stencil_format(&self) -> Option<TextureFormat> {
-        None
-    }
-
     fn get_color_operations(&self) -> Option<Operations<Color>> {
         Some(Operations {
             load: LoadOp::Clear(Color::BLACK),
