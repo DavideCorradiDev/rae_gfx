@@ -2,8 +2,9 @@ use std::{default::Default, iter, ops::DerefMut};
 
 use super::{
     BufferSlice, Canvas, Color, CommandEncoder, CommandEncoderDescriptor, Instance, LoadOp,
-    Operations, RenderPass, RenderPassColorAttachmentDescriptor, RenderPassDescriptor,
-    RenderPipeline, ShaderStage, SwapChainError, SwapChainFrame, SwapChainTexture, TextureView,
+    Operations, RenderPass, RenderPassColorAttachmentDescriptor,
+    RenderPassDepthStencilAttachmentDescriptor, RenderPassDescriptor, RenderPipeline, ShaderStage,
+    SwapChainError, SwapChainFrame, SwapChainTexture, TextureView,
 };
 
 #[derive(Debug)]
@@ -23,14 +24,21 @@ impl<'a> RenderFrame<'a> {
         canvas: &'a mut CanvasType,
     ) -> Result<Self, SwapChainError> {
         let frame = canvas.get_swap_chain_frame()?;
-        let framebuffer = canvas.get_color_buffer();
-        Ok(Self::from_buffers(instance, frame, framebuffer))
+        let color_buffer = canvas.get_color_buffer();
+        let depth_stencil_buffer = canvas.get_depth_stencil_buffer();
+        Ok(Self::from_buffers(
+            instance,
+            frame,
+            color_buffer,
+            depth_stencil_buffer,
+        ))
     }
 
     pub fn from_buffers(
         instance: &Instance,
         swap_chain_frame: Option<SwapChainFrame>,
         color_buffer: Option<&'a TextureView>,
+        depth_stencil_buffer: Option<&'a TextureView>,
     ) -> Self {
         let mut command_encoder =
             Box::new(instance.create_command_encoder(&CommandEncoderDescriptor::default()));
@@ -44,9 +52,10 @@ impl<'a> RenderFrame<'a> {
         // Since it will store them inside a Box, on the heap, their addresses should be stable.
         // Additional borrowing of the resources is prevented by keeping these resources hidden
         // inside the struct.
-        let render_pass = Some(unsafe {
-            let command_encoder_ref = &mut *(command_encoder.deref_mut() as *mut CommandEncoder);
+        let command_encoder_ref =
+            unsafe { &mut *(command_encoder.deref_mut() as *mut CommandEncoder) };
 
+        let color_attachment = unsafe {
             let (color_attachment_ref, color_resolve_target_ref) = match color_buffer {
                 Some(cv) => match &swap_chain_texture {
                     Some(sct) => (cv, Some(&*(&sct.view as *const TextureView))),
@@ -57,19 +66,31 @@ impl<'a> RenderFrame<'a> {
                     None => panic!("No main attachment specified when creating render frame."),
                 },
             };
+            RenderPassColorAttachmentDescriptor {
+                attachment: color_attachment_ref,
+                resolve_target: color_resolve_target_ref,
+                ops: Operations {
+                    load: LoadOp::Clear(Color::BLACK),
+                    store: true,
+                },
+            }
+        };
 
+        let depth_stencil_attachment = match depth_stencil_buffer {
+            Some(dsb) => Some(RenderPassDepthStencilAttachmentDescriptor {
+                attachment: dsb,
+                depth_ops: None,
+                stencil_ops: None,
+            }),
+            None => None,
+        };
+
+        let render_pass = Some(
             command_encoder_ref.begin_render_pass(&RenderPassDescriptor {
-                color_attachments: &[RenderPassColorAttachmentDescriptor {
-                    attachment: color_attachment_ref,
-                    resolve_target: color_resolve_target_ref,
-                    ops: Operations {
-                        load: LoadOp::Clear(Color::BLACK),
-                        store: true,
-                    },
-                }],
-                depth_stencil_attachment: None,
-            })
-        });
+                color_attachments: &[color_attachment],
+                depth_stencil_attachment,
+            }),
+        );
 
         Self {
             render_pass,
