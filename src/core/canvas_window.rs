@@ -30,7 +30,7 @@ impl CanvasWindow {
 
     // Unsafe: surface creation.
     pub unsafe fn from_window(instance: &Instance, window: Window) -> Self {
-        let surface = instance.create_surface(&window);
+        let surface = Surface::new(&instance, &window);
         Self::from_window_and_surface(instance, window, surface)
     }
 

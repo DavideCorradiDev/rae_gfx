@@ -8,7 +8,7 @@ pub use wgpu::{
     PushConstantRange, Queue, RasterizationStateDescriptor, RenderPass,
     RenderPassColorAttachmentDescriptor, RenderPassDepthStencilAttachmentDescriptor,
     RenderPassDescriptor, RenderPipeline, RenderPipelineDescriptor, ShaderModule,
-    ShaderModuleSource, ShaderStage, Surface, SwapChain, SwapChainDescriptor, SwapChainError,
+    ShaderModuleSource, ShaderStage, SwapChain, SwapChainDescriptor, SwapChainError,
     SwapChainFrame, SwapChainTexture, TextureFormat, TextureUsage, TextureView,
     VertexAttributeDescriptor, VertexBufferDescriptor, VertexFormat, VertexStateDescriptor,
 };

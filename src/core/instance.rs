@@ -1,4 +1,7 @@
-use std::default::Default;
+use std::{
+    default::Default,
+    ops::{Deref, DerefMut},
+};
 
 use rae_app::window::Window;
 
@@ -10,7 +13,7 @@ use super::{
     Adapter, AdapterInfo, Backend, Buffer, BufferInitDescriptor, CommandBuffer, CommandEncoder,
     CommandEncoderDescriptor, Device, Features, Limits, PipelineLayout, PipelineLayoutDescriptor,
     PowerPreference, Queue, RenderPipeline, RenderPipelineDescriptor, ShaderModule,
-    ShaderModuleSource, Surface, SwapChain, SwapChainDescriptor, TextureFormat,
+    ShaderModuleSource, SwapChain, SwapChainDescriptor, TextureFormat,
 };
 
 #[derive(Debug, PartialEq, Eq, Clone, serde::Serialize, serde::Deserialize)]
@@ -59,10 +62,10 @@ pub struct Instance {
 }
 
 impl Instance {
-    pub fn new(config: &InstanceDescriptor) -> Result<Self, InstanceCreationError> {
-        let instance = Self::create_instance(config);
-        let adapter = Self::create_adapter(&instance, config, None)?;
-        let (device, queue) = Self::create_device_and_queue(&adapter, config)?;
+    pub fn new(desc: &InstanceDescriptor) -> Result<Self, InstanceCreationError> {
+        let instance = Self::create_instance(desc);
+        let adapter = Self::create_adapter(&instance, desc, None)?;
+        let (device, queue) = Self::create_device_and_queue(&adapter, desc)?;
         Ok(Self {
             queue,
             adapter,
@@ -73,13 +76,13 @@ impl Instance {
 
     // Unsafe: surface creation.
     pub unsafe fn new_with_compatible_window(
-        config: &InstanceDescriptor,
+        desc: &InstanceDescriptor,
         compatible_window: &Window,
     ) -> Result<(Self, Surface), InstanceCreationError> {
-        let instance = Self::create_instance(config);
+        let instance = wgpu::Instance::new(desc.backend);
         let surface = instance.create_surface(compatible_window);
-        let adapter = Self::create_adapter(&instance, config, Some(&surface))?;
-        let (device, queue) = Self::create_device_and_queue(&adapter, config)?;
+        let adapter = Self::create_adapter(&instance, desc, Some(&surface))?;
+        let (device, queue) = Self::create_device_and_queue(&adapter, desc)?;
         Ok((
             Self {
                 queue,
@@ -87,7 +90,7 @@ impl Instance {
                 device,
                 instance,
             },
-            surface,
+            Surface { value: surface },
         ))
     }
     pub fn color_format(&self) -> TextureFormat {
@@ -98,12 +101,11 @@ impl Instance {
         self.adapter.get_info()
     }
 
-    // Unsafe: surface creation.
-    pub unsafe fn create_surface<W: HasRawWindowHandle>(&self, window: &W) -> Surface {
-        self.instance.create_surface(window)
-    }
-
-    pub fn create_swap_chain(&self, surface: &Surface, desc: &SwapChainDescriptor) -> SwapChain {
+    pub fn create_swap_chain(
+        &self,
+        surface: &wgpu::Surface,
+        desc: &SwapChainDescriptor,
+    ) -> SwapChain {
         self.device.create_swap_chain(surface, desc)
     }
 
@@ -131,18 +133,18 @@ impl Instance {
         self.queue.submit(command_buffers);
     }
 
-    fn create_instance(config: &InstanceDescriptor) -> wgpu::Instance {
-        wgpu::Instance::new(config.backend)
+    fn create_instance(desc: &InstanceDescriptor) -> wgpu::Instance {
+        wgpu::Instance::new(desc.backend)
     }
 
     fn create_adapter(
         instance: &wgpu::Instance,
-        config: &InstanceDescriptor,
-        compatible_surface: Option<&Surface>,
+        desc: &InstanceDescriptor,
+        compatible_surface: Option<&wgpu::Surface>,
     ) -> Result<Adapter, InstanceCreationError> {
         let adapter = match futures::executor::block_on(instance.request_adapter(
             &wgpu::RequestAdapterOptions {
-                power_preference: config.power_preference,
+                power_preference: desc.power_preference,
                 compatible_surface,
             },
         )) {
@@ -150,9 +152,9 @@ impl Instance {
             None => return Err(InstanceCreationError::AdapterRequestFailed),
         };
 
-        if !adapter.features().contains(config.required_features) {
+        if !adapter.features().contains(desc.required_features) {
             return Err(InstanceCreationError::FeaturesNotAvailable(
-                config.required_features - adapter.features(),
+                desc.required_features - adapter.features(),
             ));
         }
 
@@ -161,18 +163,43 @@ impl Instance {
 
     fn create_device_and_queue(
         adapter: &Adapter,
-        config: &InstanceDescriptor,
+        desc: &InstanceDescriptor,
     ) -> Result<(Device, Queue), InstanceCreationError> {
         let (device, queue) = futures::executor::block_on(adapter.request_device(
             &wgpu::DeviceDescriptor {
-                features: (config.optional_features & adapter.features())
-                    | config.required_features,
-                limits: config.required_limits.clone(),
+                features: (desc.optional_features & adapter.features()) | desc.required_features,
+                limits: desc.required_limits.clone(),
                 shader_validation: true,
             },
             None,
         ))?;
         Ok((device, queue))
+    }
+}
+
+#[derive(Debug)]
+pub struct Surface {
+    value: wgpu::Surface,
+}
+
+impl Surface {
+    pub unsafe fn new<W: HasRawWindowHandle>(instance: &Instance, window: &W) -> Self {
+        Self {
+            value: instance.instance.create_surface(window),
+        }
+    }
+}
+
+impl Deref for Surface {
+    type Target = wgpu::Surface;
+    fn deref(&self) -> &Self::Target {
+        &self.value
+    }
+}
+
+impl DerefMut for Surface {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        &mut self.value
     }
 }
 
