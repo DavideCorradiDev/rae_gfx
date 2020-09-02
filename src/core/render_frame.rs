@@ -13,8 +13,6 @@ pub struct RenderFrame<'a, 'b> {
     swap_chain_texture: Option<Box<SwapChainTexture>>,
 }
 
-// TODO change interfaces so that Instance is passed as an argument
-
 impl<'a, 'b> RenderFrame<'a, 'b> {
     pub fn from_parts(
         swap_chain_frame: Option<SwapChainFrame>,
