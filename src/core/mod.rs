@@ -3,7 +3,7 @@ pub use wgpu::{
     BindGroupDescriptor, BindGroupLayoutDescriptor, BlendDescriptor, BlendFactor, BlendOperation,
     BufferAddress, BufferDescriptor, BufferSlice, BufferUsage, Color, ColorStateDescriptor,
     ColorWrite, CommandBuffer, CommandEncoderDescriptor, CullMode, Features, FrontFace,
-    IndexFormat, InputStepMode, Limits, LoadOp, Operations, PipelineLayoutDescriptor,
+    IndexFormat, InputStepMode, Limits, LoadOp, Maintain, Operations, PipelineLayoutDescriptor,
     PowerPreference, PresentMode, PrimitiveTopology, ProgrammableStageDescriptor,
     PushConstantRange, RasterizationStateDescriptor, RenderBundleEncoderDescriptor, RenderPass,
     RenderPassColorAttachmentDescriptor, RenderPassDepthStencilAttachmentDescriptor,
