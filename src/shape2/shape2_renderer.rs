@@ -141,10 +141,14 @@ impl RenderPipeline {
                 range: 0..std::mem::size_of::<PushConstants>() as u32,
             }],
         });
-        let vs_module = instance
-            .create_shader_module(core::include_spirv!("shaders/gen/spirv/shape2.vert.spv"));
-        let fs_module = instance
-            .create_shader_module(core::include_spirv!("shaders/gen/spirv/shape2.frag.spv"));
+        let vs_module = core::ShaderModule::new(
+            &instance,
+            core::include_spirv!("shaders/gen/spirv/shape2.vert.spv"),
+        );
+        let fs_module = core::ShaderModule::new(
+            &instance,
+            core::include_spirv!("shaders/gen/spirv/shape2.frag.spv"),
+        );
         let pipeline = instance.create_render_pipeline(&core::RenderPipelineDescriptor {
             label: Some("shape2_render_pipeline"),
             layout: Some(&pipeline_layout),

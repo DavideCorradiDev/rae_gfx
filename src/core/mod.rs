@@ -7,10 +7,10 @@ pub use wgpu::{
     PowerPreference, PresentMode, PrimitiveTopology, ProgrammableStageDescriptor,
     PushConstantRange, Queue, RasterizationStateDescriptor, RenderPass,
     RenderPassColorAttachmentDescriptor, RenderPassDepthStencilAttachmentDescriptor,
-    RenderPassDescriptor, RenderPipeline, RenderPipelineDescriptor, ShaderModule,
-    ShaderModuleSource, ShaderStage, SwapChain, SwapChainDescriptor, SwapChainError,
-    SwapChainFrame, SwapChainTexture, TextureFormat, TextureUsage, TextureView,
-    VertexAttributeDescriptor, VertexBufferDescriptor, VertexFormat, VertexStateDescriptor,
+    RenderPassDescriptor, RenderPipeline, RenderPipelineDescriptor, ShaderModuleSource,
+    ShaderStage, SwapChain, SwapChainDescriptor, SwapChainError, SwapChainFrame, SwapChainTexture,
+    TextureFormat, TextureUsage, TextureView, VertexAttributeDescriptor, VertexBufferDescriptor,
+    VertexFormat, VertexStateDescriptor,
 };
 
 mod instance;
