@@ -532,7 +532,7 @@ mod tests {
     #[test]
     fn new() {
         let instance = Instance::new(&InstanceDescriptor {
-            backend: Backend::PRIMARY,
+            backend: Backend::VULKAN,
             power_preference: PowerPreference::Default,
             required_features: Features::default(),
             optional_features: Features::empty(),

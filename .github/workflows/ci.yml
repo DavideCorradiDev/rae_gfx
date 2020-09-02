@@ -26,9 +26,9 @@ jobs:
       fail-fast: false
       matrix:
         platform:
-          - {os: ubuntu-latest, run_tests: true, gen_doc: true}
-          - {os: windows-latest, run_tests: true, gen_doc: false}
-          - {os: macos-latest, run_tests: true, gen_doc: false}
+          - {os: ubuntu-latest, run_tests: false, gen_doc: true}
+          - {os: windows-latest, run_tests: false, gen_doc: false}
+          - {os: macos-latest, run_tests: false, gen_doc: false}
 
     env:
       RUST_BACKTRACE: 1
