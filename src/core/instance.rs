@@ -12,7 +12,9 @@ use raw_window_handle::HasRawWindowHandle;
 use super::{
     AdapterInfo, Backend, BufferDescriptor, BufferInitDescriptor, CommandBuffer,
     CommandEncoderDescriptor, Features, Limits, PipelineLayoutDescriptor, PowerPreference,
-    RenderPipelineDescriptor, ShaderModuleSource, SwapChain, SwapChainDescriptor, TextureFormat,
+    RenderBundleEncoderDescriptor, RenderPipelineDescriptor, ShaderModuleSource, SwapChain,
+    SwapChainDescriptor, TextureFormat,
+    BindGroupLayoutDescriptor
 };
 
 #[derive(Debug, PartialEq, Eq, Clone, serde::Serialize, serde::Deserialize)]
@@ -100,6 +102,14 @@ impl Instance {
         self.adapter.get_info()
     }
 
+    pub fn features(&self) -> Features {
+        self.device.features()
+    }
+
+    pub fn limits(&self) -> Limits {
+        self.device.limits()
+    }
+
     pub fn create_swap_chain(
         &self,
         surface: &wgpu::Surface,
@@ -182,7 +192,7 @@ pub struct ShaderModule {
 }
 
 impl ShaderModule {
-    pub fn new(instance: &Instance, source: ShaderModuleSource) -> ShaderModule {
+    pub fn new(instance: &Instance, source: ShaderModuleSource) -> Self {
         Self {
             value: instance.device.create_shader_module(source),
         }
@@ -208,7 +218,7 @@ pub struct PipelineLayout {
 }
 
 impl PipelineLayout {
-    pub fn new(instance: &Instance, desc: &PipelineLayoutDescriptor) -> PipelineLayout {
+    pub fn new(instance: &Instance, desc: &PipelineLayoutDescriptor) -> Self {
         Self {
             value: instance.device.create_pipeline_layout(desc),
         }
@@ -234,7 +244,7 @@ pub struct RenderPipeline {
 }
 
 impl RenderPipeline {
-    pub fn new(instance: &Instance, desc: &RenderPipelineDescriptor) -> RenderPipeline {
+    pub fn new(instance: &Instance, desc: &RenderPipelineDescriptor) -> Self {
         Self {
             value: instance.device.create_render_pipeline(desc),
         }
@@ -260,13 +270,13 @@ pub struct Buffer {
 }
 
 impl Buffer {
-    pub fn new(instance: &Instance, desc: &BufferDescriptor) -> Buffer {
+    pub fn new(instance: &Instance, desc: &BufferDescriptor) -> Self {
         Self {
             value: instance.device.create_buffer(desc),
         }
     }
 
-    pub fn init(instance: &Instance, desc: &BufferInitDescriptor) -> Buffer {
+    pub fn init(instance: &Instance, desc: &BufferInitDescriptor) -> Self {
         Self {
             value: instance.device.create_buffer_init(desc),
         }
@@ -292,7 +302,7 @@ pub struct CommandEncoder {
 }
 
 impl CommandEncoder {
-    pub fn new(instance: &Instance, desc: &CommandEncoderDescriptor) -> CommandEncoder {
+    pub fn new(instance: &Instance, desc: &CommandEncoderDescriptor) -> Self {
         Self {
             value: instance.device.create_command_encoder(desc),
         }
@@ -311,6 +321,58 @@ impl Deref for CommandEncoder {
 }
 
 impl DerefMut for CommandEncoder {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        &mut self.value
+    }
+}
+
+#[derive(Debug)]
+pub struct RenderBundleEncoder<'a> {
+    value: wgpu::RenderBundleEncoder<'a>,
+}
+
+impl<'a> RenderBundleEncoder<'a> {
+    pub fn new(instance: &'a Instance, desc: &RenderBundleEncoderDescriptor) -> Self {
+        Self {
+            value: instance.device.create_render_bundle_encoder(desc),
+        }
+    }
+}
+
+impl<'a> Deref for RenderBundleEncoder<'a> {
+    type Target = wgpu::RenderBundleEncoder<'a>;
+    fn deref(&self) -> &Self::Target {
+        &self.value
+    }
+}
+
+impl<'a> DerefMut for RenderBundleEncoder<'a> {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        &mut self.value
+    }
+}
+
+#[derive(Debug)]
+pub struct BindGroupLayout {
+    value: wgpu::BindGroupLayout,
+}
+
+impl BindGroupLayout {
+    pub fn new(instance: &Instance, desc: &BindGroupLayoutDescriptor) -> Self {
+        Self {
+            value: instance.device.create_bind_group_layout(desc),
+        }
+    }
+}
+
+impl Deref for BindGroupLayout {
+    type Target = wgpu::BindGroupLayout;
+    fn deref(&self) -> &Self::Target {
+        &self.value
+    }
+}
+
+impl DerefMut for BindGroupLayout {
     fn deref_mut(&mut self) -> &mut Self::Target {
         &mut self.value
     }
