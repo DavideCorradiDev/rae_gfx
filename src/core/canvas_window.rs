@@ -5,8 +5,8 @@ use rae_app::{
 };
 
 use super::{
-    Canvas, Color, Instance, LoadOp, Operations, PresentMode, Surface, SwapChain,
-    SwapChainDescriptor, SwapChainError, SwapChainFrame, TextureFormat, TextureUsage, TextureView,
+    Canvas, Instance, PresentMode, RenderFrame, Surface, SwapChain, SwapChainDescriptor,
+    SwapChainError, TextureFormat, TextureUsage,
 };
 
 #[derive(Debug)]
@@ -211,32 +211,16 @@ impl CanvasWindow {
 }
 
 impl Canvas for CanvasWindow {
-    fn swap_chain_frame(&mut self) -> Result<Option<SwapChainFrame>, SwapChainError> {
-        let swap_chain = self.swap_chain.get_current_frame()?;
-        Ok(Some(swap_chain))
-    }
-
-    fn color_buffer(&self) -> Option<&TextureView> {
-        None
-    }
-
-    fn depth_stencil_buffer(&self) -> Option<&TextureView> {
-        None
-    }
-
-    fn color_operations(&self) -> Option<Operations<Color>> {
-        Some(Operations {
-            load: LoadOp::Clear(Color::BLACK),
-            store: true,
-        })
-    }
-
-    fn depth_operations(&self) -> Option<Operations<f32>> {
-        None
-    }
-
-    fn stencil_operations(&self) -> Option<Operations<u32>> {
-        None
+    fn get_render_frame(&mut self) -> Result<RenderFrame, SwapChainError> {
+        let swap_chain_frame = self.swap_chain.get_current_frame()?;
+        Ok(RenderFrame::from_parts(
+            Some(swap_chain_frame),
+            None,
+            None,
+            None,
+            None,
+            None,
+        ))
     }
 }
 
