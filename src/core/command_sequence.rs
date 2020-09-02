@@ -1,8 +1,6 @@
 use std::iter;
 
-use super::{
-    Canvas, CommandEncoder, CommandEncoderDescriptor, Instance, RenderFrame, SwapChainError,
-};
+use super::{CommandEncoder, CommandEncoderDescriptor, Instance, RenderFrame, RenderPass};
 
 #[derive(Debug)]
 pub struct CommandSequence {
@@ -15,20 +13,9 @@ impl CommandSequence {
         Self { encoder }
     }
 
-    pub fn begin_render_frame<'a, CanvasType: Canvas>(
-        &'a mut self,
-        canvas: &'a mut CanvasType,
-    ) -> Result<RenderFrame<'a>, SwapChainError> {
-        let swap_chain_frame = canvas.swap_chain_frame()?;
-        Ok(RenderFrame::from_parts(
-            &mut self.encoder,
-            swap_chain_frame,
-            canvas.color_buffer(),
-            canvas.color_operations(),
-            canvas.depth_stencil_buffer(),
-            canvas.depth_operations(),
-            canvas.stencil_operations(),
-        ))
+    pub fn begin_render_pass<'a>(&'a mut self, render_frame: &'a RenderFrame) -> RenderPass<'a> {
+        self.encoder
+            .begin_render_pass(&render_frame.render_pass_descriptor())
     }
 
     pub fn submit(self, instance: &Instance) {

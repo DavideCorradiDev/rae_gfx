@@ -203,7 +203,7 @@ pub trait Renderer<'a> {
     );
 }
 
-impl<'a> Renderer<'a> for core::RenderFrame<'a> {
+impl<'a> Renderer<'a> for core::RenderPass<'a> {
     fn draw_shape2(
         &mut self,
         pipeline: &'a RenderPipeline,

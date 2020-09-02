@@ -1,21 +1,20 @@
-use std::default::Default;
+use std::{default::Default, slice};
 
 use super::{
-    BufferSlice, Color, CommandEncoder, Operations, RenderPass,
-    RenderPassColorAttachmentDescriptor, RenderPassDepthStencilAttachmentDescriptor,
-    RenderPassDescriptor, RenderPipeline, ShaderStage, SwapChainFrame, SwapChainTexture,
-    TextureView,
+    Color, Operations, RenderPassColorAttachmentDescriptor,
+    RenderPassDepthStencilAttachmentDescriptor, RenderPassDescriptor, SwapChainFrame,
+    SwapChainTexture, TextureView,
 };
 
 #[derive(Debug)]
-pub struct RenderFrame<'a> {
-    render_pass: RenderPass<'a>,
+pub struct RenderFrame<'a, 'b> {
+    render_pass_desc: RenderPassDescriptor<'a, 'b>,
+    color_attachment_descs: Vec<RenderPassColorAttachmentDescriptor<'a>>,
     swap_chain_texture: Option<Box<SwapChainTexture>>,
 }
 
-impl<'a> RenderFrame<'a> {
+impl<'a, 'b> RenderFrame<'a, 'b> {
     pub fn from_parts(
-        command_encoder: &'a mut CommandEncoder,
         swap_chain_frame: Option<SwapChainFrame>,
         color_buffer: Option<&'a TextureView>,
         color_ops: Option<Operations<Color>>,
@@ -28,10 +27,8 @@ impl<'a> RenderFrame<'a> {
             None => None,
         };
 
-        // The render pass will hold a reference to the command encoder and the texture views.
-        // Since it will store them inside a Box, on the heap, their addresses should be stable.
-        // Additional borrowing of the resources is prevented by keeping these resources hidden
-        // inside the struct.
+        // Safe to store the address of the swap_chain_texture because it is boxed and isn't exposed
+        // by the public API.
         let color_attachment_refs = unsafe {
             match color_buffer {
                 Some(cv) => match &swap_chain_texture {
@@ -45,7 +42,7 @@ impl<'a> RenderFrame<'a> {
             }
         };
 
-        let color_attachments = match color_attachment_refs {
+        let color_attachment_descs = match color_attachment_refs {
             Some(color_attachment_refs) => {
                 let ops = match color_ops {
                     Some(co) => co,
@@ -60,6 +57,14 @@ impl<'a> RenderFrame<'a> {
             None => Vec::new(),
         };
 
+        // Safe to store the address of the color attachments because it is in a vec and isn't
+        // exposed by the public API.
+        let color_attachment_descs_ref = unsafe {
+            let len = color_attachment_descs.len();
+            let ptr = color_attachment_descs.as_ptr();
+            slice::from_raw_parts(ptr, len)
+        };
+
         let depth_stencil_attachment = match depth_stencil_buffer {
             Some(dsb) => Some(RenderPassDepthStencilAttachmentDescriptor {
                 attachment: dsb,
@@ -69,40 +74,19 @@ impl<'a> RenderFrame<'a> {
             None => None,
         };
 
-        let render_pass = command_encoder.begin_render_pass(&RenderPassDescriptor {
-            color_attachments: color_attachments.as_slice(),
+        let render_pass_desc = RenderPassDescriptor {
+            color_attachments: color_attachment_descs_ref,
             depth_stencil_attachment,
-        });
+        };
 
         Self {
-            render_pass,
+            render_pass_desc,
+            color_attachment_descs,
             swap_chain_texture,
         }
     }
 
-    pub fn set_pipeline(&mut self, pipeline: &'a RenderPipeline) {
-        self.render_pass.set_pipeline(pipeline);
-    }
-
-    pub fn set_index_buffer(&mut self, buffer_slice: BufferSlice<'a>) {
-        self.render_pass.set_index_buffer(buffer_slice)
-    }
-
-    pub fn set_vertex_buffer(&mut self, slot: u32, buffer_slice: BufferSlice<'a>) {
-        self.render_pass.set_vertex_buffer(slot, buffer_slice)
-    }
-
-    pub fn set_push_constants(&mut self, stages: ShaderStage, offset: u32, data: &[u32]) {
-        self.render_pass.set_push_constants(stages, offset, data)
-    }
-
-    pub fn draw_indexed(
-        &mut self,
-        indices: core::ops::Range<u32>,
-        base_vertex: i32,
-        instances: core::ops::Range<u32>,
-    ) {
-        self.render_pass
-            .draw_indexed(indices, base_vertex, instances)
+    pub fn render_pass_descriptor(&self) -> &RenderPassDescriptor {
+        &self.render_pass_desc
     }
 }
