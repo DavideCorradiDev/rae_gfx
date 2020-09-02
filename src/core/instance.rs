@@ -10,10 +10,9 @@ use wgpu::util::DeviceExt;
 use raw_window_handle::HasRawWindowHandle;
 
 use super::{
-    Adapter, AdapterInfo, Backend, BufferDescriptor, BufferInitDescriptor, CommandBuffer,
-    CommandEncoderDescriptor, Device, Features, Limits, PipelineLayoutDescriptor, PowerPreference,
-    Queue, RenderPipelineDescriptor, ShaderModuleSource, SwapChain, SwapChainDescriptor,
-    TextureFormat,
+    AdapterInfo, Backend, BufferDescriptor, BufferInitDescriptor, CommandBuffer,
+    CommandEncoderDescriptor, Features, Limits, PipelineLayoutDescriptor, PowerPreference,
+    RenderPipelineDescriptor, ShaderModuleSource, SwapChain, SwapChainDescriptor, TextureFormat,
 };
 
 #[derive(Debug, PartialEq, Eq, Clone, serde::Serialize, serde::Deserialize)]
@@ -55,9 +54,9 @@ impl Default for InstanceDescriptor {
 
 #[derive(Debug)]
 pub struct Instance {
-    queue: Queue,
-    device: Device,
-    adapter: Adapter,
+    queue: wgpu::Queue,
+    device: wgpu::Device,
+    adapter: wgpu::Adapter,
     instance: wgpu::Instance,
 }
 
@@ -79,7 +78,7 @@ impl Instance {
         desc: &InstanceDescriptor,
         compatible_window: &Window,
     ) -> Result<(Self, Surface), InstanceCreationError> {
-        let instance = wgpu::Instance::new(desc.backend);
+        let instance = Self::create_instance(desc);
         let surface = instance.create_surface(compatible_window);
         let adapter = Self::create_adapter(&instance, desc, Some(&surface))?;
         let (device, queue) = Self::create_device_and_queue(&adapter, desc)?;
@@ -121,7 +120,7 @@ impl Instance {
         instance: &wgpu::Instance,
         desc: &InstanceDescriptor,
         compatible_surface: Option<&wgpu::Surface>,
-    ) -> Result<Adapter, InstanceCreationError> {
+    ) -> Result<wgpu::Adapter, InstanceCreationError> {
         let adapter = match futures::executor::block_on(instance.request_adapter(
             &wgpu::RequestAdapterOptions {
                 power_preference: desc.power_preference,
@@ -142,9 +141,9 @@ impl Instance {
     }
 
     fn create_device_and_queue(
-        adapter: &Adapter,
+        adapter: &wgpu::Adapter,
         desc: &InstanceDescriptor,
-    ) -> Result<(Device, Queue), InstanceCreationError> {
+    ) -> Result<(wgpu::Device, wgpu::Queue), InstanceCreationError> {
         let (device, queue) = futures::executor::block_on(adapter.request_device(
             &wgpu::DeviceDescriptor {
                 features: (desc.optional_features & adapter.features()) | desc.required_features,

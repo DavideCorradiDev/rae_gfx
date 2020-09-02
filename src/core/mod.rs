@@ -1,15 +1,15 @@
 pub use wgpu::{
-    include_spirv, util::BufferInitDescriptor, Adapter, AdapterInfo, BackendBit as Backend,
-    BindGroupLayout, BlendDescriptor, BlendFactor, BlendOperation, BufferAddress, BufferDescriptor,
-    BufferSlice, BufferUsage, Color, ColorStateDescriptor, ColorWrite, CommandBuffer,
-    CommandEncoderDescriptor, CullMode, Device, Features, FrontFace, IndexFormat, InputStepMode,
-    Limits, LoadOp, Operations, PipelineLayoutDescriptor, PowerPreference, PresentMode,
-    PrimitiveTopology, ProgrammableStageDescriptor, PushConstantRange, Queue,
-    RasterizationStateDescriptor, RenderPass, RenderPassColorAttachmentDescriptor,
-    RenderPassDepthStencilAttachmentDescriptor, RenderPassDescriptor, RenderPipelineDescriptor,
-    ShaderModuleSource, ShaderStage, SwapChain, SwapChainDescriptor, SwapChainError,
-    SwapChainFrame, SwapChainTexture, TextureFormat, TextureUsage, TextureView,
-    VertexAttributeDescriptor, VertexBufferDescriptor, VertexFormat, VertexStateDescriptor,
+    include_spirv, util::BufferInitDescriptor, AdapterInfo, BackendBit as Backend, BindGroupLayout,
+    BlendDescriptor, BlendFactor, BlendOperation, BufferAddress, BufferDescriptor, BufferSlice,
+    BufferUsage, Color, ColorStateDescriptor, ColorWrite, CommandBuffer, CommandEncoderDescriptor,
+    CullMode, Features, FrontFace, IndexFormat, InputStepMode, Limits, LoadOp, Operations,
+    PipelineLayoutDescriptor, PowerPreference, PresentMode, PrimitiveTopology,
+    ProgrammableStageDescriptor, PushConstantRange, RasterizationStateDescriptor, RenderPass,
+    RenderPassColorAttachmentDescriptor, RenderPassDepthStencilAttachmentDescriptor,
+    RenderPassDescriptor, RenderPipelineDescriptor, ShaderModuleSource, ShaderStage, SwapChain,
+    SwapChainDescriptor, SwapChainError, SwapChainFrame, SwapChainTexture, TextureFormat,
+    TextureUsage, TextureView, VertexAttributeDescriptor, VertexBufferDescriptor, VertexFormat,
+    VertexStateDescriptor,
 };
 
 mod instance;
