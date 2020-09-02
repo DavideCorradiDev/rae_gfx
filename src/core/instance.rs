@@ -11,7 +11,7 @@ use raw_window_handle::HasRawWindowHandle;
 
 use super::{
     AdapterInfo, Backend, BindGroupDescriptor, BindGroupLayoutDescriptor, BufferDescriptor,
-    BufferInitDescriptor, CommandBuffer, CommandEncoderDescriptor, Features, Limits,
+    BufferInitDescriptor, CommandBuffer, CommandEncoderDescriptor, Features, Limits, Maintain,
     PipelineLayoutDescriptor, PowerPreference, RenderBundleEncoderDescriptor,
     RenderPipelineDescriptor, SamplerDescriptor, ShaderModuleSource, SwapChainDescriptor,
     TextureDescriptor, TextureFormat,
@@ -100,6 +100,10 @@ impl Instance {
 
     pub fn info(&self) -> AdapterInfo {
         self.adapter.get_info()
+    }
+
+    pub fn poll(&self, maintain: Maintain) {
+        self.device.poll(maintain)
     }
 
     pub fn features(&self) -> Features {
