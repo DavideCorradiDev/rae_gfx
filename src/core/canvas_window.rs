@@ -197,7 +197,8 @@ impl CanvasWindow {
         size: &window::PhysicalSize<u32>,
         color_buffer_format: TextureFormat,
     ) -> SwapChain {
-        instance.create_swap_chain(
+        SwapChain::new(
+            instance,
             surface,
             &SwapChainDescriptor {
                 usage: TextureUsage::OUTPUT_ATTACHMENT,
