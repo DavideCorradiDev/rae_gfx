@@ -42,16 +42,22 @@ impl Mesh {
         vertex_list: &[Vertex],
         index_list: &[Index],
     ) -> Self {
-        let vertex_buffer = instance.create_buffer_init(&core::BufferInitDescriptor {
-            label: Some("shape2_mesh_vertex_buffer"),
-            contents: bytemuck::cast_slice(vertex_list),
-            usage: core::BufferUsage::VERTEX,
-        });
-        let index_buffer = instance.create_buffer_init(&core::BufferInitDescriptor {
-            label: Some("shape2_mesh_index_buffer"),
-            contents: bytemuck::cast_slice(index_list),
-            usage: core::BufferUsage::INDEX,
-        });
+        let vertex_buffer = core::Buffer::init(
+            &instance,
+            &core::BufferInitDescriptor {
+                label: Some("shape2_mesh_vertex_buffer"),
+                contents: bytemuck::cast_slice(vertex_list),
+                usage: core::BufferUsage::VERTEX,
+            },
+        );
+        let index_buffer = core::Buffer::init(
+            &instance,
+            &core::BufferInitDescriptor {
+                label: Some("shape2_mesh_index_buffer"),
+                contents: bytemuck::cast_slice(index_list),
+                usage: core::BufferUsage::INDEX,
+            },
+        );
         let index_count = index_list.len() as u32;
         Self {
             vertex_buffer,

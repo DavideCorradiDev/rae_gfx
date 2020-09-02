@@ -10,7 +10,7 @@ use wgpu::util::DeviceExt;
 use raw_window_handle::HasRawWindowHandle;
 
 use super::{
-    Adapter, AdapterInfo, Backend, Buffer, BufferInitDescriptor, CommandBuffer, CommandEncoder,
+    Adapter, AdapterInfo, Backend, BufferInitDescriptor, CommandBuffer, CommandEncoder,
     CommandEncoderDescriptor, Device, Features, Limits, PipelineLayoutDescriptor, PowerPreference,
     Queue, RenderPipelineDescriptor, ShaderModuleSource, SwapChain, SwapChainDescriptor,
     TextureFormat,
@@ -107,10 +107,6 @@ impl Instance {
         desc: &SwapChainDescriptor,
     ) -> SwapChain {
         self.device.create_swap_chain(surface, desc)
-    }
-
-    pub fn create_buffer_init(&self, desc: &BufferInitDescriptor) -> Buffer {
-        self.device.create_buffer_init(desc)
     }
 
     pub fn create_command_encoder(&self, desc: &CommandEncoderDescriptor) -> CommandEncoder {
@@ -258,6 +254,32 @@ impl Deref for RenderPipeline {
 }
 
 impl DerefMut for RenderPipeline {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        &mut self.value
+    }
+}
+
+#[derive(Debug)]
+pub struct Buffer {
+    value: wgpu::Buffer,
+}
+
+impl Buffer {
+    pub fn init(instance: &Instance, desc: &BufferInitDescriptor) -> Buffer {
+        Self {
+            value: instance.device.create_buffer_init(desc),
+        }
+    }
+}
+
+impl Deref for Buffer {
+    type Target = wgpu::Buffer;
+    fn deref(&self) -> &Self::Target {
+        &self.value
+    }
+}
+
+impl DerefMut for Buffer {
     fn deref_mut(&mut self) -> &mut Self::Target {
         &mut self.value
     }
