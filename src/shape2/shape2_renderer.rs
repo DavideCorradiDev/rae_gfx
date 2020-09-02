@@ -133,14 +133,17 @@ pub struct RenderPipeline {
 
 impl RenderPipeline {
     pub fn new(instance: &core::Instance, config: &RenderPipelineDescriptor) -> Self {
-        let pipeline_layout = instance.create_pipeline_layout(&core::PipelineLayoutDescriptor {
-            label: Some("shape2_pipeline_layout"),
-            bind_group_layouts: &[],
-            push_constant_ranges: &[core::PushConstantRange {
-                stages: core::ShaderStage::VERTEX,
-                range: 0..std::mem::size_of::<PushConstants>() as u32,
-            }],
-        });
+        let pipeline_layout = core::PipelineLayout::new(
+            &instance,
+            &core::PipelineLayoutDescriptor {
+                label: Some("shape2_pipeline_layout"),
+                bind_group_layouts: &[],
+                push_constant_ranges: &[core::PushConstantRange {
+                    stages: core::ShaderStage::VERTEX,
+                    range: 0..std::mem::size_of::<PushConstants>() as u32,
+                }],
+            },
+        );
         let vs_module = core::ShaderModule::new(
             &instance,
             core::include_spirv!("shaders/gen/spirv/shape2.vert.spv"),

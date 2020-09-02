@@ -3,14 +3,13 @@ pub use wgpu::{
     BindGroupLayout, BlendDescriptor, BlendFactor, BlendOperation, Buffer, BufferAddress,
     BufferSlice, BufferUsage, Color, ColorStateDescriptor, ColorWrite, CommandBuffer,
     CommandEncoder, CommandEncoderDescriptor, CullMode, Device, Features, FrontFace, IndexFormat,
-    InputStepMode, Limits, LoadOp, Operations, PipelineLayout, PipelineLayoutDescriptor,
-    PowerPreference, PresentMode, PrimitiveTopology, ProgrammableStageDescriptor,
-    PushConstantRange, Queue, RasterizationStateDescriptor, RenderPass,
-    RenderPassColorAttachmentDescriptor, RenderPassDepthStencilAttachmentDescriptor,
-    RenderPassDescriptor, RenderPipeline, RenderPipelineDescriptor, ShaderModuleSource,
-    ShaderStage, SwapChain, SwapChainDescriptor, SwapChainError, SwapChainFrame, SwapChainTexture,
-    TextureFormat, TextureUsage, TextureView, VertexAttributeDescriptor, VertexBufferDescriptor,
-    VertexFormat, VertexStateDescriptor,
+    InputStepMode, Limits, LoadOp, Operations, PipelineLayoutDescriptor, PowerPreference,
+    PresentMode, PrimitiveTopology, ProgrammableStageDescriptor, PushConstantRange, Queue,
+    RasterizationStateDescriptor, RenderPass, RenderPassColorAttachmentDescriptor,
+    RenderPassDepthStencilAttachmentDescriptor, RenderPassDescriptor, RenderPipeline,
+    RenderPipelineDescriptor, ShaderModuleSource, ShaderStage, SwapChain, SwapChainDescriptor,
+    SwapChainError, SwapChainFrame, SwapChainTexture, TextureFormat, TextureUsage, TextureView,
+    VertexAttributeDescriptor, VertexBufferDescriptor, VertexFormat, VertexStateDescriptor,
 };
 
 mod instance;
