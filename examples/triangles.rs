@@ -14,7 +14,7 @@ use rae_math::{
 
 use rae_gfx::{
     core::{
-        CanvasWindow, Color, Instance, InstanceCreationError, InstanceDescriptor, RenderFrame,
+        CanvasWindow, Color, CommandSequence, Instance, InstanceCreationError, InstanceDescriptor,
         SwapChainError,
     },
     shape2,
@@ -185,9 +185,12 @@ impl EventHandler<ApplicationError, ApplicationEvent> for ApplicationImpl {
         let current_triangle_constant = self.generate_push_constant();
         elements.push((&self.triangle_mesh, &current_triangle_constant));
 
-        let mut frame = RenderFrame::from_canvas(&self.instance, &mut self.window)?;
-        frame.draw_shape2_array(&self.pipeline, &elements);
-        frame.submit(&self.instance);
+        let mut cmd_sequence = CommandSequence::new(&self.instance);
+        {
+            let mut frame = cmd_sequence.begin_render_frame(&mut self.window)?;
+            frame.draw_shape2_array(&self.pipeline, &elements);
+        }
+        cmd_sequence.submit(&self.instance);
         Ok(ControlFlow::Continue)
     }
 }

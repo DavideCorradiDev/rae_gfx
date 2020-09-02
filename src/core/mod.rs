@@ -24,3 +24,6 @@ pub use canvas_window::*;
 
 mod render_frame;
 pub use render_frame::*;
+
+mod command_sequence;
+pub use command_sequence::*;

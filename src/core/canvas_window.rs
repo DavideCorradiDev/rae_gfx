@@ -211,31 +211,31 @@ impl CanvasWindow {
 }
 
 impl Canvas for CanvasWindow {
-    fn get_swap_chain_frame(&mut self) -> Result<Option<SwapChainFrame>, SwapChainError> {
+    fn swap_chain_frame(&mut self) -> Result<Option<SwapChainFrame>, SwapChainError> {
         let swap_chain = self.swap_chain.get_current_frame()?;
         Ok(Some(swap_chain))
     }
 
-    fn get_color_buffer(&self) -> Option<&TextureView> {
+    fn color_buffer(&self) -> Option<&TextureView> {
         None
     }
 
-    fn get_depth_stencil_buffer(&self) -> Option<&TextureView> {
+    fn depth_stencil_buffer(&self) -> Option<&TextureView> {
         None
     }
 
-    fn get_color_operations(&self) -> Option<Operations<Color>> {
+    fn color_operations(&self) -> Option<Operations<Color>> {
         Some(Operations {
             load: LoadOp::Clear(Color::BLACK),
             store: true,
         })
     }
 
-    fn get_depth_operations(&self) -> Option<Operations<f32>> {
+    fn depth_operations(&self) -> Option<Operations<f32>> {
         None
     }
 
-    fn get_stencil_operations(&self) -> Option<Operations<u32>> {
+    fn stencil_operations(&self) -> Option<Operations<u32>> {
         None
     }
 }
