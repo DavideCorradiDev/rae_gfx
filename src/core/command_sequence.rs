@@ -9,7 +9,7 @@ pub struct CommandSequence {
 
 impl CommandSequence {
     pub fn new(instance: &Instance) -> Self {
-        let encoder = instance.create_command_encoder(&CommandEncoderDescriptor::default());
+        let encoder = CommandEncoder::new(&instance, &CommandEncoderDescriptor::default());
         Self { encoder }
     }
 

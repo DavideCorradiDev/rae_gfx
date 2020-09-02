@@ -11,9 +11,9 @@ use raw_window_handle::HasRawWindowHandle;
 
 use super::{
     Adapter, AdapterInfo, Backend, BufferDescriptor, BufferInitDescriptor, CommandBuffer,
-    CommandEncoder, CommandEncoderDescriptor, Device, Features, Limits, PipelineLayoutDescriptor,
-    PowerPreference, Queue, RenderPipelineDescriptor, ShaderModuleSource, SwapChain,
-    SwapChainDescriptor, TextureFormat,
+    CommandEncoderDescriptor, Device, Features, Limits, PipelineLayoutDescriptor, PowerPreference,
+    Queue, RenderPipelineDescriptor, ShaderModuleSource, SwapChain, SwapChainDescriptor,
+    TextureFormat,
 };
 
 #[derive(Debug, PartialEq, Eq, Clone, serde::Serialize, serde::Deserialize)]
@@ -107,10 +107,6 @@ impl Instance {
         desc: &SwapChainDescriptor,
     ) -> SwapChain {
         self.device.create_swap_chain(surface, desc)
-    }
-
-    pub fn create_command_encoder(&self, desc: &CommandEncoderDescriptor) -> CommandEncoder {
-        self.device.create_command_encoder(desc)
     }
 
     pub fn submit<I: IntoIterator<Item = CommandBuffer>>(&self, command_buffers: I) {
@@ -286,6 +282,36 @@ impl Deref for Buffer {
 }
 
 impl DerefMut for Buffer {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        &mut self.value
+    }
+}
+
+#[derive(Debug)]
+pub struct CommandEncoder {
+    value: wgpu::CommandEncoder,
+}
+
+impl CommandEncoder {
+    pub fn new(instance: &Instance, desc: &CommandEncoderDescriptor) -> CommandEncoder {
+        Self {
+            value: instance.device.create_command_encoder(desc),
+        }
+    }
+
+    pub fn finish(self) -> CommandBuffer {
+        self.value.finish()
+    }
+}
+
+impl Deref for CommandEncoder {
+    type Target = wgpu::CommandEncoder;
+    fn deref(&self) -> &Self::Target {
+        &self.value
+    }
+}
+
+impl DerefMut for CommandEncoder {
     fn deref_mut(&mut self) -> &mut Self::Target {
         &mut self.value
     }
