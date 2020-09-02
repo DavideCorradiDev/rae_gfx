@@ -152,46 +152,49 @@ impl RenderPipeline {
             &instance,
             core::include_spirv!("shaders/gen/spirv/shape2.frag.spv"),
         );
-        let pipeline = instance.create_render_pipeline(&core::RenderPipelineDescriptor {
-            label: Some("shape2_render_pipeline"),
-            layout: Some(&pipeline_layout),
-            vertex_stage: core::ProgrammableStageDescriptor {
-                module: &vs_module,
-                entry_point: "main",
-            },
-            fragment_stage: Some(core::ProgrammableStageDescriptor {
-                module: &fs_module,
-                entry_point: "main",
-            }),
-            rasterization_state: Some(core::RasterizationStateDescriptor {
-                front_face: core::FrontFace::Ccw,
-                cull_mode: core::CullMode::Back,
-                ..Default::default()
-            }),
-            primitive_topology: core::PrimitiveTopology::TriangleList,
-            color_states: &[core::ColorStateDescriptor {
-                format: instance.color_format(),
-                color_blend: config.color_blend.clone(),
-                alpha_blend: config.alpha_blend.clone(),
-                write_mask: config.write_mask,
-            }],
-            depth_stencil_state: None,
-            vertex_state: core::VertexStateDescriptor {
-                index_format: core::IndexFormat::Uint16,
-                vertex_buffers: &[core::VertexBufferDescriptor {
-                    stride: std::mem::size_of::<Vertex>() as core::BufferAddress,
-                    step_mode: core::InputStepMode::Vertex,
-                    attributes: &[core::VertexAttributeDescriptor {
-                        format: core::VertexFormat::Float2,
-                        offset: 0,
-                        shader_location: 0,
-                    }],
+        let pipeline = core::RenderPipeline::new(
+            &instance,
+            &core::RenderPipelineDescriptor {
+                label: Some("shape2_render_pipeline"),
+                layout: Some(&pipeline_layout),
+                vertex_stage: core::ProgrammableStageDescriptor {
+                    module: &vs_module,
+                    entry_point: "main",
+                },
+                fragment_stage: Some(core::ProgrammableStageDescriptor {
+                    module: &fs_module,
+                    entry_point: "main",
+                }),
+                rasterization_state: Some(core::RasterizationStateDescriptor {
+                    front_face: core::FrontFace::Ccw,
+                    cull_mode: core::CullMode::Back,
+                    ..Default::default()
+                }),
+                primitive_topology: core::PrimitiveTopology::TriangleList,
+                color_states: &[core::ColorStateDescriptor {
+                    format: instance.color_format(),
+                    color_blend: config.color_blend.clone(),
+                    alpha_blend: config.alpha_blend.clone(),
+                    write_mask: config.write_mask,
                 }],
+                depth_stencil_state: None,
+                vertex_state: core::VertexStateDescriptor {
+                    index_format: core::IndexFormat::Uint16,
+                    vertex_buffers: &[core::VertexBufferDescriptor {
+                        stride: std::mem::size_of::<Vertex>() as core::BufferAddress,
+                        step_mode: core::InputStepMode::Vertex,
+                        attributes: &[core::VertexAttributeDescriptor {
+                            format: core::VertexFormat::Float2,
+                            offset: 0,
+                            shader_location: 0,
+                        }],
+                    }],
+                },
+                sample_count: config.sample_count,
+                sample_mask: !0,
+                alpha_to_coverage_enabled: false,
             },
-            sample_count: config.sample_count,
-            sample_mask: !0,
-            alpha_to_coverage_enabled: false,
-        });
+        );
         Self { pipeline }
     }
 }

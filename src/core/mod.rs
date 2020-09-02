@@ -6,9 +6,9 @@ pub use wgpu::{
     InputStepMode, Limits, LoadOp, Operations, PipelineLayoutDescriptor, PowerPreference,
     PresentMode, PrimitiveTopology, ProgrammableStageDescriptor, PushConstantRange, Queue,
     RasterizationStateDescriptor, RenderPass, RenderPassColorAttachmentDescriptor,
-    RenderPassDepthStencilAttachmentDescriptor, RenderPassDescriptor, RenderPipeline,
-    RenderPipelineDescriptor, ShaderModuleSource, ShaderStage, SwapChain, SwapChainDescriptor,
-    SwapChainError, SwapChainFrame, SwapChainTexture, TextureFormat, TextureUsage, TextureView,
+    RenderPassDepthStencilAttachmentDescriptor, RenderPassDescriptor, RenderPipelineDescriptor,
+    ShaderModuleSource, ShaderStage, SwapChain, SwapChainDescriptor, SwapChainError,
+    SwapChainFrame, SwapChainTexture, TextureFormat, TextureUsage, TextureView,
     VertexAttributeDescriptor, VertexBufferDescriptor, VertexFormat, VertexStateDescriptor,
 };
 

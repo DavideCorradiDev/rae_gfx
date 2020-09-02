@@ -12,8 +12,8 @@ use raw_window_handle::HasRawWindowHandle;
 use super::{
     Adapter, AdapterInfo, Backend, Buffer, BufferInitDescriptor, CommandBuffer, CommandEncoder,
     CommandEncoderDescriptor, Device, Features, Limits, PipelineLayoutDescriptor, PowerPreference,
-    Queue, RenderPipeline, RenderPipelineDescriptor, ShaderModuleSource, SwapChain,
-    SwapChainDescriptor, TextureFormat,
+    Queue, RenderPipelineDescriptor, ShaderModuleSource, SwapChain, SwapChainDescriptor,
+    TextureFormat,
 };
 
 #[derive(Debug, PartialEq, Eq, Clone, serde::Serialize, serde::Deserialize)]
@@ -107,10 +107,6 @@ impl Instance {
         desc: &SwapChainDescriptor,
     ) -> SwapChain {
         self.device.create_swap_chain(surface, desc)
-    }
-
-    pub fn create_render_pipeline(&self, desc: &RenderPipelineDescriptor) -> RenderPipeline {
-        self.device.create_render_pipeline(desc)
     }
 
     pub fn create_buffer_init(&self, desc: &BufferInitDescriptor) -> Buffer {
@@ -236,6 +232,32 @@ impl Deref for PipelineLayout {
 }
 
 impl DerefMut for PipelineLayout {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        &mut self.value
+    }
+}
+
+#[derive(Debug)]
+pub struct RenderPipeline {
+    value: wgpu::RenderPipeline,
+}
+
+impl RenderPipeline {
+    pub fn new(instance: &Instance, desc: &RenderPipelineDescriptor) -> RenderPipeline {
+        Self {
+            value: instance.device.create_render_pipeline(desc),
+        }
+    }
+}
+
+impl Deref for RenderPipeline {
+    type Target = wgpu::RenderPipeline;
+    fn deref(&self) -> &Self::Target {
+        &self.value
+    }
+}
+
+impl DerefMut for RenderPipeline {
     fn deref_mut(&mut self) -> &mut Self::Target {
         &mut self.value
     }
