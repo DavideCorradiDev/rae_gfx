@@ -4,28 +4,17 @@ version = "0.1.0"
 authors = ["Davide Corradi <davide.corradi.dev@gmail.com>"]
 edition = "2018"
 
-[features]
-default = ["gfx-backend-vulkan", "gfx-backend-metal"]
-empty = ["gfx-backend-empty"]
-gl = ["gfx-backend-gl"]
-metal = ["gfx-backend-metal"]
-vulkan = ["gfx-backend-vulkan"]
-
 [dependencies]
 rae_app = { git = "https://github.com/DavideCorradiDev/rae_app.git", tag = "v0.1.0" }
-rae_math = { git = "https://github.com/DavideCorradiDev/rae_math.git", tag = "v0.1.1" }
-raw-window-handle = "0.3.3"
-gfx-hal = "0.5"
-gfx-backend-empty = { version = "0.5", optional = true }
-
-[target.'cfg(target_os = "linux")'.dependencies]
-gfx-backend-gl = { version = "0.5", optional = true, features = ["glutin"] }
-
-[target.'cfg(any(target_os = "windows", target_os = "linux"))'.dependencies]
-gfx-backend-vulkan = { version = "0.5", optional = true }
-
-[target.'cfg(any(target_os = "macos", all(target_os = "ios", target_arch = "aarch64")))'.dependencies]
-gfx-backend-metal = { version = "0.5", optional = true }
+rae_math = { git = "https://github.com/DavideCorradiDev/rae_math.git", tag = "v0.1.1", features = [
+    "serde-serialize"
+] }
+wgpu = { version = "0.6", features = ["trace", "replay"] }
+raw-window-handle = { version = "0.3" }
+serde = { version = "1.0", features = ["derive"] }
+futures = { version = "0.3" }
+num-traits = { version = "0.2" }
+bytemuck = { version = "1.4" }
 
 [dev-dependencies]
 galvanic-assert = "0.8"
@@ -35,5 +24,5 @@ rand = "0.7"
 rae_shader = { git = "https://github.com/DavideCorradiDev/rae_shader.git", tag = "v0.1.2" }
 
 [[example]]
-name = "triangle"
-path = "examples/triangle.rs"
+name = "triangles"
+path = "examples/triangles.rs"

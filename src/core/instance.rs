@@ -1,206 +1,516 @@
-extern crate gfx_hal as hal;
-
 use std::{
-    cell::{Ref, RefCell, RefMut},
-    rc::Rc,
+    default::Default,
+    ops::{Deref, DerefMut},
 };
 
-use hal::{device::Device as HalDevice, queue::QueueFamily as HalQueueFamily};
+use rae_app::window::Window;
 
-use crate::halw;
+use wgpu::util::DeviceExt;
+
+use raw_window_handle::HasRawWindowHandle;
+
+use super::{
+    AdapterInfo, Backend, BindGroupDescriptor, BindGroupLayoutDescriptor, BufferDescriptor,
+    BufferInitDescriptor, CommandBuffer, CommandEncoderDescriptor, Features, Limits, Maintain,
+    PipelineLayoutDescriptor, PowerPreference, RenderBundleEncoderDescriptor,
+    RenderPipelineDescriptor, SamplerDescriptor, ShaderModuleSource, SwapChainDescriptor,
+    TextureDescriptor, TextureFormat,
+};
+
+#[derive(Debug, PartialEq, Eq, Clone, serde::Serialize, serde::Deserialize)]
+pub struct InstanceDescriptor {
+    pub backend: Backend,
+    pub power_preference: PowerPreference,
+    pub required_features: Features,
+    pub optional_features: Features,
+    pub required_limits: Limits,
+}
+
+impl InstanceDescriptor {
+    pub fn high_performance() -> Self {
+        let mut required_limits = Limits::default();
+        required_limits.max_push_constant_size = 128;
+        Self {
+            backend: Backend::PRIMARY,
+            power_preference: PowerPreference::HighPerformance,
+            required_features: Features::default() | Features::PUSH_CONSTANTS,
+            optional_features: Features::empty(),
+            required_limits,
+        }
+    }
+}
+
+impl Default for InstanceDescriptor {
+    fn default() -> Self {
+        let mut required_limits = Limits::default();
+        required_limits.max_push_constant_size = 128;
+        Self {
+            backend: Backend::PRIMARY,
+            power_preference: PowerPreference::Default,
+            required_features: Features::default() | Features::PUSH_CONSTANTS,
+            optional_features: Features::empty(),
+            required_limits,
+        }
+    }
+}
 
 #[derive(Debug)]
 pub struct Instance {
-    gpu: Rc<RefCell<halw::Gpu>>,
-    adapter: Rc<RefCell<halw::Adapter>>,
-    instance: Rc<RefCell<halw::Instance>>,
+    queue: wgpu::Queue,
+    device: wgpu::Device,
+    adapter: wgpu::Adapter,
+    instance: wgpu::Instance,
 }
 
 impl Instance {
-    pub fn create() -> Result<Self, InstanceCreationError> {
-        let instance = Rc::new(RefCell::new(halw::Instance::create("Red Ape Engine", 1)?));
-        let adapter = Rc::new(RefCell::new(Self::select_adapter(Rc::clone(&instance))?));
-        let gpu = Rc::new(RefCell::new(Self::open_device(Rc::clone(&adapter))?));
+    pub fn new(desc: &InstanceDescriptor) -> Result<Self, InstanceCreationError> {
+        let instance = Self::create_instance(desc);
+        let adapter = Self::create_adapter(&instance, desc, None)?;
+        let (device, queue) = Self::create_device_and_queue(&adapter, desc)?;
         Ok(Self {
-            gpu,
+            queue,
             adapter,
+            device,
             instance,
         })
     }
 
-    pub fn wait_idle(&self) -> Result<(), InstanceWaitIdleError> {
-        self.gpu.borrow().device.wait_idle()?;
-        Ok(())
+    // Unsafe: surface creation.
+    pub unsafe fn new_with_compatible_window(
+        desc: &InstanceDescriptor,
+        compatible_window: &Window,
+    ) -> Result<(Self, Surface), InstanceCreationError> {
+        let instance = Self::create_instance(desc);
+        let surface = instance.create_surface(compatible_window);
+        let adapter = Self::create_adapter(&instance, desc, Some(&surface))?;
+        let (device, queue) = Self::create_device_and_queue(&adapter, desc)?;
+        Ok((
+            Self {
+                queue,
+                adapter,
+                device,
+                instance,
+            },
+            Surface { value: surface },
+        ))
+    }
+    pub fn color_format(&self) -> TextureFormat {
+        TextureFormat::Bgra8UnormSrgb
     }
 
-    pub fn instance(&self) -> Ref<halw::Instance> {
-        self.instance.borrow()
+    pub fn info(&self) -> AdapterInfo {
+        self.adapter.get_info()
     }
 
-    pub fn instance_mut(&mut self) -> RefMut<halw::Instance> {
-        self.instance.borrow_mut()
+    pub fn poll(&self, maintain: Maintain) {
+        self.device.poll(maintain)
     }
 
-    pub fn instance_rc(&self) -> &Rc<RefCell<halw::Instance>> {
-        &self.instance
+    pub fn features(&self) -> Features {
+        self.device.features()
     }
 
-    pub fn adapter(&self) -> Ref<halw::Adapter> {
-        self.adapter.borrow()
+    pub fn limits(&self) -> Limits {
+        self.device.limits()
     }
 
-    pub fn adapter_mut(&mut self) -> RefMut<halw::Adapter> {
-        self.adapter.borrow_mut()
+    pub fn submit<I: IntoIterator<Item = CommandBuffer>>(&self, command_buffers: I) {
+        self.queue.submit(command_buffers);
     }
 
-    pub fn adapter_rc(&self) -> &Rc<RefCell<halw::Adapter>> {
-        &self.adapter
+    fn create_instance(desc: &InstanceDescriptor) -> wgpu::Instance {
+        wgpu::Instance::new(desc.backend)
     }
 
-    pub fn gpu(&self) -> Ref<halw::Gpu> {
-        self.gpu.borrow()
-    }
+    fn create_adapter(
+        instance: &wgpu::Instance,
+        desc: &InstanceDescriptor,
+        compatible_surface: Option<&wgpu::Surface>,
+    ) -> Result<wgpu::Adapter, InstanceCreationError> {
+        let adapter = match futures::executor::block_on(instance.request_adapter(
+            &wgpu::RequestAdapterOptions {
+                power_preference: desc.power_preference,
+                compatible_surface,
+            },
+        )) {
+            Some(v) => v,
+            None => return Err(InstanceCreationError::AdapterRequestFailed),
+        };
 
-    pub fn gpu_mut(&mut self) -> RefMut<halw::Gpu> {
-        self.gpu.borrow_mut()
-    }
-
-    pub fn gpu_rc(&self) -> &Rc<RefCell<halw::Gpu>> {
-        &self.gpu
-    }
-
-    #[cfg(feature = "empty")]
-    fn adapter_selection_criteria(_: &halw::Adapter) -> bool {
-        true
-    }
-
-    #[cfg(not(feature = "empty"))]
-    fn adapter_selection_criteria(adapter: &halw::Adapter) -> bool {
-        adapter.info.device_type == hal::adapter::DeviceType::DiscreteGpu
-            || adapter.info.device_type == hal::adapter::DeviceType::IntegratedGpu
-    }
-
-    fn select_adapter(
-        instance: Rc<RefCell<halw::Instance>>,
-    ) -> Result<halw::Adapter, InstanceCreationError> {
-        let mut adapters = halw::Adapter::enumerate(instance);
-        adapters.retain(Self::adapter_selection_criteria);
-        if adapters.is_empty() {
-            return Err(InstanceCreationError::NoSuitableAdapter);
+        if !adapter.features().contains(desc.required_features) {
+            return Err(InstanceCreationError::FeaturesNotAvailable(
+                desc.required_features - adapter.features(),
+            ));
         }
 
-        adapters.sort_by(|a, b| {
-            if a.info.device_type == b.info.device_type {
-                return std::cmp::Ordering::Equal;
-            } else if a.info.device_type == hal::adapter::DeviceType::DiscreteGpu {
-                return std::cmp::Ordering::Less;
-            } else {
-                return std::cmp::Ordering::Greater;
-            }
-        });
-        Ok(adapters.remove(0))
+        Ok(adapter)
     }
 
-    fn select_queue_family<'a>(
-        adapter: &'a halw::Adapter,
-    ) -> Result<&'a halw::QueueFamily, InstanceCreationError> {
-        // Eventually add required constraints here.
-        match adapter
-            .queue_families
-            .iter()
-            .find(|family| family.queue_type().supports_graphics())
-        {
-            Some(family) => Ok(family),
-            None => Err(InstanceCreationError::NoSuitableQueueFamily),
+    fn create_device_and_queue(
+        adapter: &wgpu::Adapter,
+        desc: &InstanceDescriptor,
+    ) -> Result<(wgpu::Device, wgpu::Queue), InstanceCreationError> {
+        let (device, queue) = futures::executor::block_on(adapter.request_device(
+            &wgpu::DeviceDescriptor {
+                features: (desc.optional_features & adapter.features()) | desc.required_features,
+                limits: desc.required_limits.clone(),
+                shader_validation: true,
+            },
+            None,
+        ))?;
+        Ok((device, queue))
+    }
+}
+
+#[derive(Debug)]
+pub struct Surface {
+    value: wgpu::Surface,
+}
+
+impl Surface {
+    pub unsafe fn new<W: HasRawWindowHandle>(instance: &Instance, window: &W) -> Self {
+        Self {
+            value: instance.instance.create_surface(window),
+        }
+    }
+}
+
+impl Deref for Surface {
+    type Target = wgpu::Surface;
+    fn deref(&self) -> &Self::Target {
+        &self.value
+    }
+}
+
+#[derive(Debug)]
+pub struct ShaderModule {
+    value: wgpu::ShaderModule,
+}
+
+impl ShaderModule {
+    pub fn new(instance: &Instance, source: ShaderModuleSource) -> Self {
+        Self {
+            value: instance.device.create_shader_module(source),
+        }
+    }
+}
+
+impl Deref for ShaderModule {
+    type Target = wgpu::ShaderModule;
+    fn deref(&self) -> &Self::Target {
+        &self.value
+    }
+}
+
+impl DerefMut for ShaderModule {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        &mut self.value
+    }
+}
+
+#[derive(Debug)]
+pub struct PipelineLayout {
+    value: wgpu::PipelineLayout,
+}
+
+impl PipelineLayout {
+    pub fn new(instance: &Instance, desc: &PipelineLayoutDescriptor) -> Self {
+        Self {
+            value: instance.device.create_pipeline_layout(desc),
+        }
+    }
+}
+
+impl Deref for PipelineLayout {
+    type Target = wgpu::PipelineLayout;
+    fn deref(&self) -> &Self::Target {
+        &self.value
+    }
+}
+
+impl DerefMut for PipelineLayout {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        &mut self.value
+    }
+}
+
+#[derive(Debug)]
+pub struct RenderPipeline {
+    value: wgpu::RenderPipeline,
+}
+
+impl RenderPipeline {
+    pub fn new(instance: &Instance, desc: &RenderPipelineDescriptor) -> Self {
+        Self {
+            value: instance.device.create_render_pipeline(desc),
+        }
+    }
+}
+
+impl Deref for RenderPipeline {
+    type Target = wgpu::RenderPipeline;
+    fn deref(&self) -> &Self::Target {
+        &self.value
+    }
+}
+
+impl DerefMut for RenderPipeline {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        &mut self.value
+    }
+}
+
+#[derive(Debug)]
+pub struct Buffer {
+    value: wgpu::Buffer,
+}
+
+impl Buffer {
+    pub fn new(instance: &Instance, desc: &BufferDescriptor) -> Self {
+        Self {
+            value: instance.device.create_buffer(desc),
         }
     }
 
-    fn open_device(
-        adapter: Rc<RefCell<halw::Adapter>>,
-    ) -> Result<halw::Gpu, InstanceCreationError> {
-        // Eventually add required GPU features here.
-        let adapter_ref = &adapter.borrow();
-        let queue_family = Self::select_queue_family(adapter_ref)?;
-        let gpu = halw::Gpu::open(
-            Rc::clone(&adapter),
-            &[(queue_family, &[1.0])],
-            hal::Features::empty(),
-        )?;
-        Ok(gpu)
+    pub fn init(instance: &Instance, desc: &BufferInitDescriptor) -> Self {
+        Self {
+            value: instance.device.create_buffer_init(desc),
+        }
+    }
+}
+
+impl Deref for Buffer {
+    type Target = wgpu::Buffer;
+    fn deref(&self) -> &Self::Target {
+        &self.value
+    }
+}
+
+impl DerefMut for Buffer {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        &mut self.value
+    }
+}
+
+#[derive(Debug)]
+pub struct CommandEncoder {
+    value: wgpu::CommandEncoder,
+}
+
+impl CommandEncoder {
+    pub fn new(instance: &Instance, desc: &CommandEncoderDescriptor) -> Self {
+        Self {
+            value: instance.device.create_command_encoder(desc),
+        }
+    }
+
+    pub fn finish(self) -> CommandBuffer {
+        self.value.finish()
+    }
+}
+
+impl Deref for CommandEncoder {
+    type Target = wgpu::CommandEncoder;
+    fn deref(&self) -> &Self::Target {
+        &self.value
+    }
+}
+
+impl DerefMut for CommandEncoder {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        &mut self.value
+    }
+}
+
+#[derive(Debug)]
+pub struct RenderBundleEncoder<'a> {
+    value: wgpu::RenderBundleEncoder<'a>,
+}
+
+impl<'a> RenderBundleEncoder<'a> {
+    pub fn new(instance: &'a Instance, desc: &RenderBundleEncoderDescriptor) -> Self {
+        Self {
+            value: instance.device.create_render_bundle_encoder(desc),
+        }
+    }
+}
+
+impl<'a> Deref for RenderBundleEncoder<'a> {
+    type Target = wgpu::RenderBundleEncoder<'a>;
+    fn deref(&self) -> &Self::Target {
+        &self.value
+    }
+}
+
+impl<'a> DerefMut for RenderBundleEncoder<'a> {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        &mut self.value
+    }
+}
+
+#[derive(Debug)]
+pub struct BindGroupLayout {
+    value: wgpu::BindGroupLayout,
+}
+
+impl BindGroupLayout {
+    pub fn new(instance: &Instance, desc: &BindGroupLayoutDescriptor) -> Self {
+        Self {
+            value: instance.device.create_bind_group_layout(desc),
+        }
+    }
+}
+
+impl Deref for BindGroupLayout {
+    type Target = wgpu::BindGroupLayout;
+    fn deref(&self) -> &Self::Target {
+        &self.value
+    }
+}
+
+impl DerefMut for BindGroupLayout {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        &mut self.value
+    }
+}
+
+#[derive(Debug)]
+pub struct BindGroup {
+    value: wgpu::BindGroup,
+}
+
+impl BindGroup {
+    pub fn new(instance: &Instance, desc: &BindGroupDescriptor) -> Self {
+        Self {
+            value: instance.device.create_bind_group(desc),
+        }
+    }
+}
+
+impl Deref for BindGroup {
+    type Target = wgpu::BindGroup;
+    fn deref(&self) -> &Self::Target {
+        &self.value
+    }
+}
+
+impl DerefMut for BindGroup {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        &mut self.value
+    }
+}
+
+#[derive(Debug)]
+pub struct Texture {
+    value: wgpu::Texture,
+}
+
+impl Texture {
+    pub fn new(instance: &Instance, desc: &TextureDescriptor) -> Self {
+        Self {
+            value: instance.device.create_texture(desc),
+        }
+    }
+}
+
+impl Deref for Texture {
+    type Target = wgpu::Texture;
+    fn deref(&self) -> &Self::Target {
+        &self.value
+    }
+}
+
+impl DerefMut for Texture {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        &mut self.value
+    }
+}
+
+#[derive(Debug)]
+pub struct Sampler {
+    value: wgpu::Sampler,
+}
+
+impl Sampler {
+    pub fn new(instance: &Instance, desc: &SamplerDescriptor) -> Self {
+        Self {
+            value: instance.device.create_sampler(desc),
+        }
+    }
+}
+
+impl Deref for Sampler {
+    type Target = wgpu::Sampler;
+    fn deref(&self) -> &Self::Target {
+        &self.value
+    }
+}
+
+impl DerefMut for Sampler {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        &mut self.value
+    }
+}
+
+#[derive(Debug)]
+pub struct SwapChain {
+    value: wgpu::SwapChain,
+}
+
+impl SwapChain {
+    pub fn new(instance: &Instance, surface: &Surface, desc: &SwapChainDescriptor) -> Self {
+        Self {
+            value: instance.device.create_swap_chain(surface, desc),
+        }
+    }
+}
+
+impl Deref for SwapChain {
+    type Target = wgpu::SwapChain;
+    fn deref(&self) -> &Self::Target {
+        &self.value
+    }
+}
+
+impl DerefMut for SwapChain {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        &mut self.value
     }
 }
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum InstanceCreationError {
-    UnsupportedBackend,
-    NoSuitableAdapter,
-    NoSuitableQueueFamily,
-    SurfaceCreationFailed,
-    DeviceCreationFailed,
+    AdapterRequestFailed,
+    FeaturesNotAvailable(Features),
+    DeviceRequestFailed(wgpu::RequestDeviceError),
 }
 
 impl std::fmt::Display for InstanceCreationError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            InstanceCreationError::UnsupportedBackend => write!(f, "Unsupported backend"),
-            InstanceCreationError::NoSuitableAdapter => write!(f, "No suitable adapter"),
-            InstanceCreationError::NoSuitableQueueFamily => write!(f, "No suitable queue family"),
-            InstanceCreationError::SurfaceCreationFailed => {
-                write!(f, "Window surface creation failed")
+            InstanceCreationError::AdapterRequestFailed => write!(f, "Adapter request failed"),
+            InstanceCreationError::FeaturesNotAvailable(features) => {
+                write!(f, "Required features are not available ({:?})", features)
             }
-            InstanceCreationError::DeviceCreationFailed => write!(f, "Device creation failed"),
+            InstanceCreationError::DeviceRequestFailed(e) => {
+                write!(f, "Device request failed ({})", e)
+            }
         }
     }
 }
 
 impl std::error::Error for InstanceCreationError {
     fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
-        None
-    }
-}
-
-impl From<hal::UnsupportedBackend> for InstanceCreationError {
-    fn from(_: hal::UnsupportedBackend) -> Self {
-        InstanceCreationError::UnsupportedBackend
-    }
-}
-
-impl From<hal::window::InitError> for InstanceCreationError {
-    fn from(_: hal::window::InitError) -> Self {
-        InstanceCreationError::SurfaceCreationFailed
-    }
-}
-
-impl From<hal::device::CreationError> for InstanceCreationError {
-    fn from(_: hal::device::CreationError) -> Self {
-        InstanceCreationError::DeviceCreationFailed
-    }
-}
-
-#[derive(Debug)]
-pub enum InstanceWaitIdleError {
-    OutOfMemory(hal::device::OutOfMemory),
-}
-
-impl std::fmt::Display for InstanceWaitIdleError {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            InstanceWaitIdleError::OutOfMemory(e) => write!(f, "Out of memory ({})", e),
+            InstanceCreationError::DeviceRequestFailed(e) => Some(e),
+            _ => None,
         }
     }
 }
 
-impl std::error::Error for InstanceWaitIdleError {
-    fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
-        match self {
-            InstanceWaitIdleError::OutOfMemory(e) => Some(e),
-        }
-    }
-}
-
-impl From<hal::device::OutOfMemory> for InstanceWaitIdleError {
-    fn from(e: hal::device::OutOfMemory) -> Self {
-        InstanceWaitIdleError::OutOfMemory(e)
+impl From<wgpu::RequestDeviceError> for InstanceCreationError {
+    fn from(e: wgpu::RequestDeviceError) -> Self {
+        InstanceCreationError::DeviceRequestFailed(e)
     }
 }
 
@@ -208,14 +518,40 @@ impl From<hal::device::OutOfMemory> for InstanceWaitIdleError {
 mod tests {
     use super::*;
 
+    use rae_app::{
+        event::{EventLoop, EventLoopAnyThread},
+        window::WindowBuilder,
+    };
+
     #[test]
-    fn instance_creation() {
-        let _instance = Instance::create().unwrap();
+    fn default_config() {
+        let instance = Instance::new(&InstanceDescriptor::default()).unwrap();
+        println!("{:?}", instance.info());
     }
 
     #[test]
-    fn double_instance_creation() {
-        let _instance1 = Instance::create().unwrap();
-        let _instance2 = Instance::create().unwrap();
+    fn new() {
+        let instance = Instance::new(&InstanceDescriptor {
+            backend: Backend::VULKAN,
+            power_preference: PowerPreference::Default,
+            required_features: Features::default(),
+            optional_features: Features::empty(),
+            required_limits: Limits::default(),
+        })
+        .unwrap();
+        println!("{:?}", instance.info());
+    }
+
+    #[test]
+    fn new_with_compatible_window() {
+        let event_loop = EventLoop::<()>::new_any_thread();
+        let window = WindowBuilder::new()
+            .with_visible(false)
+            .build(&event_loop)
+            .unwrap();
+        let (instance, _surface) = unsafe {
+            Instance::new_with_compatible_window(&InstanceDescriptor::default(), &window).unwrap()
+        };
+        println!("{:?}", instance.info());
     }
 }
