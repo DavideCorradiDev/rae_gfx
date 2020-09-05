@@ -2,6 +2,7 @@ use std::iter;
 
 use super::{
     CanvasFrame, Color, CommandEncoder, CommandEncoderDescriptor, Instance, Operations, RenderPass,
+    RenderPassColorAttachmentDescriptor, RenderPassDepthStencilAttachmentDescriptor,
     RenderPassDescriptor, TextureFormat,
 };
 
@@ -14,6 +15,7 @@ pub struct RenderPassRequirements {
 
 #[derive(Debug, PartialEq, Clone)]
 pub struct RenderPassOperations {
+    pub swap_chain_frame_operations: Option<Operations<Color>>,
     pub color_operations: Vec<Operations<Color>>,
     pub depth_operations: Option<Operations<f32>>,
     pub stencil_operations: Option<Operations<u32>>,
@@ -37,7 +39,20 @@ impl CommandSequence {
         operations: &RenderPassOperations,
     ) -> RenderPass<'a> {
         // Define color attachments.
-        let color_attachments = Vec::new();
+        let mut color_attachments = Vec::new();
+
+        if let Some(swap_chain_frame) = &canvas_frame.swap_chain_frame {
+            let frame_view = &swap_chain_frame.frame.output.view;
+            let (attachment, resolve_target) = match &swap_chain_frame.backbuffer {
+                Some(backbuffer) => (backbuffer, Some(frame_view)),
+                None => (frame_view, None),
+            };
+            color_attachments.push(RenderPassColorAttachmentDescriptor {
+                attachment,
+                resolve_target,
+                ops: operations.swap_chain_frame_operations.unwrap_or_default(),
+            });
+        }
 
         // match canvas_frame.swap_chain_frame {
         //     Some(sc_frame) => {
