@@ -2,7 +2,8 @@ use std::{default::Default, iter};
 
 use super::{
     CanvasFrame, Color, CommandEncoder, CommandEncoderDescriptor, Instance, Operations, RenderPass,
-    RenderPassColorAttachmentDescriptor, RenderPassDescriptor, TextureFormat,
+    RenderPassColorAttachmentDescriptor, RenderPassDepthStencilAttachmentDescriptor,
+    RenderPassDescriptor, TextureFormat,
 };
 
 #[derive(Debug, PartialEq, Clone)]
@@ -36,6 +37,7 @@ pub struct CommandSequence {
     encoder: CommandEncoder,
 }
 
+// TODO: improve error handling
 impl CommandSequence {
     pub fn new(instance: &Instance) -> Self {
         let encoder = CommandEncoder::new(&instance, &CommandEncoderDescriptor::default());
@@ -48,31 +50,60 @@ impl CommandSequence {
         requirements: &RenderPassRequirements,
         operations: &RenderPassOperations,
     ) -> RenderPass<'a> {
+        let mut required_color_buffer_count = requirements.color_buffer_formats.len();
+
         // Define color attachments.
         let mut color_attachments = Vec::new();
 
-        if let Some(swap_chain_frame) = &canvas_frame.swap_chain_frame {
-            let frame_view = &swap_chain_frame.frame.output.view;
-            let (attachment, resolve_target) = match &swap_chain_frame.backbuffer {
-                Some(backbuffer) => (backbuffer, Some(frame_view)),
-                None => (frame_view, None),
-            };
-            color_attachments.push(RenderPassColorAttachmentDescriptor {
-                attachment,
-                resolve_target,
-                ops: operations.swap_chain_frame_operations.unwrap_or_default(),
-            });
+        // Main swapchain attachment.
+        if required_color_buffer_count > 0 {
+            if let Some(swap_chain_frame) = &canvas_frame.swap_chain_frame {
+                let frame_view = &swap_chain_frame.frame.output.view;
+                let (attachment, resolve_target) = match &swap_chain_frame.backbuffer {
+                    Some(backbuffer) => (backbuffer, Some(frame_view)),
+                    None => (frame_view, None),
+                };
+                color_attachments.push(RenderPassColorAttachmentDescriptor {
+                    attachment,
+                    resolve_target,
+                    ops: operations.swap_chain_frame_operations.unwrap_or_default(),
+                });
+            }
+            required_color_buffer_count = required_color_buffer_count - 1;
         }
 
-        // match canvas_frame.swap_chain_frame {
-        //     Some(sc_frame) => {
-        //         let backbuffer = canvas_frame.
-        //     },
-        //     None => (),
-        // }
+        // Other color attachments.
+        for i in 0..required_color_buffer_count {
+            let color_buffer = canvas_frame
+                .color_buffers
+                .get(i)
+                .expect("Not enough color buffers");
+            let ops = match operations.color_operations.get(i) {
+                Some(v) => *v,
+                None => Operations::default(),
+            };
+            color_attachments.push(RenderPassColorAttachmentDescriptor {
+                attachment: color_buffer.buffer,
+                resolve_target: None,
+                ops,
+            })
+        }
 
         // Define depth stencil attachments.
-        let depth_stencil_attachment = None;
+        let depth_stencil_attachment = match requirements.depth_stencil_buffer_format {
+            Some(_) => {
+                let attachment = match &canvas_frame.depth_stencil_buffer {
+                    Some(v) => v.buffer,
+                    None => panic!("No depth stencil buffer"),
+                };
+                Some(RenderPassDepthStencilAttachmentDescriptor {
+                    attachment,
+                    depth_ops: operations.depth_operations,
+                    stencil_ops: operations.stencil_operations,
+                })
+            }
+            None => None,
+        };
 
         // Begin the render pass.
         let render_pass_desc = RenderPassDescriptor {
