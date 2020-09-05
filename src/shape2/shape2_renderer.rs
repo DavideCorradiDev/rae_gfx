@@ -210,7 +210,7 @@ impl RenderPipeline {
         }
     }
 
-    pub fn render_frame_requirements(&self) -> core::RenderPassRequirements {
+    pub fn render_pass_requirements(&self) -> core::RenderPassRequirements {
         core::RenderPassRequirements {
             sample_count: self.sample_count,
             color_buffer_formats: vec![self.color_buffer_format],

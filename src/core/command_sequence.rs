@@ -1,9 +1,8 @@
-use std::iter;
+use std::{default::Default, iter};
 
 use super::{
     CanvasFrame, Color, CommandEncoder, CommandEncoderDescriptor, Instance, Operations, RenderPass,
-    RenderPassColorAttachmentDescriptor, RenderPassDepthStencilAttachmentDescriptor,
-    RenderPassDescriptor, TextureFormat,
+    RenderPassColorAttachmentDescriptor, RenderPassDescriptor, TextureFormat,
 };
 
 #[derive(Debug, PartialEq, Clone)]
@@ -19,6 +18,17 @@ pub struct RenderPassOperations {
     pub color_operations: Vec<Operations<Color>>,
     pub depth_operations: Option<Operations<f32>>,
     pub stencil_operations: Option<Operations<u32>>,
+}
+
+impl Default for RenderPassOperations {
+    fn default() -> Self {
+        RenderPassOperations {
+            swap_chain_frame_operations: None,
+            color_operations: Vec::new(),
+            depth_operations: None,
+            stencil_operations: None,
+        }
+    }
 }
 
 #[derive(Debug)]

@@ -5,8 +5,8 @@ use rae_app::{
 };
 
 use super::{
-    Canvas, CanvasBuffer, CanvasFrame, CanvasSwapChainFrame, Instance, PresentMode, Surface,
-    SwapChain, SwapChainDescriptor, SwapChainError, TextureFormat, TextureUsage,
+    Canvas, CanvasFrame, CanvasSwapChainFrame, Instance, PresentMode, Surface, SwapChain,
+    SwapChainDescriptor, SwapChainError, TextureFormat, TextureUsage,
 };
 
 #[derive(Debug)]
