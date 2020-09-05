@@ -2,15 +2,16 @@ pub use wgpu::{
     include_spirv, util::BufferInitDescriptor, AdapterInfo, BackendBit as Backend,
     BindGroupDescriptor, BindGroupLayoutDescriptor, BlendDescriptor, BlendFactor, BlendOperation,
     BufferAddress, BufferDescriptor, BufferSlice, BufferUsage, Color, ColorStateDescriptor,
-    ColorWrite, CommandBuffer, CommandEncoderDescriptor, CullMode, Features, FrontFace,
-    IndexFormat, InputStepMode, Limits, LoadOp, Maintain, Operations, PipelineLayoutDescriptor,
-    PowerPreference, PresentMode, PrimitiveTopology, ProgrammableStageDescriptor,
-    PushConstantRange, RasterizationStateDescriptor, RenderBundleEncoderDescriptor, RenderPass,
+    ColorWrite, CommandBuffer, CommandEncoderDescriptor, CompareFunction, CullMode,
+    DepthStencilStateDescriptor, Features, FrontFace, IndexFormat, InputStepMode, Limits, LoadOp,
+    Maintain, Operations, PipelineLayoutDescriptor, PowerPreference, PresentMode,
+    PrimitiveTopology, ProgrammableStageDescriptor, PushConstantRange,
+    RasterizationStateDescriptor, RenderBundleEncoderDescriptor, RenderPass,
     RenderPassColorAttachmentDescriptor, RenderPassDepthStencilAttachmentDescriptor,
     RenderPassDescriptor, RenderPipelineDescriptor, SamplerDescriptor, ShaderModuleSource,
-    ShaderStage, SwapChainDescriptor, SwapChainError, SwapChainFrame, SwapChainTexture,
-    TextureDescriptor, TextureFormat, TextureUsage, TextureView, VertexAttributeDescriptor,
-    VertexBufferDescriptor, VertexFormat, VertexStateDescriptor,
+    ShaderStage, StencilStateDescriptor, SwapChainDescriptor, SwapChainError, SwapChainFrame,
+    SwapChainTexture, TextureDescriptor, TextureFormat, TextureUsage, TextureView,
+    VertexAttributeDescriptor, VertexBufferDescriptor, VertexFormat, VertexStateDescriptor,
 };
 
 mod instance;
