@@ -6,13 +6,6 @@ use super::{
     SwapChainTexture, TextureFormat, TextureView,
 };
 
-#[derive(Debug, PartialEq, Clone)]
-pub struct RenderFrameRequirements {
-    sample_count: u32,
-    color_buffer_formats: Vec<TextureFormat>,
-    depth_stencil_buffer_format: Option<TextureFormat>,
-}
-
 #[derive(Debug)]
 pub struct RenderFrame<'a, 'b> {
     render_pass_desc: RenderPassDescriptor<'a, 'b>,
