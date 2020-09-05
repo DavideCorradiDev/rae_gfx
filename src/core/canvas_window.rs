@@ -5,7 +5,7 @@ use rae_app::{
 };
 
 use super::{
-    Canvas, Instance, PresentMode, RenderFrame, Surface, SwapChain, SwapChainDescriptor,
+    Canvas, CanvasFrame, Instance, PresentMode, Surface, SwapChain, SwapChainDescriptor,
     SwapChainError, TextureFormat, TextureUsage,
 };
 
@@ -212,16 +212,15 @@ impl CanvasWindow {
 }
 
 impl Canvas for CanvasWindow {
-    fn get_render_frame(&mut self) -> Result<RenderFrame, SwapChainError> {
+    fn current_frame(&mut self) -> Result<CanvasFrame, SwapChainError> {
         let swap_chain_frame = self.swap_chain.get_current_frame()?;
-        Ok(RenderFrame::from_parts(
-            Some(swap_chain_frame),
-            None,
-            None,
-            None,
-            None,
-            None,
-        ))
+        Ok(CanvasFrame {
+            swap_chain_frame: Some(swap_chain_frame),
+            color_buffers: Vec::new(),
+            color_buffer_formats: Vec::new(),
+            depth_stencil_buffer: None,
+            depth_stencil_buffer_format: None,
+        })
     }
 }
 
