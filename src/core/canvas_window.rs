@@ -216,6 +216,7 @@ impl Canvas for CanvasWindow {
         let swap_chain_frame = self.swap_chain.get_current_frame()?;
         Ok(CanvasFrame {
             swap_chain_frame: Some(swap_chain_frame),
+            sample_count: 1,
             color_buffers: Vec::new(),
             color_buffer_formats: Vec::new(),
             depth_stencil_buffer: None,

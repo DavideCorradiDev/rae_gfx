@@ -2,7 +2,7 @@ use std::iter;
 
 use super::{
     CanvasFrame, Color, CommandEncoder, CommandEncoderDescriptor, Instance, Operations, RenderPass,
-    TextureFormat,
+    RenderPassDescriptor, TextureFormat,
 };
 
 #[derive(Debug, PartialEq, Clone)]
@@ -36,8 +36,13 @@ impl CommandSequence {
         requirements: &RenderPassRequirements,
         operations: &RenderPassOperations,
     ) -> RenderPass<'a> {
-        self.encoder
-            .begin_render_pass(&canvas_frame.render_pass_descriptor())
+        let color_attachments = Vec::new();
+        let depth_stencil_attachment = None;
+        let render_pass_desc = RenderPassDescriptor {
+            color_attachments: color_attachments.as_slice(),
+            depth_stencil_attachment,
+        };
+        self.encoder.begin_render_pass(&render_pass_desc)
     }
 
     pub fn submit(self, instance: &Instance) {

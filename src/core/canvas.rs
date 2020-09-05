@@ -3,6 +3,7 @@ use super::{SwapChainError, SwapChainFrame, TextureFormat, TextureView};
 #[derive(Debug)]
 pub struct CanvasFrame<'a> {
     pub swap_chain_frame: Option<SwapChainFrame>,
+    pub sample_count: u32,
     pub color_buffers: Vec<&'a TextureView>,
     pub color_buffer_formats: Vec<TextureFormat>,
     pub depth_stencil_buffer: Option<&'a TextureView>,
