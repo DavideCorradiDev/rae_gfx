@@ -94,8 +94,13 @@ impl Instance {
             Surface { value: surface },
         ))
     }
+
     pub fn color_format(&self) -> TextureFormat {
         TextureFormat::Bgra8UnormSrgb
+    }
+
+    pub fn depth_format(&self) -> TextureFormat {
+        TextureFormat::Depth32Float
     }
 
     pub fn info(&self) -> AdapterInfo {

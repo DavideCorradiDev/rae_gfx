@@ -5,14 +5,17 @@ use rae_app::{
 };
 
 use super::{
-    Canvas, CanvasFrame, CanvasSwapChainFrame, Instance, PresentMode, Surface, SwapChain,
-    SwapChainDescriptor, SwapChainError, TextureFormat, TextureUsage,
+    Canvas, CanvasFrame, CanvasSwapChainFrame, Extent3d, Instance, PresentMode, Surface, SwapChain,
+    SwapChainDescriptor, SwapChainError, Texture, TextureDescriptor, TextureDimension,
+    TextureFormat, TextureUsage, TextureView, TextureViewDescriptor,
 };
 
 #[derive(Debug)]
 pub struct CanvasWindow {
-    color_buffer_format: TextureFormat,
     surface_size: window::PhysicalSize<u32>,
+    depth_buffer_format: TextureFormat,
+    depth_buffer: TextureView,
+    color_buffer_format: TextureFormat,
     swap_chain: SwapChain,
     surface: Surface,
     window: Window,
@@ -41,12 +44,16 @@ impl CanvasWindow {
         surface: Surface,
     ) -> Self {
         let surface_size = window.inner_size();
+        let depth_buffer_format = instance.depth_format();
         let color_buffer_format = instance.color_format();
+        let depth_buffer = Self::create_depth_buffer(instance, &surface_size, depth_buffer_format);
         let swap_chain =
             Self::create_swap_chain(instance, &surface, &surface_size, color_buffer_format);
         Self {
-            color_buffer_format,
             surface_size,
+            depth_buffer_format,
+            depth_buffer,
+            color_buffer_format,
             swap_chain,
             surface,
             window,
@@ -189,6 +196,30 @@ impl CanvasWindow {
 
     pub fn set_cursor_visible(&self, visible: bool) {
         self.window.set_cursor_visible(visible)
+    }
+
+    fn create_depth_buffer(
+        instance: &Instance,
+        surface_size: &window::PhysicalSize<u32>,
+        depth_buffer_format: TextureFormat,
+    ) -> TextureView {
+        let texture = Texture::new(
+            instance,
+            &TextureDescriptor {
+                size: Extent3d {
+                    width: surface_size.width,
+                    height: surface_size.height,
+                    depth: 1,
+                },
+                mip_level_count: 1,
+                sample_count: 1,
+                dimension: TextureDimension::D2,
+                format: depth_buffer_format,
+                usage: TextureUsage::OUTPUT_ATTACHMENT,
+                label: None,
+            },
+        );
+        texture.create_view(&TextureViewDescriptor::default())
     }
 
     fn create_swap_chain(
