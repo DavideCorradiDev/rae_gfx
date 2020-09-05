@@ -36,8 +36,20 @@ impl CommandSequence {
         requirements: &RenderPassRequirements,
         operations: &RenderPassOperations,
     ) -> RenderPass<'a> {
+        // Define color attachments.
         let color_attachments = Vec::new();
+
+        // match canvas_frame.swap_chain_frame {
+        //     Some(sc_frame) => {
+        //         let backbuffer = canvas_frame.
+        //     },
+        //     None => (),
+        // }
+
+        // Define depth stencil attachments.
         let depth_stencil_attachment = None;
+
+        // Begin the render pass.
         let render_pass_desc = RenderPassDescriptor {
             color_attachments: color_attachments.as_slice(),
             depth_stencil_attachment,
