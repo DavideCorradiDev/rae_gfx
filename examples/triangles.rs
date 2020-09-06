@@ -182,9 +182,7 @@ impl EventHandler<ApplicationError, ApplicationEvent> for ApplicationImpl {
         for triangle_constant in &self.saved_triangle_constants {
             elements.push((&self.triangle_mesh, triangle_constant));
         }
-
         let current_triangle_constant = self.generate_push_constant();
-        elements.push((&self.triangle_mesh, &current_triangle_constant));
 
         let frame = self.window.current_frame()?;
         let mut cmd_sequence = CommandSequence::new(&self.instance);
@@ -195,6 +193,27 @@ impl EventHandler<ApplicationError, ApplicationEvent> for ApplicationImpl {
                 &RenderPassOperations::default(),
             );
             rpass.draw_shape2_array(&self.pipeline, &elements);
+        }
+        {
+            // Technically this could be done in the same render pass, just showing how to
+            // combine multiple render passes (potentially with pipeline targeting different
+            // buffers)
+            let mut rpass = cmd_sequence.begin_render_pass(
+                &frame,
+                &self.pipeline.render_pass_requirements(),
+                &RenderPassOperations {
+                    swap_chain_frame_operations: Some(rae_gfx::core::Operations {
+                        load: rae_gfx::core::LoadOp::Load,
+                        store: true,
+                    }),
+                    ..RenderPassOperations::default()
+                },
+            );
+            rpass.draw_shape2(
+                &self.pipeline,
+                &self.triangle_mesh,
+                &current_triangle_constant,
+            );
         }
         cmd_sequence.submit(&self.instance);
         Ok(ControlFlow::Continue)
