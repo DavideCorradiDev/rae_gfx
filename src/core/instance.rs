@@ -483,42 +483,6 @@ impl DerefMut for SwapChain {
     }
 }
 
-#[derive(Debug, Clone, PartialEq)]
-pub enum InstanceCreationError {
-    AdapterRequestFailed,
-    FeaturesNotAvailable(Features),
-    DeviceRequestFailed(wgpu::RequestDeviceError),
-}
-
-impl std::fmt::Display for InstanceCreationError {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match self {
-            InstanceCreationError::AdapterRequestFailed => write!(f, "Adapter request failed"),
-            InstanceCreationError::FeaturesNotAvailable(features) => {
-                write!(f, "Required features are not available ({:?})", features)
-            }
-            InstanceCreationError::DeviceRequestFailed(e) => {
-                write!(f, "Device request failed ({})", e)
-            }
-        }
-    }
-}
-
-impl std::error::Error for InstanceCreationError {
-    fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
-        match self {
-            InstanceCreationError::DeviceRequestFailed(e) => Some(e),
-            _ => None,
-        }
-    }
-}
-
-impl From<wgpu::RequestDeviceError> for InstanceCreationError {
-    fn from(e: wgpu::RequestDeviceError) -> Self {
-        InstanceCreationError::DeviceRequestFailed(e)
-    }
-}
-
 #[derive(Debug, PartialEq, Eq, Clone, Copy, serde::Serialize, serde::Deserialize)]
 pub enum ColorBufferFormat {
     Bgra8Unorm,
@@ -560,6 +524,67 @@ impl From<DepthStencilBufferFormat> for TextureFormat {
             DepthStencilBufferFormat::Depth24Plus => TextureFormat::Depth24Plus,
             DepthStencilBufferFormat::Depth24PlusStencil8 => TextureFormat::Depth24PlusStencil8,
         }
+    }
+}
+
+#[derive(Debug, PartialEq, Eq, Clone, Copy, serde::Serialize, serde::Deserialize)]
+pub enum SampleCount {
+    S1,
+    S2,
+    S4,
+    S8,
+}
+
+impl Default for SampleCount {
+    fn default() -> Self {
+        Self::S1
+    }
+}
+
+impl From<SampleCount> for u32 {
+    fn from(sc: SampleCount) -> Self {
+        match sc {
+            SampleCount::S1 => 1,
+            SampleCount::S2 => 2,
+            SampleCount::S4 => 4,
+            SampleCount::S8 => 8,
+        }
+    }
+}
+
+#[derive(Debug, Clone, PartialEq)]
+pub enum InstanceCreationError {
+    AdapterRequestFailed,
+    FeaturesNotAvailable(Features),
+    DeviceRequestFailed(wgpu::RequestDeviceError),
+}
+
+impl std::fmt::Display for InstanceCreationError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            InstanceCreationError::AdapterRequestFailed => write!(f, "Adapter request failed"),
+            InstanceCreationError::FeaturesNotAvailable(features) => {
+                write!(f, "Required features are not available ({:?})", features)
+            }
+            InstanceCreationError::DeviceRequestFailed(e) => {
+                write!(f, "Device request failed ({})", e)
+            }
+        }
+    }
+}
+
+impl std::error::Error for InstanceCreationError {
+    fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
+        match self {
+            InstanceCreationError::DeviceRequestFailed(e) => Some(e),
+            _ => None,
+        }
+    }
+}
+
+impl From<wgpu::RequestDeviceError> for InstanceCreationError {
+    fn from(e: wgpu::RequestDeviceError) -> Self {
+        InstanceCreationError::DeviceRequestFailed(e)
     }
 }
 
