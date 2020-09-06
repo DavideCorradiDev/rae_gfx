@@ -17,6 +17,8 @@ use super::{
     TextureDescriptor, TextureFormat,
 };
 
+pub type SampleCount = u32;
+
 #[derive(Debug, PartialEq, Eq, Clone, serde::Serialize, serde::Deserialize)]
 pub struct InstanceDescriptor {
     pub backend: Backend,
@@ -523,31 +525,6 @@ impl From<DepthStencilBufferFormat> for TextureFormat {
             DepthStencilBufferFormat::Depth32Float => TextureFormat::Depth32Float,
             DepthStencilBufferFormat::Depth24Plus => TextureFormat::Depth24Plus,
             DepthStencilBufferFormat::Depth24PlusStencil8 => TextureFormat::Depth24PlusStencil8,
-        }
-    }
-}
-
-#[derive(Debug, PartialEq, Eq, Clone, Copy, serde::Serialize, serde::Deserialize)]
-pub enum SampleCount {
-    S1,
-    S2,
-    S4,
-    S8,
-}
-
-impl Default for SampleCount {
-    fn default() -> Self {
-        Self::S1
-    }
-}
-
-impl From<SampleCount> for u32 {
-    fn from(sc: SampleCount) -> Self {
-        match sc {
-            SampleCount::S1 => 1,
-            SampleCount::S2 => 2,
-            SampleCount::S4 => 4,
-            SampleCount::S8 => 8,
         }
     }
 }

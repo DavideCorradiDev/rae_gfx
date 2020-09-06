@@ -8,8 +8,9 @@ use rae_app::{
 
 use super::{
     Canvas, CanvasBuffer, CanvasFrame, CanvasSwapChainFrame, Extent3d, Instance, PresentMode,
-    Surface, SwapChain, SwapChainDescriptor, SwapChainError, Texture, TextureDescriptor,
-    TextureDimension, TextureFormat, TextureUsage, TextureView, TextureViewDescriptor,
+    SampleCount, Surface, SwapChain, SwapChainDescriptor, SwapChainError, Texture,
+    TextureDescriptor, TextureDimension, TextureFormat, TextureUsage, TextureView,
+    TextureViewDescriptor,
 };
 
 // TODO: specify texture formats in the descriptor.
@@ -17,7 +18,7 @@ use super::{
 // TODO: create specific enum for sample count.
 #[derive(Debug, PartialEq, Clone, serde::Serialize, serde::Deserialize)]
 pub struct CanvasWindowDescriptor {
-    pub sample_count: u32,
+    pub sample_count: SampleCount,
 }
 
 impl Default for CanvasWindowDescriptor {
@@ -29,7 +30,7 @@ impl Default for CanvasWindowDescriptor {
 #[derive(Debug)]
 pub struct CanvasWindow {
     surface_size: window::PhysicalSize<u32>,
-    sample_count: u32,
+    sample_count: SampleCount,
     depth_buffer_format: TextureFormat,
     depth_buffer: TextureView,
     color_buffer_format: TextureFormat,
@@ -248,7 +249,7 @@ impl CanvasWindow {
         instance: &Instance,
         size: &window::PhysicalSize<u32>,
         format: TextureFormat,
-        sample_count: u32,
+        sample_count: SampleCount,
     ) -> TextureView {
         let texture = Texture::new(
             instance,
@@ -274,7 +275,7 @@ impl CanvasWindow {
         surface: &Surface,
         size: &window::PhysicalSize<u32>,
         format: TextureFormat,
-        sample_count: u32,
+        sample_count: SampleCount,
     ) -> (SwapChain, Option<TextureView>) {
         let swap_chain = SwapChain::new(
             instance,

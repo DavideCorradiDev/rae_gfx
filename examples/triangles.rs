@@ -15,7 +15,8 @@ use rae_math::{
 use rae_gfx::{
     core::{
         Canvas, CanvasWindow, CanvasWindowDescriptor, Color, CommandSequence, Instance,
-        InstanceCreationError, InstanceDescriptor, RenderPassOperations, SwapChainError,
+        InstanceCreationError, InstanceDescriptor, RenderPassOperations, SampleCount,
+        SwapChainError,
     },
     shape2,
     shape2::Renderer as Shape2Renderer,
@@ -36,7 +37,7 @@ struct ApplicationImpl {
 }
 
 impl ApplicationImpl {
-    const SAMPLE_COUNT: u32 = 8;
+    const SAMPLE_COUNT: SampleCount = 8;
 
     pub fn generate_push_constant(&self) -> shape2::PushConstants {
         let object_transform = Similarity::<f32>::from_parts(

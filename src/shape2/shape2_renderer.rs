@@ -110,7 +110,7 @@ pub struct RenderPipelineDescriptor {
     pub color_blend: core::BlendDescriptor,
     pub alpha_blend: core::BlendDescriptor,
     pub write_mask: core::ColorWrite,
-    pub sample_count: u32,
+    pub sample_count: core::SampleCount,
 }
 
 impl Default for RenderPipelineDescriptor {
@@ -135,7 +135,7 @@ impl Default for RenderPipelineDescriptor {
 #[derive(Debug)]
 pub struct RenderPipeline {
     pipeline: core::RenderPipeline,
-    sample_count: u32,
+    sample_count: core::SampleCount,
     color_buffer_format: core::TextureFormat,
 }
 

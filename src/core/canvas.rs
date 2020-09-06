@@ -1,18 +1,18 @@
-use super::{SwapChainError, SwapChainFrame, TextureFormat, TextureView};
+use super::{SampleCount, SwapChainError, SwapChainFrame, TextureFormat, TextureView};
 
 #[derive(Debug)]
 pub struct CanvasSwapChainFrame<'a> {
     pub frame: SwapChainFrame,
     pub backbuffer: Option<&'a TextureView>,
     pub format: TextureFormat,
-    pub sample_count: u32,
+    pub sample_count: SampleCount,
 }
 
 #[derive(Debug)]
 pub struct CanvasBuffer<'a> {
     pub buffer: &'a TextureView,
     pub format: TextureFormat,
-    pub sample_count: u32,
+    pub sample_count: SampleCount,
 }
 
 #[derive(Debug)]

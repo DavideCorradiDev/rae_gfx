@@ -3,12 +3,12 @@ use std::{default::Default, iter};
 use super::{
     CanvasFrame, Color, CommandEncoder, CommandEncoderDescriptor, Instance, Operations, RenderPass,
     RenderPassColorAttachmentDescriptor, RenderPassDepthStencilAttachmentDescriptor,
-    RenderPassDescriptor, TextureFormat,
+    RenderPassDescriptor, SampleCount, TextureFormat,
 };
 
 #[derive(Debug, PartialEq, Clone)]
 pub struct RenderPassRequirements {
-    pub sample_count: u32,
+    pub sample_count: SampleCount,
     pub color_buffer_formats: Vec<TextureFormat>,
     pub depth_stencil_buffer_format: Option<TextureFormat>,
 }
