@@ -138,7 +138,7 @@ impl EventHandler<ApplicationError, ApplicationEvent> for ApplicationImpl {
         size: window::PhysicalSize<u32>,
     ) -> Result<ControlFlow, Self::Error> {
         if wid == self.window.id() {
-            self.window.reconfigure_swap_chain(&self.instance);
+            self.window.update_buffers(&self.instance);
             self.projection_transform = OrthographicProjection::new(
                 0.,
                 1f32.max(size.width as f32),

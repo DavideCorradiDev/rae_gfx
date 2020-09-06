@@ -1,9 +1,9 @@
 use super::{SwapChainError, SwapChainFrame, TextureFormat, TextureView};
 
 #[derive(Debug)]
-pub struct CanvasSwapChainFrame {
+pub struct CanvasSwapChainFrame<'a> {
     pub frame: SwapChainFrame,
-    pub backbuffer: Option<TextureView>,
+    pub backbuffer: Option<&'a TextureView>,
     pub format: TextureFormat,
     pub sample_count: u32,
 }
@@ -17,7 +17,7 @@ pub struct CanvasBuffer<'a> {
 
 #[derive(Debug)]
 pub struct CanvasFrame<'a> {
-    pub swap_chain_frame: Option<CanvasSwapChainFrame>,
+    pub swap_chain_frame: Option<CanvasSwapChainFrame<'a>>,
     pub color_buffers: Vec<CanvasBuffer<'a>>,
     pub depth_stencil_buffer: Option<CanvasBuffer<'a>>,
 }

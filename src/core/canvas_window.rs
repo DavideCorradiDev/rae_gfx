@@ -7,11 +7,15 @@ use rae_app::{
 };
 
 use super::{
-    Canvas, CanvasFrame, CanvasSwapChainFrame, Extent3d, Instance, PresentMode, Surface, SwapChain,
-    SwapChainDescriptor, SwapChainError, Texture, TextureDescriptor, TextureDimension,
-    TextureFormat, TextureUsage, TextureView, TextureViewDescriptor,
+    Canvas, CanvasBuffer, CanvasFrame, CanvasSwapChainFrame, Extent3d, Instance, PresentMode,
+    Surface, SwapChain, SwapChainDescriptor, SwapChainError, Texture, TextureDescriptor,
+    TextureDimension, TextureFormat, TextureUsage, TextureView, TextureViewDescriptor,
 };
 
+// TODO: actually add the depth buffer to the canvas frame.
+// TODO: resize depth buffer when resizing.
+// TODO: specify texture formats in the descriptor.
+// TODO: create specific enums for color formats and ds formats.
 #[derive(Debug, PartialEq, Clone)]
 pub struct CanvasWindowDescriptor {
     sample_count: u32,
@@ -26,9 +30,11 @@ impl Default for CanvasWindowDescriptor {
 #[derive(Debug)]
 pub struct CanvasWindow {
     surface_size: window::PhysicalSize<u32>,
+    sample_count: u32,
     depth_buffer_format: TextureFormat,
     depth_buffer: TextureView,
     color_buffer_format: TextureFormat,
+    backbuffer: Option<TextureView>,
     swap_chain: SwapChain,
     surface: Surface,
     window: Window,
@@ -65,29 +71,51 @@ impl CanvasWindow {
         let surface_size = window.inner_size();
         let depth_buffer_format = instance.depth_format();
         let color_buffer_format = instance.color_format();
-        let depth_buffer = Self::create_depth_buffer(instance, &surface_size, depth_buffer_format);
-        let swap_chain =
-            Self::create_swap_chain(instance, &surface, &surface_size, color_buffer_format);
+        let depth_buffer = Self::create_depth_buffer(
+            instance,
+            &surface_size,
+            depth_buffer_format,
+            desc.sample_count,
+        );
+        let (swap_chain, backbuffer) = Self::create_swap_chain(
+            instance,
+            &surface,
+            &surface_size,
+            color_buffer_format,
+            desc.sample_count,
+        );
         Self {
             surface_size,
+            sample_count: desc.sample_count,
             depth_buffer_format,
             depth_buffer,
             color_buffer_format,
+            backbuffer,
             swap_chain,
             surface,
             window,
         }
     }
 
-    pub fn reconfigure_swap_chain(&mut self, instance: &Instance) {
+    pub fn update_buffers(&mut self, instance: &Instance) {
         let current_size = self.inner_size();
         if self.surface_size != current_size {
-            self.swap_chain = Self::create_swap_chain(
+            let depth_buffer = Self::create_depth_buffer(
+                instance,
+                &current_size,
+                self.depth_buffer_format,
+                self.sample_count,
+            );
+            let (swap_chain, backbuffer) = Self::create_swap_chain(
                 instance,
                 &self.surface,
                 &current_size,
                 self.color_buffer_format,
+                self.sample_count,
             );
+            self.depth_buffer = depth_buffer;
+            self.swap_chain = swap_chain;
+            self.backbuffer = backbuffer;
             self.surface_size = current_size;
         }
     }
@@ -132,7 +160,7 @@ impl CanvasWindow {
         S: Into<window::Size>,
     {
         self.window.set_inner_size(size);
-        self.reconfigure_swap_chain(instance);
+        self.update_buffers(instance);
     }
 
     pub fn set_min_inner_size<S>(&mut self, instance: &Instance, min_size: Option<S>)
@@ -140,7 +168,7 @@ impl CanvasWindow {
         S: Into<window::Size>,
     {
         self.window.set_min_inner_size(min_size);
-        self.reconfigure_swap_chain(instance);
+        self.update_buffers(instance);
     }
 
     pub fn set_max_inner_size<S>(&mut self, instance: &Instance, max_size: Option<S>)
@@ -148,7 +176,7 @@ impl CanvasWindow {
         S: Into<window::Size>,
     {
         self.window.set_max_inner_size(max_size);
-        self.reconfigure_swap_chain(instance);
+        self.update_buffers(instance);
     }
 
     pub fn set_title(&self, title: &str) {
@@ -219,21 +247,22 @@ impl CanvasWindow {
 
     fn create_depth_buffer(
         instance: &Instance,
-        surface_size: &window::PhysicalSize<u32>,
-        depth_buffer_format: TextureFormat,
+        size: &window::PhysicalSize<u32>,
+        format: TextureFormat,
+        sample_count: u32,
     ) -> TextureView {
         let texture = Texture::new(
             instance,
             &TextureDescriptor {
                 size: Extent3d {
-                    width: surface_size.width,
-                    height: surface_size.height,
+                    width: size.width,
+                    height: size.height,
                     depth: 1,
                 },
                 mip_level_count: 1,
-                sample_count: 1,
+                sample_count,
                 dimension: TextureDimension::D2,
-                format: depth_buffer_format,
+                format,
                 usage: TextureUsage::OUTPUT_ATTACHMENT,
                 label: None,
             },
@@ -245,34 +274,65 @@ impl CanvasWindow {
         instance: &Instance,
         surface: &Surface,
         size: &window::PhysicalSize<u32>,
-        color_buffer_format: TextureFormat,
-    ) -> SwapChain {
-        SwapChain::new(
+        format: TextureFormat,
+        sample_count: u32,
+    ) -> (SwapChain, Option<TextureView>) {
+        let swap_chain = SwapChain::new(
             instance,
             surface,
             &SwapChainDescriptor {
                 usage: TextureUsage::OUTPUT_ATTACHMENT,
-                format: color_buffer_format,
+                format,
                 width: size.width,
                 height: size.height,
                 present_mode: PresentMode::Mailbox,
             },
-        )
+        );
+        let backbuffer = if sample_count > 1 {
+            let backbuffer_texture = Texture::new(
+                instance,
+                &TextureDescriptor {
+                    size: Extent3d {
+                        width: size.width,
+                        height: size.height,
+                        depth: 1,
+                    },
+                    mip_level_count: 1,
+                    sample_count,
+                    dimension: TextureDimension::D2,
+                    format,
+                    usage: TextureUsage::OUTPUT_ATTACHMENT,
+                    label: None,
+                },
+            );
+            Some(backbuffer_texture.create_view(&TextureViewDescriptor::default()))
+        } else {
+            None
+        };
+        (swap_chain, backbuffer)
     }
 }
 
 impl Canvas for CanvasWindow {
     fn current_frame(&mut self) -> Result<CanvasFrame, SwapChainError> {
         let swap_chain_frame = self.swap_chain.get_current_frame()?;
+        let backbuffer = match self.backbuffer {
+            Some(ref v) => Some(v),
+            None => None,
+        };
         Ok(CanvasFrame {
             swap_chain_frame: Some(CanvasSwapChainFrame {
                 frame: swap_chain_frame,
-                backbuffer: None,
+                backbuffer,
                 format: self.color_buffer_format,
-                sample_count: 1,
+                sample_count: self.sample_count,
             }),
             color_buffers: Vec::new(),
-            depth_stencil_buffer: None,
+            depth_stencil_buffer: Some(CanvasBuffer {
+                buffer: &self.depth_buffer,
+                format: self.depth_buffer_format,
+                sample_count: self.sample_count,
+            }),
         })
     }
 }

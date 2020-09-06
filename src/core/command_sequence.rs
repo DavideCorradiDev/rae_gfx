@@ -69,7 +69,7 @@ impl CommandSequence {
         if required_color_buffer_count > 0 {
             if let Some(swap_chain_frame) = &canvas_frame.swap_chain_frame {
                 let frame_view = &swap_chain_frame.frame.output.view;
-                let (attachment, resolve_target) = match &swap_chain_frame.backbuffer {
+                let (attachment, resolve_target) = match swap_chain_frame.backbuffer {
                     Some(backbuffer) => (backbuffer, Some(frame_view)),
                     None => (frame_view, None),
                 };
