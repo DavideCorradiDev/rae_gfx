@@ -110,6 +110,7 @@ pub struct RenderPipelineDescriptor {
     pub color_blend: core::BlendDescriptor,
     pub alpha_blend: core::BlendDescriptor,
     pub write_mask: core::ColorWrite,
+    pub color_buffer_format: core::ColorBufferFormat,
     pub sample_count: core::SampleCount,
 }
 
@@ -127,6 +128,7 @@ impl Default for RenderPipelineDescriptor {
                 operation: core::BlendOperation::Max,
             },
             write_mask: core::ColorWrite::ALL,
+            color_buffer_format: core::ColorBufferFormat::default(),
             sample_count: 1,
         }
     }
@@ -136,7 +138,7 @@ impl Default for RenderPipelineDescriptor {
 pub struct RenderPipeline {
     pipeline: core::RenderPipeline,
     sample_count: core::SampleCount,
-    color_buffer_format: core::TextureFormat,
+    color_buffer_format: core::ColorBufferFormat,
 }
 
 impl RenderPipeline {
@@ -180,7 +182,7 @@ impl RenderPipeline {
                 }),
                 primitive_topology: core::PrimitiveTopology::TriangleList,
                 color_states: &[core::ColorStateDescriptor {
-                    format: instance.color_format(),
+                    format: core::TextureFormat::from(desc.color_buffer_format),
                     color_blend: desc.color_blend.clone(),
                     alpha_blend: desc.alpha_blend.clone(),
                     write_mask: desc.write_mask,
@@ -206,7 +208,7 @@ impl RenderPipeline {
         Self {
             pipeline,
             sample_count: desc.sample_count,
-            color_buffer_format: instance.color_format(),
+            color_buffer_format: desc.color_buffer_format,
         }
     }
 
