@@ -16,9 +16,9 @@ use super::{
 // TODO: resize depth buffer when resizing.
 // TODO: specify texture formats in the descriptor.
 // TODO: create specific enums for color formats and ds formats.
-#[derive(Debug, PartialEq, Clone)]
+#[derive(Debug, PartialEq, Clone, serde::Serialize, serde::Deserialize)]
 pub struct CanvasWindowDescriptor {
-    sample_count: u32,
+    pub sample_count: u32,
 }
 
 impl Default for CanvasWindowDescriptor {

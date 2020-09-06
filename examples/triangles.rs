@@ -36,7 +36,7 @@ struct ApplicationImpl {
 }
 
 impl ApplicationImpl {
-    const SAMPLE_COUNT: u32 = 8;
+    const SAMPLE_COUNT: u32 = 1;
 
     pub fn generate_push_constant(&self) -> shape2::PushConstants {
         let object_transform = Similarity::<f32>::from_parts(
@@ -71,7 +71,10 @@ impl EventHandler<ApplicationError, ApplicationEvent> for ApplicationImpl {
                 &instance,
                 window,
                 surface,
-                &CanvasWindowDescriptor::default(),
+                &CanvasWindowDescriptor {
+                    sample_count: Self::SAMPLE_COUNT,
+                    ..CanvasWindowDescriptor::default()
+                },
             );
             (window, instance)
         };
