@@ -212,8 +212,7 @@ impl EventHandler<ApplicationError, ApplicationEvent> for ApplicationImpl {
         }
         {
             // Technically this could be done in the same render pass, just showing how to
-            // combine multiple render passes (potentially with pipeline targeting different
-            // buffers)
+            // combine multiple render passes keeping what was rendered in the previous one.
             let mut rpass = cmd_sequence.begin_render_pass(
                 &frame,
                 &self.pipeline.render_pass_requirements(),
