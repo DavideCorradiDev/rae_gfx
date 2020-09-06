@@ -12,10 +12,9 @@ use super::{
     TextureDimension, TextureFormat, TextureUsage, TextureView, TextureViewDescriptor,
 };
 
-// TODO: actually add the depth buffer to the canvas frame.
-// TODO: resize depth buffer when resizing.
 // TODO: specify texture formats in the descriptor.
 // TODO: create specific enums for color formats and ds formats.
+// TODO: create specific enum for sample count.
 #[derive(Debug, PartialEq, Clone, serde::Serialize, serde::Deserialize)]
 pub struct CanvasWindowDescriptor {
     pub sample_count: u32,
