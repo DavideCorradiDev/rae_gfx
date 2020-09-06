@@ -519,6 +519,50 @@ impl From<wgpu::RequestDeviceError> for InstanceCreationError {
     }
 }
 
+#[derive(Debug, PartialEq, Eq, Clone, Copy, serde::Serialize, serde::Deserialize)]
+pub enum ColorBufferFormat {
+    Bgra8Unorm,
+    Bgra8UnormSrgb,
+}
+
+impl Default for ColorBufferFormat {
+    #[cfg(target_arch = "wasm32")]
+    fn default() -> Self {
+        Self::Bgra8Unorm
+    }
+
+    #[cfg(not(target_arch = "wasm32"))]
+    fn default() -> Self {
+        Self::Bgra8UnormSrgb
+    }
+}
+
+impl From<ColorBufferFormat> for TextureFormat {
+    fn from(f: ColorBufferFormat) -> Self {
+        match f {
+            ColorBufferFormat::Bgra8Unorm => TextureFormat::Bgra8Unorm,
+            ColorBufferFormat::Bgra8UnormSrgb => TextureFormat::Bgra8UnormSrgb,
+        }
+    }
+}
+
+#[derive(Debug, PartialEq, Eq, Clone, Copy, serde::Serialize, serde::Deserialize)]
+pub enum DepthStencilBufferFormat {
+    Depth32Float,
+    Depth24Plus,
+    Depth24PlusStencil8,
+}
+
+impl From<DepthStencilBufferFormat> for TextureFormat {
+    fn from(f: DepthStencilBufferFormat) -> Self {
+        match f {
+            DepthStencilBufferFormat::Depth32Float => TextureFormat::Depth32Float,
+            DepthStencilBufferFormat::Depth24Plus => TextureFormat::Depth24Plus,
+            DepthStencilBufferFormat::Depth24PlusStencil8 => TextureFormat::Depth24PlusStencil8,
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
