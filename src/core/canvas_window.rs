@@ -1,3 +1,5 @@
+use std::default::Default;
+
 use rae_app::{
     event::EventLoop,
     window,
@@ -9,6 +11,17 @@ use super::{
     SwapChainDescriptor, SwapChainError, Texture, TextureDescriptor, TextureDimension,
     TextureFormat, TextureUsage, TextureView, TextureViewDescriptor,
 };
+
+#[derive(Debug, PartialEq, Clone)]
+pub struct CanvasWindowDescriptor {
+    sample_count: u32,
+}
+
+impl Default for CanvasWindowDescriptor {
+    fn default() -> Self {
+        Self { sample_count: 1 }
+    }
+}
 
 #[derive(Debug)]
 pub struct CanvasWindow {
@@ -26,15 +39,20 @@ impl CanvasWindow {
     pub unsafe fn new<T: 'static>(
         instance: &Instance,
         event_loop: &EventLoop<T>,
+        desc: &CanvasWindowDescriptor,
     ) -> Result<Self, OsError> {
         let window = Window::new(event_loop)?;
-        Ok(Self::from_window(instance, window))
+        Ok(Self::from_window(instance, window, desc))
     }
 
     // Unsafe: surface creation.
-    pub unsafe fn from_window(instance: &Instance, window: Window) -> Self {
+    pub unsafe fn from_window(
+        instance: &Instance,
+        window: Window,
+        desc: &CanvasWindowDescriptor,
+    ) -> Self {
         let surface = Surface::new(&instance, &window);
-        Self::from_window_and_surface(instance, window, surface)
+        Self::from_window_and_surface(instance, window, surface, desc)
     }
 
     // Unsafe: surface must correspond to the window.
@@ -42,6 +60,7 @@ impl CanvasWindow {
         instance: &Instance,
         window: Window,
         surface: Surface,
+        desc: &CanvasWindowDescriptor,
     ) -> Self {
         let surface_size = window.inner_size();
         let depth_buffer_format = instance.depth_format();
@@ -276,7 +295,9 @@ mod tests {
             .with_visible(false)
             .build(&event_loop)
             .unwrap();
-        let _canvas_window = unsafe { CanvasWindow::from_window(&instance, window) };
+        let _canvas_window = unsafe {
+            CanvasWindow::from_window(&instance, window, &CanvasWindowDescriptor::default())
+        };
     }
 
     #[test]
@@ -289,8 +310,14 @@ mod tests {
         let (instance, surface) = unsafe {
             Instance::new_with_compatible_window(&InstanceDescriptor::default(), &window).unwrap()
         };
-        let _canvas_window =
-            unsafe { CanvasWindow::from_window_and_surface(&instance, window, surface) };
+        let _canvas_window = unsafe {
+            CanvasWindow::from_window_and_surface(
+                &instance,
+                window,
+                surface,
+                &CanvasWindowDescriptor::default(),
+            )
+        };
     }
 
     #[test]
@@ -304,6 +331,7 @@ mod tests {
                     .with_visible(false)
                     .build(&event_loop)
                     .unwrap(),
+                &CanvasWindowDescriptor::default(),
             )
         };
         let window2 = unsafe {
@@ -313,6 +341,7 @@ mod tests {
                     .with_visible(false)
                     .build(&event_loop)
                     .unwrap(),
+                &CanvasWindowDescriptor::default(),
             )
         };
         expect_that!(&window1.id(), not(eq(window2.id())));
@@ -328,7 +357,14 @@ mod tests {
         let (instance, surface) = unsafe {
             Instance::new_with_compatible_window(&InstanceDescriptor::default(), &window1).unwrap()
         };
-        let window1 = unsafe { CanvasWindow::from_window_and_surface(&instance, window1, surface) };
+        let window1 = unsafe {
+            CanvasWindow::from_window_and_surface(
+                &instance,
+                window1,
+                surface,
+                &CanvasWindowDescriptor::default(),
+            )
+        };
         let window2 = unsafe {
             CanvasWindow::from_window(
                 &instance,
@@ -336,6 +372,7 @@ mod tests {
                     .with_visible(false)
                     .build(&event_loop)
                     .unwrap(),
+                &CanvasWindowDescriptor::default(),
             )
         };
         expect_that!(&window1.id(), not(eq(window2.id())));

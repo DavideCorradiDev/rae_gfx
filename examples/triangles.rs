@@ -14,8 +14,8 @@ use rae_math::{
 
 use rae_gfx::{
     core::{
-        Canvas, CanvasWindow, Color, CommandSequence, Instance, InstanceCreationError,
-        InstanceDescriptor, RenderPassOperations, SwapChainError,
+        Canvas, CanvasWindow, CanvasWindowDescriptor, Color, CommandSequence, Instance,
+        InstanceCreationError, InstanceDescriptor, RenderPassOperations, SwapChainError,
     },
     shape2,
     shape2::Renderer as Shape2Renderer,
@@ -36,6 +36,8 @@ struct ApplicationImpl {
 }
 
 impl ApplicationImpl {
+    const SAMPLE_COUNT: u32 = 8;
+
     pub fn generate_push_constant(&self) -> shape2::PushConstants {
         let object_transform = Similarity::<f32>::from_parts(
             Translation::new(self.current_position.x, self.current_position.y),
@@ -65,12 +67,22 @@ impl EventHandler<ApplicationError, ApplicationEvent> for ApplicationImpl {
                 &InstanceDescriptor::high_performance(),
                 &window,
             )?;
-            let window = CanvasWindow::from_window_and_surface(&instance, window, surface);
+            let window = CanvasWindow::from_window_and_surface(
+                &instance,
+                window,
+                surface,
+                &CanvasWindowDescriptor::default(),
+            );
             (window, instance)
         };
 
-        let pipeline =
-            shape2::RenderPipeline::new(&instance, &shape2::RenderPipelineDescriptor::default());
+        let pipeline = shape2::RenderPipeline::new(
+            &instance,
+            &shape2::RenderPipelineDescriptor {
+                sample_count: Self::SAMPLE_COUNT,
+                ..shape2::RenderPipelineDescriptor::default()
+            },
+        );
 
         let triangle_mesh = shape2::Mesh::new(
             &instance,
