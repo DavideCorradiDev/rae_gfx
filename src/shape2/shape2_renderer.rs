@@ -110,7 +110,8 @@ pub struct RenderPipelineDescriptor {
     pub color_blend: core::BlendDescriptor,
     pub alpha_blend: core::BlendDescriptor,
     pub write_mask: core::ColorWrite,
-    pub sample_count: u32,
+    pub color_buffer_format: core::ColorBufferFormat,
+    pub sample_count: core::SampleCount,
 }
 
 impl Default for RenderPipelineDescriptor {
@@ -127,6 +128,7 @@ impl Default for RenderPipelineDescriptor {
                 operation: core::BlendOperation::Max,
             },
             write_mask: core::ColorWrite::ALL,
+            color_buffer_format: core::ColorBufferFormat::default(),
             sample_count: 1,
         }
     }
@@ -135,10 +137,12 @@ impl Default for RenderPipelineDescriptor {
 #[derive(Debug)]
 pub struct RenderPipeline {
     pipeline: core::RenderPipeline,
+    sample_count: core::SampleCount,
+    color_buffer_format: core::ColorBufferFormat,
 }
 
 impl RenderPipeline {
-    pub fn new(instance: &core::Instance, config: &RenderPipelineDescriptor) -> Self {
+    pub fn new(instance: &core::Instance, desc: &RenderPipelineDescriptor) -> Self {
         let pipeline_layout = core::PipelineLayout::new(
             &instance,
             &core::PipelineLayoutDescriptor {
@@ -178,10 +182,10 @@ impl RenderPipeline {
                 }),
                 primitive_topology: core::PrimitiveTopology::TriangleList,
                 color_states: &[core::ColorStateDescriptor {
-                    format: instance.color_format(),
-                    color_blend: config.color_blend.clone(),
-                    alpha_blend: config.alpha_blend.clone(),
-                    write_mask: config.write_mask,
+                    format: core::TextureFormat::from(desc.color_buffer_format),
+                    color_blend: desc.color_blend.clone(),
+                    alpha_blend: desc.alpha_blend.clone(),
+                    write_mask: desc.write_mask,
                 }],
                 depth_stencil_state: None,
                 vertex_state: core::VertexStateDescriptor {
@@ -196,12 +200,24 @@ impl RenderPipeline {
                         }],
                     }],
                 },
-                sample_count: config.sample_count,
+                sample_count: desc.sample_count,
                 sample_mask: !0,
                 alpha_to_coverage_enabled: false,
             },
         );
-        Self { pipeline }
+        Self {
+            pipeline,
+            sample_count: desc.sample_count,
+            color_buffer_format: desc.color_buffer_format,
+        }
+    }
+
+    pub fn render_pass_requirements(&self) -> core::RenderPassRequirements {
+        core::RenderPassRequirements {
+            sample_count: self.sample_count,
+            color_buffer_formats: vec![self.color_buffer_format],
+            depth_stencil_buffer_format: None,
+        }
     }
 }
 

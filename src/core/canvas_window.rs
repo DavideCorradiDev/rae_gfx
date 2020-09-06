@@ -1,3 +1,5 @@
+use std::default::Default;
+
 use rae_app::{
     event::EventLoop,
     window,
@@ -5,14 +7,37 @@ use rae_app::{
 };
 
 use super::{
-    Canvas, Instance, PresentMode, RenderFrame, Surface, SwapChain, SwapChainDescriptor,
-    SwapChainError, TextureFormat, TextureUsage,
+    Canvas, CanvasDepthStencilBuffer, CanvasFrame, CanvasSwapChainFrame, ColorBufferFormat,
+    DepthStencilBufferFormat, Extent3d, Instance, PresentMode, SampleCount, Surface, SwapChain,
+    SwapChainDescriptor, SwapChainError, Texture, TextureDescriptor, TextureDimension,
+    TextureFormat, TextureUsage, TextureView, TextureViewDescriptor,
 };
+
+#[derive(Debug, PartialEq, Clone, serde::Serialize, serde::Deserialize)]
+pub struct CanvasWindowDescriptor {
+    pub sample_count: SampleCount,
+    pub color_buffer_format: ColorBufferFormat,
+    pub depth_stencil_buffer_format: DepthStencilBufferFormat,
+}
+
+impl Default for CanvasWindowDescriptor {
+    fn default() -> Self {
+        Self {
+            sample_count: 1,
+            color_buffer_format: ColorBufferFormat::default(),
+            depth_stencil_buffer_format: DepthStencilBufferFormat::Depth32Float,
+        }
+    }
+}
 
 #[derive(Debug)]
 pub struct CanvasWindow {
-    color_buffer_format: TextureFormat,
     surface_size: window::PhysicalSize<u32>,
+    sample_count: SampleCount,
+    depth_stencil_buffer_format: DepthStencilBufferFormat,
+    depth_stencil_buffer: TextureView,
+    color_buffer_format: ColorBufferFormat,
+    backbuffer: Option<TextureView>,
     swap_chain: SwapChain,
     surface: Surface,
     window: Window,
@@ -23,15 +48,20 @@ impl CanvasWindow {
     pub unsafe fn new<T: 'static>(
         instance: &Instance,
         event_loop: &EventLoop<T>,
+        desc: &CanvasWindowDescriptor,
     ) -> Result<Self, OsError> {
         let window = Window::new(event_loop)?;
-        Ok(Self::from_window(instance, window))
+        Ok(Self::from_window(instance, window, desc))
     }
 
     // Unsafe: surface creation.
-    pub unsafe fn from_window(instance: &Instance, window: Window) -> Self {
+    pub unsafe fn from_window(
+        instance: &Instance,
+        window: Window,
+        desc: &CanvasWindowDescriptor,
+    ) -> Self {
         let surface = Surface::new(&instance, &window);
-        Self::from_window_and_surface(instance, window, surface)
+        Self::from_window_and_surface(instance, window, surface, desc)
     }
 
     // Unsafe: surface must correspond to the window.
@@ -39,29 +69,54 @@ impl CanvasWindow {
         instance: &Instance,
         window: Window,
         surface: Surface,
+        desc: &CanvasWindowDescriptor,
     ) -> Self {
         let surface_size = window.inner_size();
-        let color_buffer_format = instance.color_format();
-        let swap_chain =
-            Self::create_swap_chain(instance, &surface, &surface_size, color_buffer_format);
+        let depth_stencil_buffer = Self::create_depth_stencil_buffer(
+            instance,
+            &surface_size,
+            desc.depth_stencil_buffer_format,
+            desc.sample_count,
+        );
+        let (swap_chain, backbuffer) = Self::create_swap_chain(
+            instance,
+            &surface,
+            &surface_size,
+            desc.color_buffer_format,
+            desc.sample_count,
+        );
         Self {
-            color_buffer_format,
             surface_size,
+            sample_count: desc.sample_count,
+            depth_stencil_buffer_format: desc.depth_stencil_buffer_format,
+            depth_stencil_buffer,
+            color_buffer_format: desc.color_buffer_format,
+            backbuffer,
             swap_chain,
             surface,
             window,
         }
     }
 
-    pub fn reconfigure_swap_chain(&mut self, instance: &Instance) {
+    pub fn update_buffers(&mut self, instance: &Instance) {
         let current_size = self.inner_size();
         if self.surface_size != current_size {
-            self.swap_chain = Self::create_swap_chain(
+            let depth_stencil_buffer = Self::create_depth_stencil_buffer(
+                instance,
+                &current_size,
+                self.depth_stencil_buffer_format,
+                self.sample_count,
+            );
+            let (swap_chain, backbuffer) = Self::create_swap_chain(
                 instance,
                 &self.surface,
                 &current_size,
                 self.color_buffer_format,
+                self.sample_count,
             );
+            self.depth_stencil_buffer = depth_stencil_buffer;
+            self.swap_chain = swap_chain;
+            self.backbuffer = backbuffer;
             self.surface_size = current_size;
         }
     }
@@ -106,7 +161,7 @@ impl CanvasWindow {
         S: Into<window::Size>,
     {
         self.window.set_inner_size(size);
-        self.reconfigure_swap_chain(instance);
+        self.update_buffers(instance);
     }
 
     pub fn set_min_inner_size<S>(&mut self, instance: &Instance, min_size: Option<S>)
@@ -114,7 +169,7 @@ impl CanvasWindow {
         S: Into<window::Size>,
     {
         self.window.set_min_inner_size(min_size);
-        self.reconfigure_swap_chain(instance);
+        self.update_buffers(instance);
     }
 
     pub fn set_max_inner_size<S>(&mut self, instance: &Instance, max_size: Option<S>)
@@ -122,7 +177,7 @@ impl CanvasWindow {
         S: Into<window::Size>,
     {
         self.window.set_max_inner_size(max_size);
-        self.reconfigure_swap_chain(instance);
+        self.update_buffers(instance);
     }
 
     pub fn set_title(&self, title: &str) {
@@ -191,37 +246,99 @@ impl CanvasWindow {
         self.window.set_cursor_visible(visible)
     }
 
+    fn create_depth_stencil_buffer(
+        instance: &Instance,
+        size: &window::PhysicalSize<u32>,
+        format: DepthStencilBufferFormat,
+        sample_count: SampleCount,
+    ) -> TextureView {
+        let texture = Texture::new(
+            instance,
+            &TextureDescriptor {
+                size: Extent3d {
+                    width: size.width,
+                    height: size.height,
+                    depth: 1,
+                },
+                mip_level_count: 1,
+                sample_count,
+                dimension: TextureDimension::D2,
+                format: TextureFormat::from(format),
+                usage: TextureUsage::OUTPUT_ATTACHMENT,
+                label: None,
+            },
+        );
+        texture.create_view(&TextureViewDescriptor::default())
+    }
+
     fn create_swap_chain(
         instance: &Instance,
         surface: &Surface,
         size: &window::PhysicalSize<u32>,
-        color_buffer_format: TextureFormat,
-    ) -> SwapChain {
-        SwapChain::new(
+        format: ColorBufferFormat,
+        sample_count: SampleCount,
+    ) -> (SwapChain, Option<TextureView>) {
+        let usage = TextureUsage::OUTPUT_ATTACHMENT;
+        let format = TextureFormat::from(format);
+        let width = size.width;
+        let height = size.height;
+        let swap_chain = SwapChain::new(
             instance,
             surface,
             &SwapChainDescriptor {
-                usage: TextureUsage::OUTPUT_ATTACHMENT,
-                format: color_buffer_format,
-                width: size.width,
-                height: size.height,
+                usage,
+                format,
+                width,
+                height,
                 present_mode: PresentMode::Mailbox,
             },
-        )
+        );
+        let backbuffer = if sample_count > 1 {
+            let backbuffer_texture = Texture::new(
+                instance,
+                &TextureDescriptor {
+                    size: Extent3d {
+                        width,
+                        height,
+                        depth: 1,
+                    },
+                    mip_level_count: 1,
+                    sample_count,
+                    dimension: TextureDimension::D2,
+                    format,
+                    usage,
+                    label: None,
+                },
+            );
+            Some(backbuffer_texture.create_view(&TextureViewDescriptor::default()))
+        } else {
+            None
+        };
+        (swap_chain, backbuffer)
     }
 }
 
 impl Canvas for CanvasWindow {
-    fn get_render_frame(&mut self) -> Result<RenderFrame, SwapChainError> {
+    fn current_frame(&mut self) -> Result<CanvasFrame, SwapChainError> {
         let swap_chain_frame = self.swap_chain.get_current_frame()?;
-        Ok(RenderFrame::from_parts(
-            Some(swap_chain_frame),
-            None,
-            None,
-            None,
-            None,
-            None,
-        ))
+        let backbuffer = match self.backbuffer {
+            Some(ref v) => Some(v),
+            None => None,
+        };
+        Ok(CanvasFrame {
+            swap_chain_frame: Some(CanvasSwapChainFrame {
+                frame: swap_chain_frame,
+                backbuffer,
+                format: self.color_buffer_format,
+                sample_count: self.sample_count,
+            }),
+            color_buffers: Vec::new(),
+            depth_stencil_buffer: Some(CanvasDepthStencilBuffer {
+                buffer: &self.depth_stencil_buffer,
+                format: self.depth_stencil_buffer_format,
+                sample_count: self.sample_count,
+            }),
+        })
     }
 }
 
@@ -243,7 +360,9 @@ mod tests {
             .with_visible(false)
             .build(&event_loop)
             .unwrap();
-        let _canvas_window = unsafe { CanvasWindow::from_window(&instance, window) };
+        let _canvas_window = unsafe {
+            CanvasWindow::from_window(&instance, window, &CanvasWindowDescriptor::default())
+        };
     }
 
     #[test]
@@ -256,8 +375,14 @@ mod tests {
         let (instance, surface) = unsafe {
             Instance::new_with_compatible_window(&InstanceDescriptor::default(), &window).unwrap()
         };
-        let _canvas_window =
-            unsafe { CanvasWindow::from_window_and_surface(&instance, window, surface) };
+        let _canvas_window = unsafe {
+            CanvasWindow::from_window_and_surface(
+                &instance,
+                window,
+                surface,
+                &CanvasWindowDescriptor::default(),
+            )
+        };
     }
 
     #[test]
@@ -271,6 +396,7 @@ mod tests {
                     .with_visible(false)
                     .build(&event_loop)
                     .unwrap(),
+                &CanvasWindowDescriptor::default(),
             )
         };
         let window2 = unsafe {
@@ -280,6 +406,7 @@ mod tests {
                     .with_visible(false)
                     .build(&event_loop)
                     .unwrap(),
+                &CanvasWindowDescriptor::default(),
             )
         };
         expect_that!(&window1.id(), not(eq(window2.id())));
@@ -295,7 +422,14 @@ mod tests {
         let (instance, surface) = unsafe {
             Instance::new_with_compatible_window(&InstanceDescriptor::default(), &window1).unwrap()
         };
-        let window1 = unsafe { CanvasWindow::from_window_and_surface(&instance, window1, surface) };
+        let window1 = unsafe {
+            CanvasWindow::from_window_and_surface(
+                &instance,
+                window1,
+                surface,
+                &CanvasWindowDescriptor::default(),
+            )
+        };
         let window2 = unsafe {
             CanvasWindow::from_window(
                 &instance,
@@ -303,6 +437,7 @@ mod tests {
                     .with_visible(false)
                     .build(&event_loop)
                     .unwrap(),
+                &CanvasWindowDescriptor::default(),
             )
         };
         expect_that!(&window1.id(), not(eq(window2.id())));

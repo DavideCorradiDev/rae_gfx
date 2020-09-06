@@ -2,15 +2,17 @@ pub use wgpu::{
     include_spirv, util::BufferInitDescriptor, AdapterInfo, BackendBit as Backend,
     BindGroupDescriptor, BindGroupLayoutDescriptor, BlendDescriptor, BlendFactor, BlendOperation,
     BufferAddress, BufferDescriptor, BufferSlice, BufferUsage, Color, ColorStateDescriptor,
-    ColorWrite, CommandBuffer, CommandEncoderDescriptor, CullMode, Features, FrontFace,
-    IndexFormat, InputStepMode, Limits, LoadOp, Maintain, Operations, PipelineLayoutDescriptor,
-    PowerPreference, PresentMode, PrimitiveTopology, ProgrammableStageDescriptor,
-    PushConstantRange, RasterizationStateDescriptor, RenderBundleEncoderDescriptor, RenderPass,
+    ColorWrite, CommandBuffer, CommandEncoderDescriptor, CompareFunction, CullMode,
+    DepthStencilStateDescriptor, Extent3d, Features, FrontFace, IndexFormat, InputStepMode, Limits,
+    LoadOp, Maintain, Operations, PipelineLayoutDescriptor, PowerPreference, PresentMode,
+    PrimitiveTopology, ProgrammableStageDescriptor, PushConstantRange,
+    RasterizationStateDescriptor, RenderBundleEncoderDescriptor, RenderPass,
     RenderPassColorAttachmentDescriptor, RenderPassDepthStencilAttachmentDescriptor,
     RenderPassDescriptor, RenderPipelineDescriptor, SamplerDescriptor, ShaderModuleSource,
-    ShaderStage, SwapChainDescriptor, SwapChainError, SwapChainFrame, SwapChainTexture,
-    TextureDescriptor, TextureFormat, TextureUsage, TextureView, VertexAttributeDescriptor,
-    VertexBufferDescriptor, VertexFormat, VertexStateDescriptor,
+    ShaderStage, StencilStateDescriptor, SwapChainDescriptor, SwapChainError, SwapChainFrame,
+    SwapChainTexture, TextureDescriptor, TextureDimension, TextureFormat, TextureUsage,
+    TextureView, TextureViewDescriptor, VertexAttributeDescriptor, VertexBufferDescriptor,
+    VertexFormat, VertexStateDescriptor,
 };
 
 mod instance;
@@ -21,9 +23,6 @@ pub use canvas::*;
 
 mod canvas_window;
 pub use canvas_window::*;
-
-mod render_frame;
-pub use render_frame::*;
 
 mod command_sequence;
 pub use command_sequence::*;

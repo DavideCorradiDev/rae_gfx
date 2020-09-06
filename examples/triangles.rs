@@ -14,8 +14,9 @@ use rae_math::{
 
 use rae_gfx::{
     core::{
-        Canvas, CanvasWindow, Color, CommandSequence, Instance, InstanceCreationError,
-        InstanceDescriptor, SwapChainError,
+        Canvas, CanvasWindow, CanvasWindowDescriptor, Color, CommandSequence, Instance,
+        InstanceCreationError, InstanceDescriptor, RenderPassOperations, SampleCount,
+        SwapChainError,
     },
     shape2,
     shape2::Renderer as Shape2Renderer,
@@ -36,6 +37,8 @@ struct ApplicationImpl {
 }
 
 impl ApplicationImpl {
+    const SAMPLE_COUNT: SampleCount = 8;
+
     pub fn generate_push_constant(&self) -> shape2::PushConstants {
         let object_transform = Similarity::<f32>::from_parts(
             Translation::new(self.current_position.x, self.current_position.y),
@@ -65,12 +68,25 @@ impl EventHandler<ApplicationError, ApplicationEvent> for ApplicationImpl {
                 &InstanceDescriptor::high_performance(),
                 &window,
             )?;
-            let window = CanvasWindow::from_window_and_surface(&instance, window, surface);
+            let window = CanvasWindow::from_window_and_surface(
+                &instance,
+                window,
+                surface,
+                &CanvasWindowDescriptor {
+                    sample_count: Self::SAMPLE_COUNT,
+                    ..CanvasWindowDescriptor::default()
+                },
+            );
             (window, instance)
         };
 
-        let pipeline =
-            shape2::RenderPipeline::new(&instance, &shape2::RenderPipelineDescriptor::default());
+        let pipeline = shape2::RenderPipeline::new(
+            &instance,
+            &shape2::RenderPipelineDescriptor {
+                sample_count: Self::SAMPLE_COUNT,
+                ..shape2::RenderPipelineDescriptor::default()
+            },
+        );
 
         let triangle_mesh = shape2::Mesh::new(
             &instance,
@@ -84,7 +100,8 @@ impl EventHandler<ApplicationError, ApplicationEvent> for ApplicationImpl {
 
         let window_size = window.inner_size();
 
-        // This matrix will flip the y axis, so that screen coordinates follow mouse coordinates.
+        // This matrix will flip the y axis, so that screen coordinates follow mouse
+        // coordinates.
         let projection_transform = OrthographicProjection::new(
             0.,
             window_size.width as f32,
@@ -125,7 +142,7 @@ impl EventHandler<ApplicationError, ApplicationEvent> for ApplicationImpl {
         size: window::PhysicalSize<u32>,
     ) -> Result<ControlFlow, Self::Error> {
         if wid == self.window.id() {
-            self.window.reconfigure_swap_chain(&self.instance);
+            self.window.update_buffers(&self.instance);
             self.projection_transform = OrthographicProjection::new(
                 0.,
                 1f32.max(size.width as f32),
@@ -181,15 +198,37 @@ impl EventHandler<ApplicationError, ApplicationEvent> for ApplicationImpl {
         for triangle_constant in &self.saved_triangle_constants {
             elements.push((&self.triangle_mesh, triangle_constant));
         }
-
         let current_triangle_constant = self.generate_push_constant();
-        elements.push((&self.triangle_mesh, &current_triangle_constant));
 
-        let frame = self.window.get_render_frame()?;
+        let frame = self.window.current_frame()?;
         let mut cmd_sequence = CommandSequence::new(&self.instance);
         {
-            let mut rpass = cmd_sequence.begin_render_pass(&frame);
+            let mut rpass = cmd_sequence.begin_render_pass(
+                &frame,
+                &self.pipeline.render_pass_requirements(),
+                &RenderPassOperations::default(),
+            );
             rpass.draw_shape2_array(&self.pipeline, &elements);
+        }
+        {
+            // Technically this could be done in the same render pass, just showing how to
+            // combine multiple render passes keeping what was rendered in the previous one.
+            let mut rpass = cmd_sequence.begin_render_pass(
+                &frame,
+                &self.pipeline.render_pass_requirements(),
+                &RenderPassOperations {
+                    swap_chain_frame_operations: Some(rae_gfx::core::Operations {
+                        load: rae_gfx::core::LoadOp::Load,
+                        store: true,
+                    }),
+                    ..RenderPassOperations::default()
+                },
+            );
+            rpass.draw_shape2(
+                &self.pipeline,
+                &self.triangle_mesh,
+                &current_triangle_constant,
+            );
         }
         cmd_sequence.submit(&self.instance);
         Ok(ControlFlow::Continue)
