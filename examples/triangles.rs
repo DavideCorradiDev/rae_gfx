@@ -84,7 +84,8 @@ impl EventHandler<ApplicationError, ApplicationEvent> for ApplicationImpl {
 
         let window_size = window.inner_size();
 
-        // This matrix will flip the y axis, so that screen coordinates follow mouse coordinates.
+        // This matrix will flip the y axis, so that screen coordinates follow mouse
+        // coordinates.
         let projection_transform = OrthographicProjection::new(
             0.,
             window_size.width as f32,
