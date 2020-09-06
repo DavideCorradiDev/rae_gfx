@@ -1,9 +1,10 @@
 use std::{default::Default, iter};
 
 use super::{
-    CanvasFrame, Color, CommandEncoder, CommandEncoderDescriptor, Instance, Operations, RenderPass,
-    RenderPassColorAttachmentDescriptor, RenderPassDepthStencilAttachmentDescriptor,
-    RenderPassDescriptor, SampleCount, TextureFormat,
+    CanvasFrame, ColorOperations, CommandEncoder, CommandEncoderDescriptor, DepthOperations,
+    Instance, Operations, RenderPass, RenderPassColorAttachmentDescriptor,
+    RenderPassDepthStencilAttachmentDescriptor, RenderPassDescriptor, SampleCount,
+    StencilOperations, TextureFormat,
 };
 
 #[derive(Debug, PartialEq, Clone)]
@@ -15,10 +16,10 @@ pub struct RenderPassRequirements {
 
 #[derive(Debug, PartialEq, Clone)]
 pub struct RenderPassOperations {
-    pub swap_chain_frame_operations: Option<Operations<Color>>,
-    pub color_operations: Vec<Operations<Color>>,
-    pub depth_operations: Option<Operations<f32>>,
-    pub stencil_operations: Option<Operations<u32>>,
+    pub swap_chain_frame_operations: Option<ColorOperations>,
+    pub color_operations: Vec<ColorOperations>,
+    pub depth_operations: Option<DepthOperations>,
+    pub stencil_operations: Option<StencilOperations>,
 }
 
 impl Default for RenderPassOperations {

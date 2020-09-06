@@ -11,13 +11,16 @@ use raw_window_handle::HasRawWindowHandle;
 
 use super::{
     AdapterInfo, Backend, BindGroupDescriptor, BindGroupLayoutDescriptor, BufferDescriptor,
-    BufferInitDescriptor, CommandBuffer, CommandEncoderDescriptor, Features, Limits, Maintain,
-    PipelineLayoutDescriptor, PowerPreference, RenderBundleEncoderDescriptor,
+    BufferInitDescriptor, Color, CommandBuffer, CommandEncoderDescriptor, Features, Limits,
+    Maintain, Operations, PipelineLayoutDescriptor, PowerPreference, RenderBundleEncoderDescriptor,
     RenderPipelineDescriptor, SamplerDescriptor, ShaderModuleSource, SwapChainDescriptor,
     TextureDescriptor, TextureFormat,
 };
 
 pub type SampleCount = u32;
+pub type ColorOperations = Operations<Color>;
+pub type DepthOperations = Operations<f32>;
+pub type StencilOperations = Operations<u32>;
 
 #[derive(Debug, PartialEq, Eq, Clone, serde::Serialize, serde::Deserialize)]
 pub struct InstanceDescriptor {
