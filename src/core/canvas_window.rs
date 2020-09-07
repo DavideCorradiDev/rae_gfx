@@ -31,6 +31,13 @@ impl Default for CanvasWindowDescriptor {
 }
 
 #[derive(Debug)]
+struct ColorBuffer {
+    format: ColorBufferFormat,
+    backbuffer: Option<TextureView>,
+    swap_chain: SwapChain,
+}
+
+#[derive(Debug)]
 struct DepthStencilBuffer {
     buffer: TextureView,
     format: DepthStencilBufferFormat,
@@ -41,9 +48,7 @@ pub struct CanvasWindow {
     surface_size: window::PhysicalSize<u32>,
     sample_count: SampleCount,
     depth_stencil_buffer: Option<DepthStencilBuffer>,
-    color_buffer_format: ColorBufferFormat,
-    backbuffer: Option<TextureView>,
-    swap_chain: SwapChain,
+    color_buffer: ColorBuffer,
     surface: Surface,
     window: Window,
 }
@@ -83,7 +88,7 @@ impl CanvasWindow {
             desc.depth_stencil_buffer_format,
             desc.sample_count,
         );
-        let (swap_chain, backbuffer) = Self::create_swap_chain(
+        let color_buffer = Self::create_color_buffer(
             instance,
             &surface,
             &surface_size,
@@ -94,16 +99,14 @@ impl CanvasWindow {
             surface_size,
             sample_count: desc.sample_count,
             depth_stencil_buffer,
-            color_buffer_format: desc.color_buffer_format,
-            backbuffer,
-            swap_chain,
+            color_buffer,
             surface,
             window,
         }
     }
 
     pub fn color_buffer_format(&self) -> ColorBufferFormat {
-        self.color_buffer_format
+        self.color_buffer.format
     }
 
     pub fn depth_stencil_buffer_format(&self) -> Option<DepthStencilBufferFormat> {
@@ -116,22 +119,19 @@ impl CanvasWindow {
     pub fn update_buffers(&mut self, instance: &Instance) {
         let current_size = self.inner_size();
         if self.surface_size != current_size {
-            let depth_stencil_buffer = Self::create_depth_stencil_buffer(
+            self.depth_stencil_buffer = Self::create_depth_stencil_buffer(
                 instance,
                 &current_size,
                 self.depth_stencil_buffer_format(),
                 self.sample_count,
             );
-            let (swap_chain, backbuffer) = Self::create_swap_chain(
+            self.color_buffer = Self::create_color_buffer(
                 instance,
                 &self.surface,
                 &current_size,
-                self.color_buffer_format,
+                self.color_buffer_format(),
                 self.sample_count,
             );
-            self.depth_stencil_buffer = depth_stencil_buffer;
-            self.swap_chain = swap_chain;
-            self.backbuffer = backbuffer;
             self.surface_size = current_size;
         }
     }
@@ -294,15 +294,15 @@ impl CanvasWindow {
         }
     }
 
-    fn create_swap_chain(
+    fn create_color_buffer(
         instance: &Instance,
         surface: &Surface,
         size: &window::PhysicalSize<u32>,
         format: ColorBufferFormat,
         sample_count: SampleCount,
-    ) -> (SwapChain, Option<TextureView>) {
+    ) -> ColorBuffer {
         let usage = TextureUsage::OUTPUT_ATTACHMENT;
-        let format = TextureFormat::from(format);
+        let texture_format = TextureFormat::from(format);
         let width = size.width;
         let height = size.height;
         let swap_chain = SwapChain::new(
@@ -310,7 +310,7 @@ impl CanvasWindow {
             surface,
             &SwapChainDescriptor {
                 usage,
-                format,
+                format: texture_format,
                 width,
                 height,
                 present_mode: PresentMode::Mailbox,
@@ -328,7 +328,7 @@ impl CanvasWindow {
                     mip_level_count: 1,
                     sample_count,
                     dimension: TextureDimension::D2,
-                    format,
+                    format: texture_format,
                     usage,
                     label: None,
                 },
@@ -337,16 +337,28 @@ impl CanvasWindow {
         } else {
             None
         };
-        (swap_chain, backbuffer)
+        ColorBuffer {
+            format,
+            backbuffer,
+            swap_chain,
+        }
     }
 }
 
 impl Canvas for CanvasWindow {
     fn current_frame(&mut self) -> Result<CanvasFrame, SwapChainError> {
-        let swap_chain_frame = self.swap_chain.get_current_frame()?;
-        let backbuffer = match self.backbuffer {
-            Some(ref v) => Some(v),
-            None => None,
+        let swap_chain_frame = {
+            let frame = self.color_buffer.swap_chain.get_current_frame()?;
+            let backbuffer = match self.color_buffer.backbuffer {
+                Some(ref v) => Some(v),
+                None => None,
+            };
+            Some(CanvasSwapChainFrame {
+                frame,
+                backbuffer,
+                format: self.color_buffer.format,
+                sample_count: self.sample_count,
+            })
         };
         let depth_stencil_buffer = match &self.depth_stencil_buffer {
             Some(depth_stencil_buffer) => Some(CanvasDepthStencilBuffer {
@@ -357,12 +369,7 @@ impl Canvas for CanvasWindow {
             None => None,
         };
         Ok(CanvasFrame {
-            swap_chain_frame: Some(CanvasSwapChainFrame {
-                frame: swap_chain_frame,
-                backbuffer,
-                format: self.color_buffer_format,
-                sample_count: self.sample_count,
-            }),
+            swap_chain_frame,
             color_buffers: Vec::new(),
             depth_stencil_buffer,
         })
