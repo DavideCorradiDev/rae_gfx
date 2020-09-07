@@ -39,8 +39,8 @@ struct ColorBuffer {
 
 #[derive(Debug)]
 struct DepthStencilBuffer {
-    buffer: TextureView,
     format: DepthStencilBufferFormat,
+    buffer: TextureView,
 }
 
 #[derive(Debug)]

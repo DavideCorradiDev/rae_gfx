@@ -194,22 +194,29 @@ impl EventHandler<ApplicationError, ApplicationEvent> for ApplicationImpl {
             self.current_angle = self.current_angle - std::f32::consts::PI * 2.;
         }
 
-        let mut elements = Vec::new();
-        for triangle_constant in &self.saved_triangle_constants {
-            elements.push((&self.triangle_mesh, triangle_constant));
+        let mut draw_static_triangle_commands = Vec::new();
+        for saved_triangle_constant in self.saved_triangle_constants.iter() {
+            draw_static_triangle_commands.push(shape2::DrawMesh {
+                mesh: &self.triangle_mesh,
+                index_range: 0..self.triangle_mesh.index_count(),
+                constants: &saved_triangle_constant,
+            })
         }
-        let current_triangle_constant = self.generate_push_constant();
+
+        let current_triangle_constants = self.generate_push_constant();
 
         let frame = self.window.current_frame()?;
         let mut cmd_sequence = CommandSequence::new(&self.instance);
+
         {
             let mut rpass = cmd_sequence.begin_render_pass(
                 &frame,
                 &self.pipeline.render_pass_requirements(),
                 &RenderPassOperations::default(),
             );
-            rpass.draw_shape2_array(&self.pipeline, &elements);
+            rpass.draw_shape2(&self.pipeline, draw_static_triangle_commands.as_slice());
         }
+
         {
             // Technically this could be done in the same render pass, just showing how to
             // combine multiple render passes keeping what was rendered in the previous one.
@@ -226,10 +233,14 @@ impl EventHandler<ApplicationError, ApplicationEvent> for ApplicationImpl {
             );
             rpass.draw_shape2(
                 &self.pipeline,
-                &self.triangle_mesh,
-                &current_triangle_constant,
+                &[shape2::DrawMesh {
+                    mesh: &self.triangle_mesh,
+                    index_range: 0..self.triangle_mesh.index_count(),
+                    constants: &current_triangle_constants,
+                }],
             );
         }
+
         cmd_sequence.submit(&self.instance);
         Ok(ControlFlow::Continue)
     }
