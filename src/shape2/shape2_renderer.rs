@@ -1,4 +1,5 @@
-use std::default::Default;
+use ::core::{iter::IntoIterator, ops::Range};
+use std::{borrow::Borrow, default::Default};
 
 use num_traits::Zero;
 
@@ -64,6 +65,10 @@ impl Mesh {
             index_buffer,
             index_count,
         }
+    }
+
+    pub fn index_count(&self) -> u32 {
+        self.index_count
     }
 }
 
@@ -221,45 +226,33 @@ impl RenderPipeline {
     }
 }
 
+#[derive(Debug)]
+pub struct DrawMesh<'a> {
+    pub mesh: &'a Mesh,
+    pub index_range: Range<u32>,
+    pub constants: &'a PushConstants,
+}
+
 pub trait Renderer<'a> {
-    fn draw_shape2(
-        &mut self,
-        pipeline: &'a RenderPipeline,
-        mesh: &'a Mesh,
-        constants: &'a PushConstants,
-    );
-    fn draw_shape2_array(
-        &mut self,
-        pipeline: &'a RenderPipeline,
-        meshes: &'a [(&'a Mesh, &'a PushConstants)],
-    );
+    fn draw_shape2<It>(&mut self, pipeline: &'a RenderPipeline, draw_mesh_commands: It)
+    where
+        It: IntoIterator,
+        It::Item: Borrow<DrawMesh<'a>>;
 }
 
 impl<'a> Renderer<'a> for core::RenderPass<'a> {
-    fn draw_shape2(
-        &mut self,
-        pipeline: &'a RenderPipeline,
-        mesh: &'a Mesh,
-        constants: &'a PushConstants,
-    ) {
+    fn draw_shape2<It>(&mut self, pipeline: &'a RenderPipeline, draw_mesh_commands: It)
+    where
+        It: IntoIterator,
+        It::Item: Borrow<DrawMesh<'a>>,
+    {
         self.set_pipeline(&pipeline.pipeline);
-        self.set_index_buffer(mesh.index_buffer.slice(..));
-        self.set_vertex_buffer(0, mesh.vertex_buffer.slice(..));
-        self.set_push_constants(core::ShaderStage::VERTEX, 0, constants.as_slice());
-        self.draw_indexed(0..mesh.index_count as u32, 0, 0..1);
-    }
-
-    fn draw_shape2_array(
-        &mut self,
-        pipeline: &'a RenderPipeline,
-        meshes: &'a [(&'a Mesh, &'a PushConstants)],
-    ) {
-        self.set_pipeline(&pipeline.pipeline);
-        for (mesh, constants) in meshes.iter() {
-            self.set_index_buffer(mesh.index_buffer.slice(..));
-            self.set_vertex_buffer(0, mesh.vertex_buffer.slice(..));
-            self.set_push_constants(core::ShaderStage::VERTEX, 0, constants.as_slice());
-            self.draw_indexed(0..mesh.index_count as u32, 0, 0..1);
+        for draw_mesh in draw_mesh_commands.into_iter() {
+            let draw_mesh = draw_mesh.borrow();
+            self.set_index_buffer(draw_mesh.mesh.index_buffer.slice(..));
+            self.set_vertex_buffer(0, draw_mesh.mesh.vertex_buffer.slice(..));
+            self.set_push_constants(core::ShaderStage::VERTEX, 0, draw_mesh.constants.as_slice());
+            self.draw_indexed(draw_mesh.index_range.clone(), 0, 0..1);
         }
     }
 }
