@@ -214,7 +214,7 @@ impl EventHandler<ApplicationError, ApplicationEvent> for ApplicationImpl {
                 &self.pipeline.render_pass_requirements(),
                 &RenderPassOperations::default(),
             );
-            rpass.draw_shape2(&self.pipeline, draw_static_triangle_commands.as_slice());
+            rpass.draw_shape2(&self.pipeline, draw_static_triangle_commands);
         }
 
         {
