@@ -1,5 +1,5 @@
-use ::core::ops::Range;
-use std::default::Default;
+use ::core::{iter::IntoIterator, ops::Range};
+use std::{borrow::Borrow, default::Default};
 
 use num_traits::Zero;
 
@@ -225,6 +225,7 @@ impl RenderPipeline {
         }
     }
 }
+// TODO: default rendering all indexes.
 
 #[derive(Debug)]
 pub struct DrawMesh<'a> {
@@ -234,13 +235,21 @@ pub struct DrawMesh<'a> {
 }
 
 pub trait Renderer<'a> {
-    fn draw_shape2(&mut self, pipeline: &'a RenderPipeline, draw_mesh_commands: &[DrawMesh<'a>]);
+    fn draw_shape2<It>(&mut self, pipeline: &'a RenderPipeline, draw_mesh_commands: It)
+    where
+        It: IntoIterator,
+        It::Item: Borrow<DrawMesh<'a>>;
 }
 
 impl<'a> Renderer<'a> for core::RenderPass<'a> {
-    fn draw_shape2(&mut self, pipeline: &'a RenderPipeline, draw_mesh_commands: &[DrawMesh<'a>]) {
+    fn draw_shape2<It>(&mut self, pipeline: &'a RenderPipeline, draw_mesh_commands: It)
+    where
+        It: IntoIterator,
+        It::Item: Borrow<DrawMesh<'a>>,
+    {
         self.set_pipeline(&pipeline.pipeline);
-        for draw_mesh in draw_mesh_commands.iter() {
+        for draw_mesh in draw_mesh_commands.into_iter() {
+            let draw_mesh = draw_mesh.borrow();
             self.set_index_buffer(draw_mesh.mesh.index_buffer.slice(..));
             self.set_vertex_buffer(0, draw_mesh.mesh.vertex_buffer.slice(..));
             self.set_push_constants(core::ShaderStage::VERTEX, 0, draw_mesh.constants.as_slice());
