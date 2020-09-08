@@ -225,7 +225,6 @@ impl RenderPipeline {
         }
     }
 }
-// TODO: default rendering all indexes.
 
 #[derive(Debug)]
 pub struct DrawMesh<'a> {
