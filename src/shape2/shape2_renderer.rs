@@ -28,49 +28,9 @@ unsafe impl bytemuck::Zeroable for Vertex {
 
 unsafe impl bytemuck::Pod for Vertex {}
 
-pub type Index = u16;
+pub type Index = core::Index;
 
-#[derive(Debug)]
-pub struct Mesh {
-    vertex_buffer: core::Buffer,
-    index_buffer: core::Buffer,
-    index_count: u32,
-}
-
-impl Mesh {
-    pub fn new<'a>(
-        instance: &core::Instance,
-        vertex_list: &[Vertex],
-        index_list: &[Index],
-    ) -> Self {
-        let vertex_buffer = core::Buffer::init(
-            &instance,
-            &core::BufferInitDescriptor {
-                label: None,
-                contents: bytemuck::cast_slice(vertex_list),
-                usage: core::BufferUsage::VERTEX,
-            },
-        );
-        let index_buffer = core::Buffer::init(
-            &instance,
-            &core::BufferInitDescriptor {
-                label: None,
-                contents: bytemuck::cast_slice(index_list),
-                usage: core::BufferUsage::INDEX,
-            },
-        );
-        let index_count = index_list.len() as u32;
-        Self {
-            vertex_buffer,
-            index_buffer,
-            index_count,
-        }
-    }
-
-    pub fn index_count(&self) -> u32 {
-        self.index_count
-    }
-}
+pub type Mesh = core::IndexedMesh<Vertex>;
 
 #[derive(Debug, PartialEq, Clone, Copy, serde::Serialize, serde::Deserialize)]
 pub struct PushConstants {
@@ -249,8 +209,8 @@ impl<'a> Renderer<'a> for core::RenderPass<'a> {
         self.set_pipeline(&pipeline.pipeline);
         for draw_mesh in draw_mesh_commands.into_iter() {
             let draw_mesh = draw_mesh.borrow();
-            self.set_index_buffer(draw_mesh.mesh.index_buffer.slice(..));
-            self.set_vertex_buffer(0, draw_mesh.mesh.vertex_buffer.slice(..));
+            self.set_index_buffer(draw_mesh.mesh.index_buffer().slice(..));
+            self.set_vertex_buffer(0, draw_mesh.mesh.vertex_buffer().slice(..));
             self.set_push_constants(core::ShaderStage::VERTEX, 0, draw_mesh.constants.as_slice());
             self.draw_indexed(draw_mesh.index_range.clone(), 0, 0..1);
         }

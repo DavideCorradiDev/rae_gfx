@@ -26,3 +26,6 @@ pub use canvas_window::*;
 
 mod command_sequence;
 pub use command_sequence::*;
+
+mod mesh;
+pub use mesh::*;
