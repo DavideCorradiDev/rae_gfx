@@ -46,7 +46,7 @@ impl Mesh {
         let vertex_buffer = core::Buffer::init(
             &instance,
             &core::BufferInitDescriptor {
-                label: Some("shape2_mesh_vertex_buffer"),
+                label: None,
                 contents: bytemuck::cast_slice(vertex_list),
                 usage: core::BufferUsage::VERTEX,
             },
@@ -54,7 +54,7 @@ impl Mesh {
         let index_buffer = core::Buffer::init(
             &instance,
             &core::BufferInitDescriptor {
-                label: Some("shape2_mesh_index_buffer"),
+                label: None,
                 contents: bytemuck::cast_slice(index_list),
                 usage: core::BufferUsage::INDEX,
             },
@@ -151,7 +151,7 @@ impl RenderPipeline {
         let pipeline_layout = core::PipelineLayout::new(
             &instance,
             &core::PipelineLayoutDescriptor {
-                label: Some("shape2_pipeline_layout"),
+                label: None,
                 bind_group_layouts: &[],
                 push_constant_ranges: &[core::PushConstantRange {
                     stages: core::ShaderStage::VERTEX,
@@ -170,7 +170,7 @@ impl RenderPipeline {
         let pipeline = core::RenderPipeline::new(
             &instance,
             &core::RenderPipelineDescriptor {
-                label: Some("shape2_render_pipeline"),
+                label: None,
                 layout: Some(&pipeline_layout),
                 vertex_stage: core::ProgrammableStageDescriptor {
                     module: &vs_module,
