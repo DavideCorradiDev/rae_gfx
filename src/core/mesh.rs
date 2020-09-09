@@ -1,6 +1,7 @@
+use ::core::ops::Range;
 use std::marker::PhantomData;
 
-use super::{Buffer, BufferInitDescriptor, BufferUsage, Instance};
+use super::{Buffer, BufferInitDescriptor, BufferUsage, Instance, RenderPass};
 
 pub type Index = u16;
 
@@ -39,15 +40,27 @@ impl<V: bytemuck::Pod> IndexedMesh<V> {
         }
     }
 
-    pub fn vertex_buffer(&self) -> &Buffer {
-        &self.vertex_buffer
-    }
-
-    pub fn index_buffer(&self) -> &Buffer {
-        &self.index_buffer
-    }
-
     pub fn index_count(&self) -> u32 {
         self.index_count
+    }
+}
+
+pub trait IndexedMeshRenderer<'a> {
+    fn draw_indexed_mesh<V: bytemuck::Pod>(
+        &mut self,
+        mesh: &'a IndexedMesh<V>,
+        index_range: &Range<u32>,
+    );
+}
+
+impl<'a> IndexedMeshRenderer<'a> for RenderPass<'a> {
+    fn draw_indexed_mesh<V: bytemuck::Pod>(
+        &mut self,
+        mesh: &'a IndexedMesh<V>,
+        index_range: &Range<u32>,
+    ) {
+        self.set_index_buffer(mesh.index_buffer.slice(..));
+        self.set_vertex_buffer(0, mesh.vertex_buffer.slice(..));
+        self.draw_indexed(index_range.clone(), 0, 0..1);
     }
 }
