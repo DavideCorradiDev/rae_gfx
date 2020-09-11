@@ -10,6 +10,7 @@ rae_math = { git = "https://github.com/DavideCorradiDev/rae_math.git", tag = "v0
     "serde-serialize"
 ] }
 wgpu = { version = "0.6", features = ["trace", "replay"] }
+image = { version = "0.23" }
 raw-window-handle = { version = "0.3" }
 serde = { version = "1.0", features = ["derive"] }
 futures = { version = "0.3" }

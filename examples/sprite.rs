@@ -10,8 +10,8 @@ use rae_math::geometry2::{OrthographicProjection, Projective};
 use rae_gfx::{
     core::{
         Canvas, CanvasWindow, CanvasWindowDescriptor, CommandSequence, Instance,
-        InstanceCreationError, InstanceDescriptor, RenderPassOperations, SampleCount,
-        SwapChainError,
+        InstanceCreationError, InstanceDescriptor, RenderPassOperations, SampleCount, Sampler,
+        SwapChainError, TextureView,
     },
     sprite,
     sprite::Renderer as Shape2Renderer,
@@ -23,6 +23,9 @@ struct ApplicationImpl {
     instance: Instance,
     pipeline: sprite::RenderPipeline,
     projection_transform: Projective<f32>,
+    sprite_texture: TextureView,
+    sprite_texture_sampler: Sampler,
+    sprite: sprite::Mesh,
 }
 
 impl ApplicationImpl {
