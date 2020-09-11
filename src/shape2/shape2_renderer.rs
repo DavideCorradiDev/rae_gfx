@@ -190,7 +190,7 @@ impl RenderPipeline {
 pub struct DrawCommandDescriptor<'a> {
     pub mesh: &'a Mesh,
     pub index_range: Range<u32>,
-    pub constants: &'a PushConstants,
+    pub push_constants: &'a PushConstants,
 }
 
 pub trait Renderer<'a> {
@@ -212,7 +212,7 @@ impl<'a> Renderer<'a> for core::RenderPass<'a> {
             self.set_push_constants(
                 core::ShaderStage::VERTEX,
                 0,
-                draw_command.constants.as_slice(),
+                draw_command.push_constants.as_slice(),
             );
             self.draw_indexed_mesh(draw_command.mesh, &draw_command.index_range);
         }

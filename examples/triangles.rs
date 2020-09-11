@@ -201,7 +201,7 @@ impl EventHandler<ApplicationError, ApplicationEvent> for ApplicationImpl {
             draw_static_triangle_commands.push(shape2::DrawCommandDescriptor {
                 mesh: &self.triangle_mesh,
                 index_range: 0..self.triangle_mesh.index_count(),
-                constants: &saved_triangle_constant,
+                push_constants: &saved_triangle_constant,
             })
         }
 
@@ -238,7 +238,7 @@ impl EventHandler<ApplicationError, ApplicationEvent> for ApplicationImpl {
                 iter::once(shape2::DrawCommandDescriptor {
                     mesh: &self.triangle_mesh,
                     index_range: 0..self.triangle_mesh.index_count(),
-                    constants: &current_triangle_constants,
+                    push_constants: &current_triangle_constants,
                 }),
             );
         }

@@ -255,7 +255,7 @@ impl RenderPipeline {
 pub struct DrawCommandMeshDescriptor<'a> {
     pub mesh: &'a Mesh,
     pub index_range: Range<u32>,
-    pub constants: &'a PushConstants,
+    pub push_constants: &'a PushConstants,
 }
 
 #[derive(Debug)]
@@ -264,8 +264,7 @@ where
     It: IntoIterator,
     It::Item: Into<DrawCommandMeshDescriptor<'a>>,
 {
-    pub texture: &'a core::Texture,
-    pub sample: &'a core::Sampler,
+    pub uniform_constants: &'a UniformConstants,
     pub meshes: It,
 }
 
@@ -289,12 +288,13 @@ impl<'a> Renderer<'a> for core::RenderPass<'a> {
         self.set_pipeline(&pipeline.pipeline);
         for draw_command in draw_commands.into_iter() {
             let draw_command = draw_command.into();
+            self.set_bind_group(0, &draw_command.uniform_constants.bind_group, &[]);
             for draw_mesh_command in draw_command.meshes.into_iter() {
                 let draw_mesh_command = draw_mesh_command.into();
                 self.set_push_constants(
                     core::ShaderStage::VERTEX,
                     0,
-                    draw_mesh_command.constants.as_slice(),
+                    draw_mesh_command.push_constants.as_slice(),
                 );
                 self.draw_indexed_mesh(draw_mesh_command.mesh, &draw_mesh_command.index_range);
             }
