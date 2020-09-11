@@ -46,7 +46,7 @@ impl MeshTemplates for Mesh {
             Vertex::new([width, height], [1., 1.]),
             Vertex::new([0., height], [0., 1.]),
         ];
-        let index_list = vec![0, 1, 3, 3, 1, 2];
+        let index_list = vec![0, 3, 1, 1, 3, 2];
         Self::new(instance, &vertex_list, &index_list)
     }
 }
