@@ -269,7 +269,7 @@ impl RenderPipeline {
 }
 
 #[derive(Debug)]
-pub struct DrawCommandMeshDescriptor<'a> {
+pub struct DrawMeshCommandDescriptor<'a> {
     pub mesh: &'a Mesh,
     pub index_range: Range<u32>,
     pub push_constants: &'a PushConstants,
@@ -279,10 +279,10 @@ pub struct DrawCommandMeshDescriptor<'a> {
 pub struct DrawCommandDescriptor<'a, It>
 where
     It: IntoIterator,
-    It::Item: Into<DrawCommandMeshDescriptor<'a>>,
+    It::Item: Into<DrawMeshCommandDescriptor<'a>>,
 {
     pub uniform_constants: &'a UniformConstants,
-    pub meshes: It,
+    pub draw_mesh_commands: It,
 }
 
 pub trait Renderer<'a> {
@@ -291,7 +291,7 @@ pub trait Renderer<'a> {
         It: IntoIterator,
         It::Item: Into<DrawCommandDescriptor<'a, MeshIt>>,
         MeshIt: IntoIterator,
-        MeshIt::Item: Into<DrawCommandMeshDescriptor<'a>>;
+        MeshIt::Item: Into<DrawMeshCommandDescriptor<'a>>;
 }
 
 impl<'a> Renderer<'a> for core::RenderPass<'a> {
@@ -300,13 +300,13 @@ impl<'a> Renderer<'a> for core::RenderPass<'a> {
         It: IntoIterator,
         It::Item: Into<DrawCommandDescriptor<'a, MeshIt>>,
         MeshIt: IntoIterator,
-        MeshIt::Item: Into<DrawCommandMeshDescriptor<'a>>,
+        MeshIt::Item: Into<DrawMeshCommandDescriptor<'a>>,
     {
         self.set_pipeline(&pipeline.pipeline);
         for draw_command in draw_commands.into_iter() {
             let draw_command = draw_command.into();
             self.set_bind_group(0, &draw_command.uniform_constants.bind_group, &[]);
-            for draw_mesh_command in draw_command.meshes.into_iter() {
+            for draw_mesh_command in draw_command.draw_mesh_commands.into_iter() {
                 let draw_mesh_command = draw_mesh_command.into();
                 self.set_push_constants(
                     core::ShaderStage::VERTEX,

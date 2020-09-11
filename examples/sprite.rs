@@ -1,3 +1,5 @@
+use std::iter;
+
 use rae_app::{
     application::Application,
     event::{ControlFlow, EventHandler, EventLoop},
@@ -5,13 +7,17 @@ use rae_app::{
     window::{WindowBuilder, WindowId},
 };
 
-use rae_math::geometry2::{OrthographicProjection, Projective};
+use rae_math::{
+    conversion::convert,
+    geometry2::{OrthographicProjection, Projective},
+};
 
 use rae_gfx::{
     core::{
-        AddressMode, Canvas, CanvasWindow, CanvasWindowDescriptor, CommandSequence, FilterMode,
-        Instance, InstanceCreationError, InstanceDescriptor, RenderPassOperations, SampleCount,
-        Sampler, SamplerDescriptor, SwapChainError, Texture, TextureView, TextureViewDescriptor,
+        AddressMode, Canvas, CanvasWindow, CanvasWindowDescriptor, Color, CommandSequence,
+        FilterMode, Instance, InstanceCreationError, InstanceDescriptor, RenderPassOperations,
+        SampleCount, Sampler, SamplerDescriptor, SwapChainError, Texture, TextureView,
+        TextureViewDescriptor,
     },
     sprite,
     sprite::{MeshTemplates as SpriteMeshTemplates, Renderer as SpriteRenderer},
@@ -130,14 +136,28 @@ impl EventHandler<ApplicationError, ApplicationEvent> for ApplicationImpl {
         Ok(ControlFlow::Continue)
     }
 
-    fn on_variable_update(&mut self, dt: std::time::Duration) -> Result<ControlFlow, Self::Error> {
+    fn on_variable_update(&mut self, _dt: std::time::Duration) -> Result<ControlFlow, Self::Error> {
+        let push_constants =
+            sprite::PushConstants::new(&convert(self.projection_transform), Color::WHITE);
+
         let frame = self.window.current_frame()?;
         let mut cmd_sequence = CommandSequence::new(&self.instance);
         {
-            let mut _rpass = cmd_sequence.begin_render_pass(
+            let mut rpass = cmd_sequence.begin_render_pass(
                 &frame,
                 &self.pipeline.render_pass_requirements(),
                 &RenderPassOperations::default(),
+            );
+            rpass.draw_sprite(
+                &self.pipeline,
+                iter::once(sprite::DrawCommandDescriptor {
+                    uniform_constants: &self.sprite_uniform_constants,
+                    draw_mesh_commands: iter::once(sprite::DrawMeshCommandDescriptor {
+                        mesh: &self.sprite_mesh,
+                        index_range: 0..self.sprite_mesh.index_count(),
+                        push_constants: &push_constants,
+                    }),
+                }),
             );
         }
         cmd_sequence.submit(&self.instance);
