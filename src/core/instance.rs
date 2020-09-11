@@ -430,8 +430,6 @@ impl Texture {
     }
 
     pub fn from_image(instance: &Instance, img: &image::RgbaImage) -> Self {
-        use image::GenericImageView;
-
         let img_dimensions = img.dimensions();
         let size = Extent3d {
             width: img_dimensions.0,
