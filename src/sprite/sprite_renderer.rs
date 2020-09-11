@@ -239,11 +239,18 @@ impl RenderPipeline {
                     vertex_buffers: &[core::VertexBufferDescriptor {
                         stride: std::mem::size_of::<Vertex>() as core::BufferAddress,
                         step_mode: core::InputStepMode::Vertex,
-                        attributes: &[core::VertexAttributeDescriptor {
-                            format: core::VertexFormat::Float2,
-                            offset: 0,
-                            shader_location: 0,
-                        }],
+                        attributes: &[
+                            core::VertexAttributeDescriptor {
+                                format: core::VertexFormat::Float2,
+                                offset: 0,
+                                shader_location: 0,
+                            },
+                            core::VertexAttributeDescriptor {
+                                format: core::VertexFormat::Float2,
+                                offset: 8,
+                                shader_location: 1,
+                            },
+                        ],
                     }],
                 },
                 sample_count: desc.sample_count,
