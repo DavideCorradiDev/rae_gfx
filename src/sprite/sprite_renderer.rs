@@ -34,6 +34,23 @@ pub type Index = core::Index;
 
 pub type Mesh = core::IndexedMesh<Vertex>;
 
+pub trait MeshTemplates {
+    fn textured_rect(instance: &core::Instance, width: f32, height: f32) -> Self;
+}
+
+impl MeshTemplates for Mesh {
+    fn textured_rect(instance: &core::Instance, width: f32, height: f32) -> Self {
+        let vertex_list = vec![
+            Vertex::new([0., 0.], [0., 0.]),
+            Vertex::new([width, 0.], [1., 0.]),
+            Vertex::new([width, height], [1., 1.]),
+            Vertex::new([0., height], [0., 1.]),
+        ];
+        let index_list = vec![0, 1, 3, 3, 1, 2];
+        Self::new(instance, &vertex_list, &index_list)
+    }
+}
+
 #[derive(Debug, PartialEq, Clone, Copy, serde::Serialize, serde::Deserialize)]
 pub struct PushConstants {
     transform: geometry3::HomogeneousMatrix<f32>,
