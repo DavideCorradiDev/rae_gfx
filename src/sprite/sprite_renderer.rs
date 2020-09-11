@@ -72,6 +72,66 @@ unsafe impl bytemuck::Zeroable for PushConstants {
 
 unsafe impl bytemuck::Pod for PushConstants {}
 
+fn bind_group_layout(instance: &core::Instance) -> core::BindGroupLayout {
+    core::BindGroupLayout::new(
+        instance,
+        &core::BindGroupLayoutDescriptor {
+            label: None,
+            entries: &[
+                core::BindGroupLayoutEntry {
+                    binding: 0,
+                    visibility: core::ShaderStage::FRAGMENT,
+                    ty: core::BindingType::SampledTexture {
+                        multisampled: false,
+                        component_type: core::TextureComponentType::Float,
+                        dimension: core::TextureViewDimension::D2,
+                    },
+                    count: None,
+                },
+                core::BindGroupLayoutEntry {
+                    binding: 1,
+                    visibility: core::ShaderStage::FRAGMENT,
+                    ty: core::BindingType::Sampler { comparison: false },
+                    count: None,
+                },
+            ],
+        },
+    )
+}
+
+#[derive(Debug)]
+pub struct UniformConstants {
+    bind_group: core::BindGroup,
+}
+
+impl UniformConstants {
+    pub fn new(
+        instance: &core::Instance,
+        texture: &core::TextureView,
+        sampler: &core::Sampler,
+    ) -> Self {
+        let layout = bind_group_layout(instance);
+        let bind_group = core::BindGroup::new(
+            instance,
+            &core::BindGroupDescriptor {
+                label: None,
+                layout: &layout,
+                entries: &[
+                    core::BindGroupEntry {
+                        binding: 0,
+                        resource: core::BindingResource::TextureView(texture),
+                    },
+                    core::BindGroupEntry {
+                        binding: 1,
+                        resource: core::BindingResource::Sampler(sampler),
+                    },
+                ],
+            },
+        );
+        Self { bind_group }
+    }
+}
+
 #[derive(Debug, PartialEq, Clone, serde::Serialize, serde::Deserialize)]
 pub struct RenderPipelineDescriptor {
     pub color_blend: core::BlendDescriptor,
@@ -111,30 +171,7 @@ pub struct RenderPipeline {
 
 impl RenderPipeline {
     pub fn new(instance: &core::Instance, desc: &RenderPipelineDescriptor) -> Self {
-        let bind_group_layout = core::BindGroupLayout::new(
-            instance,
-            &core::BindGroupLayoutDescriptor {
-                label: None,
-                entries: &[
-                    core::BindGroupLayoutEntry {
-                        binding: 0,
-                        visibility: core::ShaderStage::FRAGMENT,
-                        ty: core::BindingType::SampledTexture {
-                            multisampled: false,
-                            component_type: core::TextureComponentType::Float,
-                            dimension: core::TextureViewDimension::D2,
-                        },
-                        count: None,
-                    },
-                    core::BindGroupLayoutEntry {
-                        binding: 1,
-                        visibility: core::ShaderStage::FRAGMENT,
-                        ty: core::BindingType::Sampler { comparison: false },
-                        count: None,
-                    },
-                ],
-            },
-        );
+        let bind_group_layout = bind_group_layout(instance);
         let pipeline_layout = core::PipelineLayout::new(
             instance,
             &core::PipelineLayoutDescriptor {
