@@ -429,11 +429,7 @@ impl Texture {
         }
     }
 
-    pub fn from_image(
-        instance: &Instance,
-        img: &image::DynamicImage,
-        mip_level_count: u32,
-    ) -> Self {
+    pub fn from_image(instance: &Instance, img: &image::RgbaImage) -> Self {
         use image::GenericImageView;
 
         let img_dimensions = img.dimensions();
@@ -447,24 +443,21 @@ impl Texture {
             &TextureDescriptor {
                 label: None,
                 size,
-                mip_level_count,
+                mip_level_count: 1,
                 sample_count: 1,
                 dimension: TextureDimension::D2,
                 format: TextureFormat::Rgba8UnormSrgb,
                 usage: TextureUsage::SAMPLED | TextureUsage::COPY_DST,
             },
         );
-        let data = img
-            .as_flat_samples_u8()
-            .expect("Failed to extract image data");
         texture.write(
             instance,
             0,
             Origin3d::ZERO,
-            data.as_slice(),
+            img.as_flat_samples().as_slice(),
             TextureDataLayout {
                 offset: 0,
-                bytes_per_row: 4 * size.width * size.height,
+                bytes_per_row: 4 * size.height,
                 rows_per_image: 0,
             },
             size,

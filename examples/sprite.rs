@@ -11,7 +11,7 @@ use rae_gfx::{
     core::{
         Canvas, CanvasWindow, CanvasWindowDescriptor, CommandSequence, Instance,
         InstanceCreationError, InstanceDescriptor, RenderPassOperations, SampleCount, Sampler,
-        SwapChainError, TextureView,
+        SwapChainError, Texture, TextureView, TextureViewDescriptor,
     },
     sprite,
     sprite::Renderer as Shape2Renderer,
@@ -24,8 +24,8 @@ struct ApplicationImpl {
     pipeline: sprite::RenderPipeline,
     projection_transform: Projective<f32>,
     sprite_texture: TextureView,
-    sprite_texture_sampler: Sampler,
-    sprite: sprite::Mesh,
+    /* sprite_texture_sampler: Sampler,
+     * sprite: sprite::Mesh, */
 }
 
 impl ApplicationImpl {
@@ -80,11 +80,18 @@ impl EventHandler<ApplicationError, ApplicationEvent> for ApplicationImpl {
         )
         .to_projective();
 
+        let image = image::open("examples/data/gioconda.jpg")
+            .expect("Failed to load texture image")
+            .into_rgba();
+        let sprite_texture =
+            Texture::from_image(&instance, &image).create_view(&TextureViewDescriptor::default());
+
         Ok(Self {
             window,
             instance,
             pipeline,
             projection_transform,
+            sprite_texture,
         })
     }
 
