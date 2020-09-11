@@ -9,9 +9,9 @@ use rae_math::geometry2::{OrthographicProjection, Projective};
 
 use rae_gfx::{
     core::{
-        Canvas, CanvasWindow, CanvasWindowDescriptor, CommandSequence, Instance,
-        InstanceCreationError, InstanceDescriptor, RenderPassOperations, SampleCount, Sampler,
-        SwapChainError, Texture, TextureView, TextureViewDescriptor,
+        AddressMode, Canvas, CanvasWindow, CanvasWindowDescriptor, CommandSequence, FilterMode,
+        Instance, InstanceCreationError, InstanceDescriptor, RenderPassOperations, SampleCount,
+        Sampler, SamplerDescriptor, SwapChainError, Texture, TextureView, TextureViewDescriptor,
     },
     sprite,
     sprite::Renderer as Shape2Renderer,
@@ -24,8 +24,9 @@ struct ApplicationImpl {
     pipeline: sprite::RenderPipeline,
     projection_transform: Projective<f32>,
     sprite_texture: TextureView,
-    /* sprite_texture_sampler: Sampler,
-     * sprite: sprite::Mesh, */
+    sprite_sampler: Sampler,
+    sprite_uniform_constants: sprite::UniformConstants,
+    // sprite: sprite::Mesh,
 }
 
 impl ApplicationImpl {
@@ -85,6 +86,18 @@ impl EventHandler<ApplicationError, ApplicationEvent> for ApplicationImpl {
             .into_rgba();
         let sprite_texture =
             Texture::from_image(&instance, &image).create_view(&TextureViewDescriptor::default());
+        let sprite_sampler = Sampler::new(
+            &instance,
+            &SamplerDescriptor {
+                address_mode_u: AddressMode::ClampToEdge,
+                address_mode_v: AddressMode::ClampToEdge,
+                mag_filter: FilterMode::Nearest,
+                min_filter: FilterMode::Linear,
+                ..SamplerDescriptor::default()
+            },
+        );
+        let sprite_uniform_constants =
+            sprite::UniformConstants::new(&instance, &sprite_texture, &sprite_sampler);
 
         Ok(Self {
             window,
@@ -92,6 +105,8 @@ impl EventHandler<ApplicationError, ApplicationEvent> for ApplicationImpl {
             pipeline,
             projection_transform,
             sprite_texture,
+            sprite_sampler,
+            sprite_uniform_constants,
         })
     }
 
