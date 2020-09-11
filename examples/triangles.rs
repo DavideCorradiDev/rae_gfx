@@ -1,3 +1,5 @@
+use std::iter;
+
 use rand::Rng;
 
 use rae_app::{
@@ -196,7 +198,7 @@ impl EventHandler<ApplicationError, ApplicationEvent> for ApplicationImpl {
 
         let mut draw_static_triangle_commands = Vec::new();
         for saved_triangle_constant in self.saved_triangle_constants.iter() {
-            draw_static_triangle_commands.push(shape2::DrawMesh {
+            draw_static_triangle_commands.push(shape2::DrawCommandDescriptor {
                 mesh: &self.triangle_mesh,
                 index_range: 0..self.triangle_mesh.index_count(),
                 constants: &saved_triangle_constant,
@@ -233,11 +235,11 @@ impl EventHandler<ApplicationError, ApplicationEvent> for ApplicationImpl {
             );
             rpass.draw_shape2(
                 &self.pipeline,
-                &[shape2::DrawMesh {
+                iter::once(shape2::DrawCommandDescriptor {
                     mesh: &self.triangle_mesh,
                     index_range: 0..self.triangle_mesh.index_count(),
                     constants: &current_triangle_constants,
-                }],
+                }),
             );
         }
 

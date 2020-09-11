@@ -1,5 +1,5 @@
 use ::core::{iter::IntoIterator, ops::Range};
-use std::{borrow::Borrow, default::Default};
+use std::{convert::Into, default::Default};
 
 use num_traits::Zero;
 
@@ -187,30 +187,34 @@ impl RenderPipeline {
 }
 
 #[derive(Debug)]
-pub struct DrawMesh<'a> {
+pub struct DrawCommandDescriptor<'a> {
     pub mesh: &'a Mesh,
     pub index_range: Range<u32>,
     pub constants: &'a PushConstants,
 }
 
 pub trait Renderer<'a> {
-    fn draw_shape2<It>(&mut self, pipeline: &'a RenderPipeline, draw_mesh_commands: It)
+    fn draw_shape2<It>(&mut self, pipeline: &'a RenderPipeline, draw_commands: It)
     where
         It: IntoIterator,
-        It::Item: Borrow<DrawMesh<'a>>;
+        It::Item: Into<DrawCommandDescriptor<'a>>;
 }
 
 impl<'a> Renderer<'a> for core::RenderPass<'a> {
-    fn draw_shape2<It>(&mut self, pipeline: &'a RenderPipeline, draw_mesh_commands: It)
+    fn draw_shape2<It>(&mut self, pipeline: &'a RenderPipeline, draw_commands: It)
     where
         It: IntoIterator,
-        It::Item: Borrow<DrawMesh<'a>>,
+        It::Item: Into<DrawCommandDescriptor<'a>>,
     {
         self.set_pipeline(&pipeline.pipeline);
-        for draw_mesh in draw_mesh_commands.into_iter() {
-            let draw_mesh = draw_mesh.borrow();
-            self.set_push_constants(core::ShaderStage::VERTEX, 0, draw_mesh.constants.as_slice());
-            self.draw_indexed_mesh(draw_mesh.mesh, &draw_mesh.index_range);
+        for draw_command in draw_commands.into_iter() {
+            let draw_command = draw_command.into();
+            self.set_push_constants(
+                core::ShaderStage::VERTEX,
+                0,
+                draw_command.constants.as_slice(),
+            );
+            self.draw_indexed_mesh(draw_command.mesh, &draw_command.index_range);
         }
     }
 }

@@ -1,5 +1,5 @@
 use ::core::{iter::IntoIterator, ops::Range};
-use std::{borrow::Borrow, default::Default};
+use std::{convert::Into, default::Default};
 
 use num_traits::Zero;
 
@@ -104,17 +104,42 @@ impl Default for RenderPipelineDescriptor {
 #[derive(Debug)]
 pub struct RenderPipeline {
     pipeline: core::RenderPipeline,
+    bind_group_layout: core::BindGroupLayout,
     sample_count: core::SampleCount,
     color_buffer_format: core::ColorBufferFormat,
 }
 
 impl RenderPipeline {
     pub fn new(instance: &core::Instance, desc: &RenderPipelineDescriptor) -> Self {
+        let bind_group_layout = core::BindGroupLayout::new(
+            instance,
+            &core::BindGroupLayoutDescriptor {
+                label: None,
+                entries: &[
+                    core::BindGroupLayoutEntry {
+                        binding: 0,
+                        visibility: core::ShaderStage::FRAGMENT,
+                        ty: core::BindingType::SampledTexture {
+                            multisampled: false,
+                            component_type: core::TextureComponentType::Float,
+                            dimension: core::TextureViewDimension::D2,
+                        },
+                        count: None,
+                    },
+                    core::BindGroupLayoutEntry {
+                        binding: 1,
+                        visibility: core::ShaderStage::FRAGMENT,
+                        ty: core::BindingType::Sampler { comparison: false },
+                        count: None,
+                    },
+                ],
+            },
+        );
         let pipeline_layout = core::PipelineLayout::new(
-            &instance,
+            instance,
             &core::PipelineLayoutDescriptor {
                 label: None,
-                bind_group_layouts: &[],
+                bind_group_layouts: &[&bind_group_layout],
                 push_constant_ranges: &[core::PushConstantRange {
                     stages: core::ShaderStage::VERTEX,
                     range: 0..std::mem::size_of::<PushConstants>() as u32,
@@ -122,15 +147,15 @@ impl RenderPipeline {
             },
         );
         let vs_module = core::ShaderModule::new(
-            &instance,
+            instance,
             core::include_spirv!("shaders/gen/spirv/sprite.vert.spv"),
         );
         let fs_module = core::ShaderModule::new(
-            &instance,
+            instance,
             core::include_spirv!("shaders/gen/spirv/sprite.frag.spv"),
         );
         let pipeline = core::RenderPipeline::new(
-            &instance,
+            instance,
             &core::RenderPipelineDescriptor {
                 label: None,
                 layout: Some(&pipeline_layout),
@@ -174,6 +199,7 @@ impl RenderPipeline {
         );
         Self {
             pipeline,
+            bind_group_layout,
             sample_count: desc.sample_count,
             color_buffer_format: desc.color_buffer_format,
         }
@@ -189,30 +215,52 @@ impl RenderPipeline {
 }
 
 #[derive(Debug)]
-pub struct DrawMesh<'a> {
+pub struct DrawCommandMeshDescriptor<'a> {
     pub mesh: &'a Mesh,
     pub index_range: Range<u32>,
     pub constants: &'a PushConstants,
 }
 
+#[derive(Debug)]
+pub struct DrawCommandDescriptor<'a, It>
+where
+    It: IntoIterator,
+    It::Item: Into<DrawCommandMeshDescriptor<'a>>,
+{
+    pub texture: &'a core::Texture,
+    pub sample: &'a core::Sampler,
+    pub meshes: It,
+}
+
 pub trait Renderer<'a> {
-    fn draw_shape2<It>(&mut self, pipeline: &'a RenderPipeline, draw_mesh_commands: It)
+    fn draw_sprite<It, MeshIt>(&mut self, pipeline: &'a RenderPipeline, draw_commands: It)
     where
         It: IntoIterator,
-        It::Item: Borrow<DrawMesh<'a>>;
+        It::Item: Into<DrawCommandDescriptor<'a, MeshIt>>,
+        MeshIt: IntoIterator,
+        MeshIt::Item: Into<DrawCommandMeshDescriptor<'a>>;
 }
 
 impl<'a> Renderer<'a> for core::RenderPass<'a> {
-    fn draw_shape2<It>(&mut self, pipeline: &'a RenderPipeline, draw_mesh_commands: It)
+    fn draw_sprite<It, MeshIt>(&mut self, pipeline: &'a RenderPipeline, draw_commands: It)
     where
         It: IntoIterator,
-        It::Item: Borrow<DrawMesh<'a>>,
+        It::Item: Into<DrawCommandDescriptor<'a, MeshIt>>,
+        MeshIt: IntoIterator,
+        MeshIt::Item: Into<DrawCommandMeshDescriptor<'a>>,
     {
         self.set_pipeline(&pipeline.pipeline);
-        for draw_mesh in draw_mesh_commands.into_iter() {
-            let draw_mesh = draw_mesh.borrow();
-            self.set_push_constants(core::ShaderStage::VERTEX, 0, draw_mesh.constants.as_slice());
-            self.draw_indexed_mesh(draw_mesh.mesh, &draw_mesh.index_range);
+        for draw_command in draw_commands.into_iter() {
+            let draw_command = draw_command.into();
+            for draw_mesh_command in draw_command.meshes.into_iter() {
+                let draw_mesh_command = draw_mesh_command.into();
+                self.set_push_constants(
+                    core::ShaderStage::VERTEX,
+                    0,
+                    draw_mesh_command.constants.as_slice(),
+                );
+                self.draw_indexed_mesh(draw_mesh_command.mesh, &draw_mesh_command.index_range);
+            }
         }
     }
 }
