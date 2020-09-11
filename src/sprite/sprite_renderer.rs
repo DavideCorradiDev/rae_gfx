@@ -35,11 +35,11 @@ pub type Index = core::Index;
 pub type Mesh = core::IndexedMesh<Vertex>;
 
 pub trait MeshTemplates {
-    fn textured_rect(instance: &core::Instance, width: f32, height: f32) -> Self;
+    fn textured_rectangle(instance: &core::Instance, width: f32, height: f32) -> Self;
 }
 
 impl MeshTemplates for Mesh {
-    fn textured_rect(instance: &core::Instance, width: f32, height: f32) -> Self {
+    fn textured_rectangle(instance: &core::Instance, width: f32, height: f32) -> Self {
         let vertex_list = vec![
             Vertex::new([0., 0.], [0., 0.]),
             Vertex::new([width, 0.], [1., 0.]),

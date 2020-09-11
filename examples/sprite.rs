@@ -14,7 +14,7 @@ use rae_gfx::{
         Sampler, SamplerDescriptor, SwapChainError, Texture, TextureView, TextureViewDescriptor,
     },
     sprite,
-    sprite::Renderer as Shape2Renderer,
+    sprite::{MeshTemplates as SpriteMeshTemplates, Renderer as SpriteRenderer},
 };
 
 #[derive(Debug)]
@@ -26,7 +26,7 @@ struct ApplicationImpl {
     sprite_texture: TextureView,
     sprite_sampler: Sampler,
     sprite_uniform_constants: sprite::UniformConstants,
-    // sprite: sprite::Mesh,
+    sprite_mesh: sprite::Mesh,
 }
 
 impl ApplicationImpl {
@@ -98,6 +98,7 @@ impl EventHandler<ApplicationError, ApplicationEvent> for ApplicationImpl {
         );
         let sprite_uniform_constants =
             sprite::UniformConstants::new(&instance, &sprite_texture, &sprite_sampler);
+        let sprite_mesh = sprite::Mesh::textured_rectangle(&instance, 100., 100.);
 
         Ok(Self {
             window,
@@ -107,6 +108,7 @@ impl EventHandler<ApplicationError, ApplicationEvent> for ApplicationImpl {
             sprite_texture,
             sprite_sampler,
             sprite_uniform_constants,
+            sprite_mesh,
         })
     }
 
