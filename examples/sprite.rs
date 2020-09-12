@@ -104,7 +104,11 @@ impl EventHandler<ApplicationError, ApplicationEvent> for ApplicationImpl {
         );
         let sprite_uniform_constants =
             sprite::UniformConstants::new(&instance, &sprite_texture, &sprite_sampler);
-        let sprite_mesh = sprite::Mesh::textured_rectangle(&instance, 800., 800.);
+        let sprite_mesh = sprite::Mesh::quad(
+            &instance,
+            &sprite::Vertex::new([0., 0.], [0., 0.]),
+            &sprite::Vertex::new([800., 800.], [1., 1.]),
+        );
 
         Ok(Self {
             window,

@@ -17,7 +17,7 @@ impl Vertex {
         Self { position }
     }
 
-    pub fn from_geometry(position: &geometry2::Point<f32>) -> Self {
+    pub fn from_points(position: &geometry2::Point<f32>) -> Self {
         Self {
             position: [position.x, position.y],
         }
