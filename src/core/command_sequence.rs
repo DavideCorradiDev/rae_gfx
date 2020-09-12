@@ -79,8 +79,8 @@ impl CommandSequence {
                     resolve_target,
                     ops: operations.swap_chain_frame_operations.unwrap_or_default(),
                 });
+                required_color_buffer_count = required_color_buffer_count - 1;
             }
-            required_color_buffer_count = required_color_buffer_count - 1;
         }
 
         // Other color attachments.
@@ -130,4 +130,6 @@ impl CommandSequence {
     pub fn submit(self, instance: &Instance) {
         instance.submit(iter::once(self.encoder.finish()))
     }
+
+    // pub fn copy_texture_to_texture(&mut self, source: )
 }

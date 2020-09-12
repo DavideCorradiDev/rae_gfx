@@ -40,6 +40,7 @@ struct DepthStencilBuffer {
 
 #[derive(Debug)]
 pub struct CanvasTexture {
+    size: Size<u32>,
     sample_count: SampleCount,
     depth_stencil_buffer: Option<DepthStencilBuffer>,
     color_buffer: Option<ColorBuffer>,
@@ -76,10 +77,15 @@ impl CanvasTexture {
             "No buffer defined for a CanvasTexture"
         );
         Self {
+            size: desc.size,
             sample_count: desc.sample_count,
             color_buffer,
             depth_stencil_buffer,
         }
+    }
+
+    pub fn size(&self) -> &Size<u32> {
+        &self.size
     }
 
     fn create_texture_view(

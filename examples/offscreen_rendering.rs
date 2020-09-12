@@ -4,7 +4,7 @@ use rand::Rng;
 
 use rae_app::{
     application::Application,
-    event::{mouse, ControlFlow, DeviceId, EventHandler, EventLoop},
+    event::{ControlFlow, EventHandler, EventLoop},
     window,
     window::{WindowBuilder, WindowId},
 };
@@ -17,9 +17,9 @@ use rae_math::{
 
 use rae_gfx::{
     core::{
-        Canvas, CanvasWindow, CanvasWindowDescriptor, Color, CommandSequence, Instance,
-        InstanceCreationError, InstanceDescriptor, RenderPassOperations, SampleCount,
-        SwapChainError,
+        Canvas, CanvasTexture, CanvasTextureDescriptor, CanvasWindow, CanvasWindowDescriptor,
+        Color, CommandSequence, Instance, InstanceCreationError, InstanceDescriptor,
+        RenderPassOperations, SampleCount, Size, SwapChainError,
     },
     shape2,
     shape2::Renderer as Shape2Renderer,
@@ -28,6 +28,7 @@ use rae_gfx::{
 #[derive(Debug)]
 struct ApplicationImpl {
     window: CanvasWindow,
+    canvas: CanvasTexture,
     instance: Instance,
     pipeline: shape2::RenderPipeline,
     triangle_mesh: shape2::Mesh,
@@ -89,7 +90,7 @@ impl ApplicationImpl {
 
     pub fn generate_push_constant(&self) -> shape2::PushConstants {
         let object_transform = Similarity::<f32>::from_parts(
-            Translation::new(400., 400.),
+            Translation::new(50., 50.),
             UnitComplex::new(self.current_angle),
             1.,
         );
@@ -128,6 +129,15 @@ impl EventHandler<ApplicationError, ApplicationEvent> for ApplicationImpl {
             (window, instance)
         };
 
+        let canvas = CanvasTexture::new(
+            &instance,
+            &CanvasTextureDescriptor {
+                size: Size::new(100, 100),
+                sample_count: Self::SAMPLE_COUNT,
+                ..CanvasTextureDescriptor::default()
+            },
+        );
+
         let pipeline = shape2::RenderPipeline::new(
             &instance,
             &shape2::RenderPipelineDescriptor {
@@ -146,20 +156,19 @@ impl EventHandler<ApplicationError, ApplicationEvent> for ApplicationImpl {
             &[0, 1, 2],
         );
 
-        let window_size = window.inner_size();
-
         // This matrix will flip the y axis, so that screen coordinates follow mouse
         // coordinates.
         let projection_transform = OrthographicProjection::new(
             0.,
-            window_size.width as f32,
-            window_size.height as f32,
+            canvas.size().width() as f32,
+            canvas.size().height() as f32,
             0.,
         )
         .to_projective();
 
         Ok(Self {
             window,
+            canvas,
             instance,
             pipeline,
             triangle_mesh,
@@ -194,7 +203,7 @@ impl EventHandler<ApplicationError, ApplicationEvent> for ApplicationImpl {
 
         let current_triangle_constants = self.generate_push_constant();
 
-        let frame = self.window.current_frame()?;
+        let frame = self.canvas.current_frame()?;
         let mut cmd_sequence = CommandSequence::new(&self.instance);
         {
             let mut rpass = cmd_sequence.begin_render_pass(
