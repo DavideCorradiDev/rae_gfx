@@ -1,7 +1,8 @@
 use std::default::Default;
 
 use super::{
-    ColorBufferFormat, DepthStencilBufferFormat, Extent3d, Instance, SampleCount, Size, Texture,
+    Canvas, CanvasColorBuffer, CanvasDepthStencilBuffer, CanvasFrame, ColorBufferFormat,
+    DepthStencilBufferFormat, Extent3d, Instance, SampleCount, Size, SwapChainError, Texture,
     TextureDescriptor, TextureDimension, TextureFormat, TextureUsage, TextureView,
     TextureViewDescriptor,
 };
@@ -104,5 +105,31 @@ impl CanvasTexture {
             },
         )
         .create_view(&TextureViewDescriptor::default())
+    }
+}
+
+impl Canvas for CanvasTexture {
+    fn current_frame(&mut self) -> Result<CanvasFrame, SwapChainError> {
+        let color_buffers = match &self.color_buffer {
+            Some(color_buffer) => vec![CanvasColorBuffer {
+                buffer: &color_buffer.buffer,
+                format: color_buffer.format,
+                sample_count: self.sample_count,
+            }],
+            None => Vec::new(),
+        };
+        let depth_stencil_buffer = match &self.depth_stencil_buffer {
+            Some(depth_stencil_buffer) => Some(CanvasDepthStencilBuffer {
+                buffer: &depth_stencil_buffer.buffer,
+                format: depth_stencil_buffer.format,
+                sample_count: self.sample_count,
+            }),
+            None => None,
+        };
+        Ok(CanvasFrame {
+            swap_chain_frame: None,
+            color_buffers,
+            depth_stencil_buffer,
+        })
     }
 }
