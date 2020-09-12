@@ -1,5 +1,7 @@
 use std::iter;
 
+use rand::Rng;
+
 use rae_app::{
     application::Application,
     event::{ControlFlow, EventHandler, EventLoop},
@@ -16,8 +18,7 @@ use rae_gfx::{
     core::{
         AddressMode, Canvas, CanvasWindow, CanvasWindowDescriptor, Color, CommandSequence,
         FilterMode, Instance, InstanceCreationError, InstanceDescriptor, RenderPassOperations,
-        SampleCount, Sampler, SamplerDescriptor, SwapChainError, Texture, TextureView,
-        TextureViewDescriptor,
+        SampleCount, Sampler, SamplerDescriptor, SwapChainError, Texture, TextureViewDescriptor,
     },
     sprite,
     sprite::{MeshTemplates as SpriteMeshTemplates, Renderer as SpriteRenderer},
@@ -36,6 +37,8 @@ struct ApplicationImpl {
     pipeline: sprite::RenderPipeline,
     projection_transform: Projective<f32>,
     sprites: Vec<Sprite>,
+    current_color: Color,
+    target_color: Color,
 }
 
 impl ApplicationImpl {
@@ -175,8 +178,8 @@ impl ApplicationImpl {
                 ),
                 mesh: sprite::Mesh::quad(
                     instance,
-                    &sprite::Vertex::new([400., 400.], [-0.5, -0.5]),
                     &sprite::Vertex::new([800., 800.], [1.5, 1.5]),
+                    &sprite::Vertex::new([400., 400.], [-0.5, -0.5]),
                 ),
             },
         ]
@@ -239,6 +242,8 @@ impl EventHandler<ApplicationError, ApplicationEvent> for ApplicationImpl {
             pipeline,
             projection_transform,
             sprites,
+            current_color: Color::WHITE,
+            target_color: Color::WHITE,
         })
     }
 
@@ -260,9 +265,57 @@ impl EventHandler<ApplicationError, ApplicationEvent> for ApplicationImpl {
         Ok(ControlFlow::Continue)
     }
 
-    fn on_variable_update(&mut self, _dt: std::time::Duration) -> Result<ControlFlow, Self::Error> {
+    fn on_variable_update(&mut self, dt: std::time::Duration) -> Result<ControlFlow, Self::Error> {
+        #[cfg_attr(rustfmt, rustfmt_skip)]
+        const COLORS: [Color; 8] = [
+            Color { r: 0., g: 0., b: 0., a: 1., },
+            Color { r: 1., g: 0., b: 0., a: 1., },
+            Color { r: 0., g: 1., b: 0., a: 1., },
+            Color { r: 0., g: 0., b: 1., a: 1., },
+            Color { r: 1., g: 1., b: 0., a: 1., },
+            Color { r: 1., g: 0., b: 1., a: 1., },
+            Color { r: 0., g: 1., b: 1., a: 1., },
+            Color { r: 1., g: 1., b: 1., a: 1., },
+        ];
+        const COLOR_CHANGE_SPEED: f64 = 1.;
+
+        self.current_color.r = num::clamp(
+            self.current_color.r
+                + num::signum(self.target_color.r - self.current_color.r)
+                    * COLOR_CHANGE_SPEED
+                    * dt.as_secs_f64(),
+            0.,
+            1.,
+        );
+        self.current_color.g = num::clamp(
+            self.current_color.g
+                + num::signum(self.target_color.g - self.current_color.g)
+                    * COLOR_CHANGE_SPEED
+                    * dt.as_secs_f64(),
+            0.,
+            1.,
+        );
+        self.current_color.b = num::clamp(
+            self.current_color.b
+                + num::signum(self.target_color.b - self.current_color.b)
+                    * COLOR_CHANGE_SPEED
+                    * dt.as_secs_f64(),
+            0.,
+            1.,
+        );
+
+        println!(
+            "Current color: {:?}, target color: {:?}",
+            self.current_color, self.target_color
+        );
+
+        if self.current_color == self.target_color {
+            let mut rng = rand::thread_rng();
+            self.target_color = COLORS[rng.gen_range(0, COLORS.len() - 1)];
+        }
+
         let push_constants =
-            sprite::PushConstants::new(&convert(self.projection_transform), Color::WHITE);
+            sprite::PushConstants::new(&convert(self.projection_transform), self.current_color);
 
         let frame = self.window.current_frame()?;
         let mut cmd_sequence = CommandSequence::new(&self.instance);
