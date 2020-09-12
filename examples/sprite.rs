@@ -107,7 +107,7 @@ impl EventHandler<ApplicationError, ApplicationEvent> for ApplicationImpl {
         let sprite_mesh = sprite::Mesh::quad(
             &instance,
             &sprite::Vertex::new([0., 0.], [0., 0.]),
-            &sprite::Vertex::new([800., 800.], [1., 1.]),
+            &sprite::Vertex::new([800., 800.], [0.8, 1.2]),
         );
 
         Ok(Self {
