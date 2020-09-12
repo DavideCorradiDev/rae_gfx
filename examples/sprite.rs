@@ -101,8 +101,8 @@ impl ApplicationImpl {
                 ),
                 mesh: sprite::Mesh::quad(
                     instance,
-                    &sprite::Vertex::new([600., 0.], [0.5, 0.]),
-                    &sprite::Vertex::new([800., 200.], [1., 0.5]),
+                    &sprite::Vertex::new([800., 0.], [1., 0.]),
+                    &sprite::Vertex::new([600., 200.], [0.5, 0.5]),
                 ),
             },
             Sprite {
@@ -121,8 +121,8 @@ impl ApplicationImpl {
                 ),
                 mesh: sprite::Mesh::quad(
                     instance,
-                    &sprite::Vertex::new([400., 200.], [0., 0.5]),
-                    &sprite::Vertex::new([600., 400.], [0.5, 1.]),
+                    &sprite::Vertex::new([400., 400.], [0., 1.]),
+                    &sprite::Vertex::new([600., 200.], [0.5, 0.5]),
                 ),
             },
             Sprite {
