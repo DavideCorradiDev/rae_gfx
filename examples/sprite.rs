@@ -40,6 +40,147 @@ struct ApplicationImpl {
 
 impl ApplicationImpl {
     const SAMPLE_COUNT: SampleCount = 8;
+
+    fn create_sprites(instance: &Instance) -> Vec<Sprite> {
+        let image = image::open("examples/data/gioconda.jpg")
+            .expect("Failed to load texture image")
+            .into_rgba();
+        let sprite_texture =
+            Texture::from_image(instance, &image).create_view(&TextureViewDescriptor::default());
+
+        vec![
+            Sprite {
+                uniform_constants: sprite::UniformConstants::new(
+                    instance,
+                    &sprite_texture,
+                    &Sampler::new(&instance, &SamplerDescriptor::default()),
+                ),
+                mesh: sprite::Mesh::quad(
+                    instance,
+                    &sprite::Vertex::new([0., 0.], [0., 0.]),
+                    &sprite::Vertex::new([400., 400.], [1., 1.]),
+                ),
+            },
+            Sprite {
+                uniform_constants: sprite::UniformConstants::new(
+                    instance,
+                    &sprite_texture,
+                    &Sampler::new(
+                        &instance,
+                        &SamplerDescriptor {
+                            mag_filter: FilterMode::Nearest,
+                            min_filter: FilterMode::Linear,
+                            mipmap_filter: FilterMode::Nearest,
+                            ..SamplerDescriptor::default()
+                        },
+                    ),
+                ),
+                mesh: sprite::Mesh::quad(
+                    instance,
+                    &sprite::Vertex::new([400., 0.], [0., 0.]),
+                    &sprite::Vertex::new([600., 200.], [0.5, 0.5]),
+                ),
+            },
+            Sprite {
+                uniform_constants: sprite::UniformConstants::new(
+                    instance,
+                    &sprite_texture,
+                    &Sampler::new(
+                        &instance,
+                        &SamplerDescriptor {
+                            mag_filter: FilterMode::Linear,
+                            min_filter: FilterMode::Linear,
+                            mipmap_filter: FilterMode::Linear,
+                            ..SamplerDescriptor::default()
+                        },
+                    ),
+                ),
+                mesh: sprite::Mesh::quad(
+                    instance,
+                    &sprite::Vertex::new([600., 0.], [0.5, 0.]),
+                    &sprite::Vertex::new([800., 200.], [1., 0.5]),
+                ),
+            },
+            Sprite {
+                uniform_constants: sprite::UniformConstants::new(
+                    instance,
+                    &sprite_texture,
+                    &Sampler::new(
+                        &instance,
+                        &SamplerDescriptor {
+                            mag_filter: FilterMode::Linear,
+                            min_filter: FilterMode::Linear,
+                            mipmap_filter: FilterMode::Linear,
+                            ..SamplerDescriptor::default()
+                        },
+                    ),
+                ),
+                mesh: sprite::Mesh::quad(
+                    instance,
+                    &sprite::Vertex::new([400., 200.], [0., 0.5]),
+                    &sprite::Vertex::new([600., 400.], [0.5, 1.]),
+                ),
+            },
+            Sprite {
+                uniform_constants: sprite::UniformConstants::new(
+                    instance,
+                    &sprite_texture,
+                    &Sampler::new(
+                        &instance,
+                        &SamplerDescriptor {
+                            mag_filter: FilterMode::Nearest,
+                            min_filter: FilterMode::Linear,
+                            mipmap_filter: FilterMode::Nearest,
+                            ..SamplerDescriptor::default()
+                        },
+                    ),
+                ),
+                mesh: sprite::Mesh::quad(
+                    instance,
+                    &sprite::Vertex::new([600., 200.], [0.5, 0.5]),
+                    &sprite::Vertex::new([800., 400.], [1., 1.]),
+                ),
+            },
+            Sprite {
+                uniform_constants: sprite::UniformConstants::new(
+                    instance,
+                    &sprite_texture,
+                    &Sampler::new(
+                        &instance,
+                        &SamplerDescriptor {
+                            address_mode_u: AddressMode::Repeat,
+                            address_mode_v: AddressMode::ClampToEdge,
+                            ..SamplerDescriptor::default()
+                        },
+                    ),
+                ),
+                mesh: sprite::Mesh::quad(
+                    instance,
+                    &sprite::Vertex::new([000., 400.], [-0.5, -0.5]),
+                    &sprite::Vertex::new([400., 800.], [1.5, 1.5]),
+                ),
+            },
+            Sprite {
+                uniform_constants: sprite::UniformConstants::new(
+                    instance,
+                    &sprite_texture,
+                    &Sampler::new(
+                        &instance,
+                        &SamplerDescriptor {
+                            address_mode_u: AddressMode::MirrorRepeat,
+                            address_mode_v: AddressMode::ClampToEdge,
+                            ..SamplerDescriptor::default()
+                        },
+                    ),
+                ),
+                mesh: sprite::Mesh::quad(
+                    instance,
+                    &sprite::Vertex::new([400., 400.], [-0.5, -0.5]),
+                    &sprite::Vertex::new([800., 800.], [1.5, 1.5]),
+                ),
+            },
+        ]
+    }
 }
 
 impl EventHandler<ApplicationError, ApplicationEvent> for ApplicationImpl {
@@ -90,34 +231,7 @@ impl EventHandler<ApplicationError, ApplicationEvent> for ApplicationImpl {
         )
         .to_projective();
 
-        let image = image::open("examples/data/gioconda.jpg")
-            .expect("Failed to load texture image")
-            .into_rgba();
-        let sprite_texture =
-            Texture::from_image(&instance, &image).create_view(&TextureViewDescriptor::default());
-
-        let mut sprites = Vec::new();
-        sprites.push(Sprite {
-            uniform_constants: sprite::UniformConstants::new(
-                &instance,
-                &sprite_texture,
-                &Sampler::new(
-                    &instance,
-                    &SamplerDescriptor {
-                        address_mode_u: AddressMode::ClampToEdge,
-                        address_mode_v: AddressMode::ClampToEdge,
-                        mag_filter: FilterMode::Nearest,
-                        min_filter: FilterMode::Linear,
-                        ..SamplerDescriptor::default()
-                    },
-                ),
-            ),
-            mesh: sprite::Mesh::quad(
-                &instance,
-                &sprite::Vertex::new([0., 0.], [0., 0.]),
-                &sprite::Vertex::new([800., 800.], [0.8, 1.2]),
-            ),
-        });
+        let sprites = Self::create_sprites(&instance);
 
         Ok(Self {
             window,
