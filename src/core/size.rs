@@ -2,12 +2,12 @@ use num_traits::identities::Zero;
 use std::cmp::PartialOrd;
 
 #[derive(Debug, PartialEq, Clone, serde::Serialize, serde::Deserialize)]
-pub struct Size<T: Zero + PartialOrd> {
+pub struct Size<T: Copy + Zero + PartialOrd> {
     width: T,
     height: T,
 }
 
-impl<T: Zero + PartialOrd> Size<T> {
+impl<T: Copy + Zero + PartialOrd> Size<T> {
     pub fn new(width: T, height: T) -> Self {
         assert!(
             width >= T::zero() && height >= T::zero(),
@@ -16,8 +16,8 @@ impl<T: Zero + PartialOrd> Size<T> {
         Self { width, height }
     }
 
-    pub fn width(&self) -> &T {
-        &self.width
+    pub fn width(&self) -> T {
+        self.width
     }
 
     pub fn set_width(&mut self, value: T) {
@@ -25,8 +25,8 @@ impl<T: Zero + PartialOrd> Size<T> {
         self.width = value;
     }
 
-    pub fn height(&self) -> &T {
-        &self.height
+    pub fn height(&self) -> T {
+        self.height
     }
 
     pub fn set_height(&mut self, value: T) {
