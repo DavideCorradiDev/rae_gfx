@@ -19,10 +19,10 @@ use rae_math::{
 
 use rae_gfx::{
     core::{
-        Canvas, CanvasTexture, CanvasTextureDescriptor, CanvasWindow, CanvasWindowDescriptor,
-        Color, ColorOperations, CommandSequence, Instance, InstanceCreationError,
-        InstanceDescriptor, LoadOp, RenderPassOperations, SampleCount, Sampler, SamplerDescriptor,
-        Size, SwapChainError,
+        AddressMode, Canvas, CanvasTexture, CanvasTextureDescriptor, CanvasWindow,
+        CanvasWindowDescriptor, Color, ColorOperations, CommandSequence, Instance,
+        InstanceCreationError, InstanceDescriptor, LoadOp, RenderPassOperations, SampleCount,
+        Sampler, SamplerDescriptor, Size, SwapChainError,
     },
     shape2,
     shape2::Renderer as Shape2Renderer,
@@ -46,7 +46,7 @@ struct ApplicationImpl {
 }
 
 impl ApplicationImpl {
-    const SAMPLE_COUNT: SampleCount = 8;
+    const SAMPLE_COUNT: SampleCount = 1;
 
     fn update_color(&mut self, dt: std::time::Duration) {
         #[cfg_attr(rustfmt, rustfmt_skip)]
@@ -98,7 +98,7 @@ impl ApplicationImpl {
     pub fn generate_triangle_push_constants(&self) -> shape2::PushConstants {
         let projection_transform = OrthographicProjection::new(0., 1., 1., 0.).to_projective();
         let object_transform = Similarity::<f32>::from_parts(
-            Translation::new(0., 0.),
+            Translation::new(0.5, 0.5),
             UnitComplex::new(self.current_angle),
             1.,
         );
@@ -142,7 +142,7 @@ impl EventHandler<ApplicationError, ApplicationEvent> for ApplicationImpl {
         let canvas = CanvasTexture::new(
             &instance,
             &CanvasTextureDescriptor {
-                size: Size::new(400, 400),
+                size: Size::new(100, 100),
                 sample_count: Self::SAMPLE_COUNT,
                 ..CanvasTextureDescriptor::default()
             },
@@ -159,9 +159,9 @@ impl EventHandler<ApplicationError, ApplicationEvent> for ApplicationImpl {
         let triangle_mesh = shape2::Mesh::new(
             &instance,
             &[
-                shape2::Vertex::new([-0.5, 0.5]),
-                shape2::Vertex::new([0.5, 0.5]),
-                shape2::Vertex::new([0., -0.5]),
+                shape2::Vertex::new([-0.25, 0.25]),
+                shape2::Vertex::new([0.25, 0.25]),
+                shape2::Vertex::new([0., -0.25]),
             ],
             &[0, 1, 2],
         );
@@ -171,11 +171,18 @@ impl EventHandler<ApplicationError, ApplicationEvent> for ApplicationImpl {
 
         let quad_mesh = sprite::Mesh::quad(
             &instance,
-            &sprite::Vertex::new([0.25, 0.25], [0., 0.]),
-            &sprite::Vertex::new([0.75, 0.75], [2., 2.]),
+            &sprite::Vertex::new([0., 0.], [0., 0.]),
+            &sprite::Vertex::new([1., 1.], [2., 2.]),
         );
 
-        let sampler = Sampler::new(&instance, &SamplerDescriptor::default());
+        let sampler = Sampler::new(
+            &instance,
+            &SamplerDescriptor {
+                address_mode_u: AddressMode::MirrorRepeat,
+                address_mode_v: AddressMode::MirrorRepeat,
+                ..SamplerDescriptor::default()
+            },
+        );
 
         let canvas_color_buffer = canvas
             .color_buffer()
