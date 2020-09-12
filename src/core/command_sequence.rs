@@ -130,6 +130,4 @@ impl CommandSequence {
     pub fn submit(self, instance: &Instance) {
         instance.submit(iter::once(self.encoder.finish()))
     }
-
-    // pub fn copy_texture_to_texture(&mut self, source: )
 }

@@ -105,6 +105,10 @@ impl CanvasWindow {
         }
     }
 
+    pub fn sample_count(&self) -> SampleCount {
+        self.sample_count
+    }
+
     pub fn color_buffer_format(&self) -> ColorBufferFormat {
         self.color_buffer.format
     }

@@ -88,6 +88,38 @@ impl CanvasTexture {
         &self.size
     }
 
+    pub fn sample_count(&self) -> SampleCount {
+        self.sample_count
+    }
+
+    pub fn color_buffer(&self) -> Option<&TextureView> {
+        match &self.color_buffer {
+            Some(v) => Some(&v.buffer),
+            None => None,
+        }
+    }
+
+    pub fn color_buffer_format(&self) -> Option<ColorBufferFormat> {
+        match &self.color_buffer {
+            Some(v) => Some(v.format),
+            None => None,
+        }
+    }
+
+    pub fn depth_stencil_buffer(&self) -> Option<&TextureView> {
+        match &self.color_buffer {
+            Some(v) => Some(&v.buffer),
+            None => None,
+        }
+    }
+
+    pub fn depth_stencil_buffer_format(&self) -> Option<DepthStencilBufferFormat> {
+        match &self.depth_stencil_buffer {
+            Some(v) => Some(v.format),
+            None => None,
+        }
+    }
+
     fn create_texture_view(
         instance: &Instance,
         size: &Size<u32>,
@@ -106,7 +138,7 @@ impl CanvasTexture {
                 sample_count,
                 dimension: TextureDimension::D2,
                 format,
-                usage: TextureUsage::OUTPUT_ATTACHMENT,
+                usage: TextureUsage::SAMPLED | TextureUsage::OUTPUT_ATTACHMENT,
                 label: None,
             },
         )
