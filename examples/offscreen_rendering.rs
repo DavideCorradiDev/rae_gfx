@@ -20,8 +20,9 @@ use rae_math::{
 use rae_gfx::{
     core::{
         Canvas, CanvasTexture, CanvasTextureDescriptor, CanvasWindow, CanvasWindowDescriptor,
-        Color, CommandSequence, Instance, InstanceCreationError, InstanceDescriptor,
-        RenderPassOperations, SampleCount, Sampler, SamplerDescriptor, Size, SwapChainError,
+        Color, ColorOperations, CommandSequence, Instance, InstanceCreationError,
+        InstanceDescriptor, LoadOp, RenderPassOperations, SampleCount, Sampler, SamplerDescriptor,
+        Size, SwapChainError,
     },
     shape2,
     shape2::Renderer as Shape2Renderer,
@@ -36,7 +37,6 @@ struct ApplicationImpl {
     instance: Instance,
     shape2_pipeline: shape2::RenderPipeline,
     triangle_mesh: shape2::Mesh,
-    projection_transform: Projective<f32>,
     sprite_pipeline: sprite::RenderPipeline,
     quad_mesh: sprite::Mesh,
     sprite_uniform_constants: sprite::UniformConstants,
@@ -96,19 +96,21 @@ impl ApplicationImpl {
     }
 
     pub fn generate_triangle_push_constants(&self) -> shape2::PushConstants {
+        let projection_transform = OrthographicProjection::new(0., 1., 1., 0.).to_projective();
         let object_transform = Similarity::<f32>::from_parts(
-            Translation::new(50., 50.),
+            Translation::new(0., 0.),
             UnitComplex::new(self.current_angle),
             1.,
         );
         shape2::PushConstants::new(
-            &convert(self.projection_transform * object_transform),
+            &convert(projection_transform * object_transform),
             self.current_color,
         )
     }
 
     pub fn generate_blit_push_constants(&self) -> sprite::PushConstants {
-        sprite::PushConstants::new(&Transform::identity(), Color::WHITE)
+        let projection_transform = OrthographicProjection::new(0., 1., 1., 0.).to_projective();
+        sprite::PushConstants::new(&convert(projection_transform), Color::WHITE)
     }
 }
 
@@ -140,7 +142,7 @@ impl EventHandler<ApplicationError, ApplicationEvent> for ApplicationImpl {
         let canvas = CanvasTexture::new(
             &instance,
             &CanvasTextureDescriptor {
-                size: Size::new(100, 100),
+                size: Size::new(400, 400),
                 sample_count: Self::SAMPLE_COUNT,
                 ..CanvasTextureDescriptor::default()
             },
@@ -157,28 +159,20 @@ impl EventHandler<ApplicationError, ApplicationEvent> for ApplicationImpl {
         let triangle_mesh = shape2::Mesh::new(
             &instance,
             &[
-                shape2::Vertex::new([-50., 50.]),
-                shape2::Vertex::new([50., 50.]),
-                shape2::Vertex::new([0., -50.]),
+                shape2::Vertex::new([-0.5, 0.5]),
+                shape2::Vertex::new([0.5, 0.5]),
+                shape2::Vertex::new([0., -0.5]),
             ],
             &[0, 1, 2],
         );
-
-        let projection_transform = OrthographicProjection::new(
-            0.,
-            canvas.size().width() as f32,
-            canvas.size().height() as f32,
-            0.,
-        )
-        .to_projective();
 
         let sprite_pipeline =
             sprite::RenderPipeline::new(&instance, &sprite::RenderPipelineDescriptor::default());
 
         let quad_mesh = sprite::Mesh::quad(
             &instance,
-            &sprite::Vertex::new([0., 0.], [0., 0.]),
-            &sprite::Vertex::new([1., 1.], [1., 1.]),
+            &sprite::Vertex::new([0.25, 0.25], [0., 0.]),
+            &sprite::Vertex::new([0.75, 0.75], [2., 2.]),
         );
 
         let sampler = Sampler::new(&instance, &SamplerDescriptor::default());
@@ -195,7 +189,6 @@ impl EventHandler<ApplicationError, ApplicationEvent> for ApplicationImpl {
             instance,
             shape2_pipeline,
             triangle_mesh,
-            projection_transform,
             sprite_pipeline,
             quad_mesh,
             sprite_uniform_constants,
@@ -212,13 +205,6 @@ impl EventHandler<ApplicationError, ApplicationEvent> for ApplicationImpl {
     ) -> Result<ControlFlow, Self::Error> {
         if wid == self.window.id() {
             self.window.update_buffers(&self.instance);
-            self.projection_transform = OrthographicProjection::new(
-                0.,
-                1f32.max(size.width as f32),
-                1f32.max(size.height as f32),
-                0.,
-            )
-            .to_projective();
         }
         Ok(ControlFlow::Continue)
     }
@@ -236,7 +222,13 @@ impl EventHandler<ApplicationError, ApplicationEvent> for ApplicationImpl {
                 let mut rpass = cmd_sequence.begin_render_pass(
                     &frame,
                     &self.shape2_pipeline.render_pass_requirements(),
-                    &RenderPassOperations::default(),
+                    &RenderPassOperations {
+                        color_operations: vec![ColorOperations {
+                            load: LoadOp::Clear(Color::BLACK),
+                            store: true,
+                        }],
+                        ..RenderPassOperations::default()
+                    },
                 );
                 rpass.draw_shape2(
                     &self.shape2_pipeline,
@@ -258,7 +250,13 @@ impl EventHandler<ApplicationError, ApplicationEvent> for ApplicationImpl {
                 let mut rpass = cmd_sequence.begin_render_pass(
                     &frame,
                     &self.sprite_pipeline.render_pass_requirements(),
-                    &RenderPassOperations::default(),
+                    &RenderPassOperations {
+                        swap_chain_frame_operations: Some(ColorOperations {
+                            load: LoadOp::Clear(Color::WHITE),
+                            store: true,
+                        }),
+                        ..RenderPassOperations::default()
+                    },
                 );
                 rpass.draw_sprite(
                     &self.sprite_pipeline,
