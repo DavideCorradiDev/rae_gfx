@@ -9,20 +9,22 @@ use crate::{core, core::IndexedMeshRenderer};
 
 #[derive(Debug, PartialEq, Clone, Copy, serde::Serialize, serde::Deserialize)]
 pub struct Vertex {
-    pub position: geometry2::Point<f32>,
+    pub position: [f32; 2],
+    pub texture_coordinates: [f32; 2],
 }
 
 impl Vertex {
-    pub fn new(position: [f32; 2]) -> Self {
+    pub fn new(position: [f32; 2], texture_coordinates: [f32; 2]) -> Self {
         Self {
-            position: geometry2::Point::from(position),
+            position,
+            texture_coordinates,
         }
     }
 }
 
 unsafe impl bytemuck::Zeroable for Vertex {
     fn zeroed() -> Self {
-        Self::new([0., 0.])
+        Self::new([0., 0.], [0., 0.])
     }
 }
 
@@ -31,6 +33,23 @@ unsafe impl bytemuck::Pod for Vertex {}
 pub type Index = core::Index;
 
 pub type Mesh = core::IndexedMesh<Vertex>;
+
+pub trait MeshTemplates {
+    fn textured_rectangle(instance: &core::Instance, width: f32, height: f32) -> Self;
+}
+
+impl MeshTemplates for Mesh {
+    fn textured_rectangle(instance: &core::Instance, width: f32, height: f32) -> Self {
+        let vertex_list = vec![
+            Vertex::new([0., 0.], [0., 0.]),
+            Vertex::new([width, 0.], [1., 0.]),
+            Vertex::new([width, height], [1., 1.]),
+            Vertex::new([0., height], [0., 1.]),
+        ];
+        let index_list = vec![0, 3, 1, 1, 3, 2];
+        Self::new(instance, &vertex_list, &index_list)
+    }
+}
 
 #[derive(Debug, PartialEq, Clone, Copy, serde::Serialize, serde::Deserialize)]
 pub struct PushConstants {
@@ -70,6 +89,66 @@ unsafe impl bytemuck::Zeroable for PushConstants {
 
 unsafe impl bytemuck::Pod for PushConstants {}
 
+fn bind_group_layout(instance: &core::Instance) -> core::BindGroupLayout {
+    core::BindGroupLayout::new(
+        instance,
+        &core::BindGroupLayoutDescriptor {
+            label: None,
+            entries: &[
+                core::BindGroupLayoutEntry {
+                    binding: 0,
+                    visibility: core::ShaderStage::FRAGMENT,
+                    ty: core::BindingType::SampledTexture {
+                        multisampled: false,
+                        component_type: core::TextureComponentType::Float,
+                        dimension: core::TextureViewDimension::D2,
+                    },
+                    count: None,
+                },
+                core::BindGroupLayoutEntry {
+                    binding: 1,
+                    visibility: core::ShaderStage::FRAGMENT,
+                    ty: core::BindingType::Sampler { comparison: false },
+                    count: None,
+                },
+            ],
+        },
+    )
+}
+
+#[derive(Debug)]
+pub struct UniformConstants {
+    bind_group: core::BindGroup,
+}
+
+impl UniformConstants {
+    pub fn new(
+        instance: &core::Instance,
+        texture: &core::TextureView,
+        sampler: &core::Sampler,
+    ) -> Self {
+        let layout = bind_group_layout(instance);
+        let bind_group = core::BindGroup::new(
+            instance,
+            &core::BindGroupDescriptor {
+                label: None,
+                layout: &layout,
+                entries: &[
+                    core::BindGroupEntry {
+                        binding: 0,
+                        resource: core::BindingResource::TextureView(texture),
+                    },
+                    core::BindGroupEntry {
+                        binding: 1,
+                        resource: core::BindingResource::Sampler(sampler),
+                    },
+                ],
+            },
+        );
+        Self { bind_group }
+    }
+}
+
 #[derive(Debug, PartialEq, Clone, serde::Serialize, serde::Deserialize)]
 pub struct RenderPipelineDescriptor {
     pub color_blend: core::BlendDescriptor,
@@ -102,17 +181,19 @@ impl Default for RenderPipelineDescriptor {
 #[derive(Debug)]
 pub struct RenderPipeline {
     pipeline: core::RenderPipeline,
+    bind_group_layout: core::BindGroupLayout,
     sample_count: core::SampleCount,
     color_buffer_format: core::ColorBufferFormat,
 }
 
 impl RenderPipeline {
     pub fn new(instance: &core::Instance, desc: &RenderPipelineDescriptor) -> Self {
+        let bind_group_layout = bind_group_layout(instance);
         let pipeline_layout = core::PipelineLayout::new(
-            &instance,
+            instance,
             &core::PipelineLayoutDescriptor {
                 label: None,
-                bind_group_layouts: &[],
+                bind_group_layouts: &[&bind_group_layout],
                 push_constant_ranges: &[core::PushConstantRange {
                     stages: core::ShaderStage::VERTEX,
                     range: 0..std::mem::size_of::<PushConstants>() as u32,
@@ -120,15 +201,15 @@ impl RenderPipeline {
             },
         );
         let vs_module = core::ShaderModule::new(
-            &instance,
-            core::include_spirv!("shaders/gen/spirv/shape2.vert.spv"),
+            instance,
+            core::include_spirv!("shaders/gen/spirv/sprite.vert.spv"),
         );
         let fs_module = core::ShaderModule::new(
-            &instance,
-            core::include_spirv!("shaders/gen/spirv/shape2.frag.spv"),
+            instance,
+            core::include_spirv!("shaders/gen/spirv/sprite.frag.spv"),
         );
         let pipeline = core::RenderPipeline::new(
-            &instance,
+            instance,
             &core::RenderPipelineDescriptor {
                 label: None,
                 layout: Some(&pipeline_layout),
@@ -158,11 +239,18 @@ impl RenderPipeline {
                     vertex_buffers: &[core::VertexBufferDescriptor {
                         stride: std::mem::size_of::<Vertex>() as core::BufferAddress,
                         step_mode: core::InputStepMode::Vertex,
-                        attributes: &[core::VertexAttributeDescriptor {
-                            format: core::VertexFormat::Float2,
-                            offset: 0,
-                            shader_location: 0,
-                        }],
+                        attributes: &[
+                            core::VertexAttributeDescriptor {
+                                format: core::VertexFormat::Float2,
+                                offset: 0,
+                                shader_location: 0,
+                            },
+                            core::VertexAttributeDescriptor {
+                                format: core::VertexFormat::Float2,
+                                offset: 8,
+                                shader_location: 1,
+                            },
+                        ],
                     }],
                 },
                 sample_count: desc.sample_count,
@@ -172,6 +260,7 @@ impl RenderPipeline {
         );
         Self {
             pipeline,
+            bind_group_layout,
             sample_count: desc.sample_count,
             color_buffer_format: desc.color_buffer_format,
         }
@@ -187,34 +276,52 @@ impl RenderPipeline {
 }
 
 #[derive(Debug)]
-pub struct DrawCommandDescriptor<'a> {
+pub struct DrawMeshCommandDescriptor<'a> {
     pub mesh: &'a Mesh,
     pub index_range: Range<u32>,
     pub push_constants: &'a PushConstants,
 }
 
+#[derive(Debug)]
+pub struct DrawCommandDescriptor<'a, It>
+where
+    It: IntoIterator,
+    It::Item: Into<DrawMeshCommandDescriptor<'a>>,
+{
+    pub uniform_constants: &'a UniformConstants,
+    pub draw_mesh_commands: It,
+}
+
 pub trait Renderer<'a> {
-    fn draw_shape2<It>(&mut self, pipeline: &'a RenderPipeline, draw_commands: It)
+    fn draw_sprite<It, MeshIt>(&mut self, pipeline: &'a RenderPipeline, draw_commands: It)
     where
         It: IntoIterator,
-        It::Item: Into<DrawCommandDescriptor<'a>>;
+        It::Item: Into<DrawCommandDescriptor<'a, MeshIt>>,
+        MeshIt: IntoIterator,
+        MeshIt::Item: Into<DrawMeshCommandDescriptor<'a>>;
 }
 
 impl<'a> Renderer<'a> for core::RenderPass<'a> {
-    fn draw_shape2<It>(&mut self, pipeline: &'a RenderPipeline, draw_commands: It)
+    fn draw_sprite<It, MeshIt>(&mut self, pipeline: &'a RenderPipeline, draw_commands: It)
     where
         It: IntoIterator,
-        It::Item: Into<DrawCommandDescriptor<'a>>,
+        It::Item: Into<DrawCommandDescriptor<'a, MeshIt>>,
+        MeshIt: IntoIterator,
+        MeshIt::Item: Into<DrawMeshCommandDescriptor<'a>>,
     {
         self.set_pipeline(&pipeline.pipeline);
         for draw_command in draw_commands.into_iter() {
             let draw_command = draw_command.into();
-            self.set_push_constants(
-                core::ShaderStage::VERTEX,
-                0,
-                draw_command.push_constants.as_slice(),
-            );
-            self.draw_indexed_mesh(draw_command.mesh, &draw_command.index_range);
+            self.set_bind_group(0, &draw_command.uniform_constants.bind_group, &[]);
+            for draw_mesh_command in draw_command.draw_mesh_commands.into_iter() {
+                let draw_mesh_command = draw_mesh_command.into();
+                self.set_push_constants(
+                    core::ShaderStage::VERTEX,
+                    0,
+                    draw_mesh_command.push_constants.as_slice(),
+                );
+                self.draw_indexed_mesh(draw_mesh_command.mesh, &draw_mesh_command.index_range);
+            }
         }
     }
 }

@@ -10,11 +10,12 @@ use wgpu::util::DeviceExt;
 use raw_window_handle::HasRawWindowHandle;
 
 use super::{
-    AdapterInfo, Backend, BindGroupDescriptor, BindGroupLayoutDescriptor, BufferDescriptor,
-    BufferInitDescriptor, Color, CommandBuffer, CommandEncoderDescriptor, Features, Limits,
-    Maintain, Operations, PipelineLayoutDescriptor, PowerPreference, RenderBundleEncoderDescriptor,
-    RenderPipelineDescriptor, SamplerDescriptor, ShaderModuleSource, SwapChainDescriptor,
-    TextureDescriptor, TextureFormat,
+    AdapterInfo, Backend, BindGroupDescriptor, BindGroupLayoutDescriptor, BufferAddress,
+    BufferDescriptor, BufferInitDescriptor, Color, CommandBuffer, CommandEncoderDescriptor,
+    Extent3d, Features, Limits, Maintain, Operations, Origin3d, PipelineLayoutDescriptor,
+    PowerPreference, RenderBundleEncoderDescriptor, RenderPipelineDescriptor, SamplerDescriptor,
+    ShaderModuleSource, SwapChainDescriptor, TextureCopyView, TextureDataLayout, TextureDescriptor,
+    TextureDimension, TextureFormat, TextureUsage,
 };
 
 pub type SampleCount = u32;
@@ -118,6 +119,20 @@ impl Instance {
 
     pub fn submit<I: IntoIterator<Item = CommandBuffer>>(&self, command_buffers: I) {
         self.queue.submit(command_buffers);
+    }
+
+    pub fn write_buffer(&self, buffer: &Buffer, offset: BufferAddress, data: &[u8]) {
+        self.queue.write_buffer(buffer, offset, data);
+    }
+
+    pub fn write_texture(
+        &self,
+        texture: TextureCopyView<'_>,
+        data: &[u8],
+        data_layout: TextureDataLayout,
+        size: Extent3d,
+    ) {
+        self.queue.write_texture(texture, data, data_layout, size);
     }
 
     fn create_instance(desc: &InstanceDescriptor) -> wgpu::Instance {
@@ -412,6 +427,61 @@ impl Texture {
         Self {
             value: instance.device.create_texture(desc),
         }
+    }
+
+    pub fn from_image(instance: &Instance, img: &image::RgbaImage) -> Self {
+        let img_dimensions = img.dimensions();
+        let size = Extent3d {
+            width: img_dimensions.0,
+            height: img_dimensions.1,
+            depth: 1,
+        };
+        let texture = Self::new(
+            instance,
+            &TextureDescriptor {
+                label: None,
+                size,
+                mip_level_count: 1,
+                sample_count: 1,
+                dimension: TextureDimension::D2,
+                format: TextureFormat::Rgba8UnormSrgb,
+                usage: TextureUsage::SAMPLED | TextureUsage::COPY_DST,
+            },
+        );
+        texture.write(
+            instance,
+            0,
+            Origin3d::ZERO,
+            img.as_flat_samples().as_slice(),
+            TextureDataLayout {
+                offset: 0,
+                bytes_per_row: 4 * size.height,
+                rows_per_image: 0,
+            },
+            size,
+        );
+        texture
+    }
+
+    pub fn write(
+        &self,
+        instance: &Instance,
+        mip_level: u32,
+        origin: Origin3d,
+        data: &[u8],
+        data_layout: TextureDataLayout,
+        size: Extent3d,
+    ) {
+        instance.write_texture(
+            TextureCopyView {
+                texture: self,
+                mip_level,
+                origin,
+            },
+            data,
+            data_layout,
+            size,
+        );
     }
 }
 
