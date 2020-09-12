@@ -11,7 +11,9 @@ use rae_app::{
 
 use rae_math::{
     conversion::convert,
-    geometry2::{OrthographicProjection, Projective, Similarity, Translation, UnitComplex},
+    geometry2::{
+        OrthographicProjection, Projective, Similarity, Transform, Translation, UnitComplex,
+    },
     geometry3,
 };
 
@@ -19,10 +21,12 @@ use rae_gfx::{
     core::{
         Canvas, CanvasTexture, CanvasTextureDescriptor, CanvasWindow, CanvasWindowDescriptor,
         Color, CommandSequence, Instance, InstanceCreationError, InstanceDescriptor,
-        RenderPassOperations, SampleCount, Size, SwapChainError,
+        RenderPassOperations, SampleCount, Sampler, SamplerDescriptor, Size, SwapChainError,
     },
     shape2,
     shape2::Renderer as Shape2Renderer,
+    sprite,
+    sprite::{MeshTemplates as SpriteMeshTemplates, Renderer as SpriteRenderer},
 };
 
 #[derive(Debug)]
@@ -30,9 +34,12 @@ struct ApplicationImpl {
     window: CanvasWindow,
     canvas: CanvasTexture,
     instance: Instance,
-    pipeline: shape2::RenderPipeline,
+    shape2_pipeline: shape2::RenderPipeline,
     triangle_mesh: shape2::Mesh,
     projection_transform: Projective<f32>,
+    sprite_pipeline: sprite::RenderPipeline,
+    quad_mesh: sprite::Mesh,
+    sprite_uniform_constants: sprite::UniformConstants,
     current_angle: f32,
     current_color: Color,
     target_color: Color,
@@ -88,7 +95,7 @@ impl ApplicationImpl {
         }
     }
 
-    pub fn generate_push_constant(&self) -> shape2::PushConstants {
+    pub fn generate_triangle_push_constants(&self) -> shape2::PushConstants {
         let object_transform = Similarity::<f32>::from_parts(
             Translation::new(50., 50.),
             UnitComplex::new(self.current_angle),
@@ -98,6 +105,10 @@ impl ApplicationImpl {
             &convert(self.projection_transform * object_transform),
             self.current_color,
         )
+    }
+
+    pub fn generate_blit_push_constants(&self) -> sprite::PushConstants {
+        sprite::PushConstants::new(&Transform::identity(), Color::WHITE)
     }
 }
 
@@ -121,10 +132,7 @@ impl EventHandler<ApplicationError, ApplicationEvent> for ApplicationImpl {
                 &instance,
                 window,
                 surface,
-                &CanvasWindowDescriptor {
-                    sample_count: Self::SAMPLE_COUNT,
-                    ..CanvasWindowDescriptor::default()
-                },
+                &CanvasWindowDescriptor::default(),
             );
             (window, instance)
         };
@@ -138,7 +146,7 @@ impl EventHandler<ApplicationError, ApplicationEvent> for ApplicationImpl {
             },
         );
 
-        let pipeline = shape2::RenderPipeline::new(
+        let shape2_pipeline = shape2::RenderPipeline::new(
             &instance,
             &shape2::RenderPipelineDescriptor {
                 sample_count: Self::SAMPLE_COUNT,
@@ -156,8 +164,6 @@ impl EventHandler<ApplicationError, ApplicationEvent> for ApplicationImpl {
             &[0, 1, 2],
         );
 
-        // This matrix will flip the y axis, so that screen coordinates follow mouse
-        // coordinates.
         let projection_transform = OrthographicProjection::new(
             0.,
             canvas.size().width() as f32,
@@ -166,13 +172,33 @@ impl EventHandler<ApplicationError, ApplicationEvent> for ApplicationImpl {
         )
         .to_projective();
 
+        let sprite_pipeline =
+            sprite::RenderPipeline::new(&instance, &sprite::RenderPipelineDescriptor::default());
+
+        let quad_mesh = sprite::Mesh::quad(
+            &instance,
+            &sprite::Vertex::new([0., 0.], [0., 0.]),
+            &sprite::Vertex::new([1., 1.], [1., 1.]),
+        );
+
+        let sampler = Sampler::new(&instance, &SamplerDescriptor::default());
+
+        let canvas_color_buffer = canvas
+            .color_buffer()
+            .expect("The canvas color buffer doesn't exist");
+        let sprite_uniform_constants =
+            sprite::UniformConstants::new(&instance, canvas_color_buffer, &sampler);
+
         Ok(Self {
             window,
             canvas,
             instance,
-            pipeline,
+            shape2_pipeline,
             triangle_mesh,
             projection_transform,
+            sprite_pipeline,
+            quad_mesh,
+            sprite_uniform_constants,
             current_angle: 0.,
             current_color: Color::WHITE,
             target_color: Color::WHITE,
@@ -201,27 +227,53 @@ impl EventHandler<ApplicationError, ApplicationEvent> for ApplicationImpl {
         self.update_color(dt);
         self.update_angle(dt);
 
-        let current_triangle_constants = self.generate_push_constant();
-
-        let frame = self.canvas.current_frame()?;
-        let mut cmd_sequence = CommandSequence::new(&self.instance);
         {
-            let mut rpass = cmd_sequence.begin_render_pass(
-                &frame,
-                &self.pipeline.render_pass_requirements(),
-                &RenderPassOperations::default(),
-            );
-            rpass.draw_shape2(
-                &self.pipeline,
-                iter::once(shape2::DrawCommandDescriptor {
-                    mesh: &self.triangle_mesh,
-                    index_range: 0..self.triangle_mesh.index_count(),
-                    push_constants: &current_triangle_constants,
-                }),
-            );
+            // Render a triangle onto the canvas texture.
+            let push_constants = self.generate_triangle_push_constants();
+            let frame = self.canvas.current_frame()?;
+            let mut cmd_sequence = CommandSequence::new(&self.instance);
+            {
+                let mut rpass = cmd_sequence.begin_render_pass(
+                    &frame,
+                    &self.shape2_pipeline.render_pass_requirements(),
+                    &RenderPassOperations::default(),
+                );
+                rpass.draw_shape2(
+                    &self.shape2_pipeline,
+                    iter::once(shape2::DrawCommandDescriptor {
+                        mesh: &self.triangle_mesh,
+                        index_range: 0..self.triangle_mesh.index_count(),
+                        push_constants: &push_constants,
+                    }),
+                );
+            }
+            cmd_sequence.submit(&self.instance);
         }
-
-        cmd_sequence.submit(&self.instance);
+        {
+            // Render the canvas texture onto the canvas window.
+            let push_constants = self.generate_blit_push_constants();
+            let frame = self.window.current_frame()?;
+            let mut cmd_sequence = CommandSequence::new(&self.instance);
+            {
+                let mut rpass = cmd_sequence.begin_render_pass(
+                    &frame,
+                    &self.sprite_pipeline.render_pass_requirements(),
+                    &RenderPassOperations::default(),
+                );
+                rpass.draw_sprite(
+                    &self.sprite_pipeline,
+                    iter::once(sprite::DrawCommandDescriptor {
+                        uniform_constants: &self.sprite_uniform_constants,
+                        draw_mesh_commands: iter::once(sprite::DrawMeshCommandDescriptor {
+                            mesh: &self.quad_mesh,
+                            index_range: 0..self.quad_mesh.index_count(),
+                            push_constants: &push_constants,
+                        }),
+                    }),
+                );
+            }
+            cmd_sequence.submit(&self.instance);
+        }
         Ok(ControlFlow::Continue)
     }
 }
