@@ -1,5 +1,7 @@
 use std::iter;
 
+use rand::Rng;
+
 use rae_app::{
     application::Application,
     event::{ControlFlow, EventHandler, EventLoop},
@@ -10,18 +12,24 @@ use rae_app::{
 use rae_math::{
     conversion::convert,
     geometry2::{OrthographicProjection, Projective},
+    geometry3,
 };
 
 use rae_gfx::{
     core::{
         AddressMode, Canvas, CanvasWindow, CanvasWindowDescriptor, Color, CommandSequence,
         FilterMode, Instance, InstanceCreationError, InstanceDescriptor, RenderPassOperations,
-        SampleCount, Sampler, SamplerDescriptor, SwapChainError, Texture, TextureView,
-        TextureViewDescriptor,
+        SampleCount, Sampler, SamplerDescriptor, SwapChainError, Texture, TextureViewDescriptor,
     },
     sprite,
     sprite::{MeshTemplates as SpriteMeshTemplates, Renderer as SpriteRenderer},
 };
+
+#[derive(Debug)]
+struct Sprite {
+    uniform_constants: sprite::UniformConstants,
+    mesh: sprite::Mesh,
+}
 
 #[derive(Debug)]
 struct ApplicationImpl {
@@ -29,14 +37,193 @@ struct ApplicationImpl {
     instance: Instance,
     pipeline: sprite::RenderPipeline,
     projection_transform: Projective<f32>,
-    sprite_texture: TextureView,
-    sprite_sampler: Sampler,
-    sprite_uniform_constants: sprite::UniformConstants,
-    sprite_mesh: sprite::Mesh,
+    sprites: Vec<Sprite>,
+    current_color: Color,
+    target_color: Color,
 }
 
 impl ApplicationImpl {
     const SAMPLE_COUNT: SampleCount = 8;
+
+    fn create_sprites(instance: &Instance) -> Vec<Sprite> {
+        let image = image::open("examples/data/gioconda.jpg")
+            .expect("Failed to load texture image")
+            .into_rgba();
+        let sprite_texture =
+            Texture::from_image(instance, &image).create_view(&TextureViewDescriptor::default());
+
+        vec![
+            Sprite {
+                uniform_constants: sprite::UniformConstants::new(
+                    instance,
+                    &sprite_texture,
+                    &Sampler::new(&instance, &SamplerDescriptor::default()),
+                ),
+                mesh: sprite::Mesh::quad(
+                    instance,
+                    &sprite::Vertex::new([0., 0.], [0., 0.]),
+                    &sprite::Vertex::new([400., 400.], [1., 1.]),
+                ),
+            },
+            Sprite {
+                uniform_constants: sprite::UniformConstants::new(
+                    instance,
+                    &sprite_texture,
+                    &Sampler::new(
+                        &instance,
+                        &SamplerDescriptor {
+                            mag_filter: FilterMode::Nearest,
+                            min_filter: FilterMode::Linear,
+                            mipmap_filter: FilterMode::Nearest,
+                            ..SamplerDescriptor::default()
+                        },
+                    ),
+                ),
+                mesh: sprite::Mesh::quad(
+                    instance,
+                    &sprite::Vertex::new([400., 0.], [0., 0.]),
+                    &sprite::Vertex::new([600., 200.], [0.5, 0.5]),
+                ),
+            },
+            Sprite {
+                uniform_constants: sprite::UniformConstants::new(
+                    instance,
+                    &sprite_texture,
+                    &Sampler::new(
+                        &instance,
+                        &SamplerDescriptor {
+                            mag_filter: FilterMode::Linear,
+                            min_filter: FilterMode::Linear,
+                            mipmap_filter: FilterMode::Linear,
+                            ..SamplerDescriptor::default()
+                        },
+                    ),
+                ),
+                mesh: sprite::Mesh::quad(
+                    instance,
+                    &sprite::Vertex::new([800., 0.], [1., 0.]),
+                    &sprite::Vertex::new([600., 200.], [0.5, 0.5]),
+                ),
+            },
+            Sprite {
+                uniform_constants: sprite::UniformConstants::new(
+                    instance,
+                    &sprite_texture,
+                    &Sampler::new(
+                        &instance,
+                        &SamplerDescriptor {
+                            mag_filter: FilterMode::Linear,
+                            min_filter: FilterMode::Linear,
+                            mipmap_filter: FilterMode::Linear,
+                            ..SamplerDescriptor::default()
+                        },
+                    ),
+                ),
+                mesh: sprite::Mesh::quad(
+                    instance,
+                    &sprite::Vertex::new([400., 400.], [0., 1.]),
+                    &sprite::Vertex::new([600., 200.], [0.5, 0.5]),
+                ),
+            },
+            Sprite {
+                uniform_constants: sprite::UniformConstants::new(
+                    instance,
+                    &sprite_texture,
+                    &Sampler::new(
+                        &instance,
+                        &SamplerDescriptor {
+                            mag_filter: FilterMode::Nearest,
+                            min_filter: FilterMode::Linear,
+                            mipmap_filter: FilterMode::Nearest,
+                            ..SamplerDescriptor::default()
+                        },
+                    ),
+                ),
+                mesh: sprite::Mesh::quad(
+                    instance,
+                    &sprite::Vertex::new([600., 200.], [0.5, 0.5]),
+                    &sprite::Vertex::new([800., 400.], [1., 1.]),
+                ),
+            },
+            Sprite {
+                uniform_constants: sprite::UniformConstants::new(
+                    instance,
+                    &sprite_texture,
+                    &Sampler::new(
+                        &instance,
+                        &SamplerDescriptor {
+                            address_mode_u: AddressMode::Repeat,
+                            address_mode_v: AddressMode::ClampToEdge,
+                            ..SamplerDescriptor::default()
+                        },
+                    ),
+                ),
+                mesh: sprite::Mesh::quad(
+                    instance,
+                    &sprite::Vertex::new([000., 400.], [-0.5, -0.5]),
+                    &sprite::Vertex::new([400., 800.], [1.5, 1.5]),
+                ),
+            },
+            Sprite {
+                uniform_constants: sprite::UniformConstants::new(
+                    instance,
+                    &sprite_texture,
+                    &Sampler::new(
+                        &instance,
+                        &SamplerDescriptor {
+                            address_mode_u: AddressMode::MirrorRepeat,
+                            address_mode_v: AddressMode::ClampToEdge,
+                            ..SamplerDescriptor::default()
+                        },
+                    ),
+                ),
+                mesh: sprite::Mesh::quad(
+                    instance,
+                    &sprite::Vertex::new([800., 800.], [1.5, 1.5]),
+                    &sprite::Vertex::new([400., 400.], [-0.5, -0.5]),
+                ),
+            },
+        ]
+    }
+
+    fn update_color(&mut self, dt: std::time::Duration) {
+        #[cfg_attr(rustfmt, rustfmt_skip)]
+        const COLORS: [Color; 8] = [
+            Color { r: 0., g: 0., b: 0., a: 1., },
+            Color { r: 1., g: 0., b: 0., a: 1., },
+            Color { r: 0., g: 1., b: 0., a: 1., },
+            Color { r: 0., g: 0., b: 1., a: 1., },
+            Color { r: 1., g: 1., b: 0., a: 1., },
+            Color { r: 1., g: 0., b: 1., a: 1., },
+            Color { r: 0., g: 1., b: 1., a: 1., },
+            Color { r: 1., g: 1., b: 1., a: 1., },
+        ];
+        const COLOR_CHANGE_SPEED: f64 = 1.;
+
+        if self.current_color != self.target_color {
+            let current_color = geometry3::Point::new(
+                self.current_color.r,
+                self.current_color.g,
+                self.current_color.b,
+            );
+            let target_color = geometry3::Point::new(
+                self.target_color.r,
+                self.target_color.g,
+                self.target_color.b,
+            );
+            let next_color = current_color
+                + (target_color - current_color).normalize()
+                    * COLOR_CHANGE_SPEED
+                    * dt.as_secs_f64();
+
+            self.current_color.r = num::clamp(next_color[0], 0., 1.);
+            self.current_color.g = num::clamp(next_color[1], 0., 1.);
+            self.current_color.b = num::clamp(next_color[2], 0., 1.);
+        } else {
+            let mut rng = rand::thread_rng();
+            self.target_color = COLORS[rng.gen_range(0, COLORS.len() - 1)];
+        }
+    }
 }
 
 impl EventHandler<ApplicationError, ApplicationEvent> for ApplicationImpl {
@@ -87,34 +274,16 @@ impl EventHandler<ApplicationError, ApplicationEvent> for ApplicationImpl {
         )
         .to_projective();
 
-        let image = image::open("examples/data/gioconda.jpg")
-            .expect("Failed to load texture image")
-            .into_rgba();
-        let sprite_texture =
-            Texture::from_image(&instance, &image).create_view(&TextureViewDescriptor::default());
-        let sprite_sampler = Sampler::new(
-            &instance,
-            &SamplerDescriptor {
-                address_mode_u: AddressMode::ClampToEdge,
-                address_mode_v: AddressMode::ClampToEdge,
-                mag_filter: FilterMode::Nearest,
-                min_filter: FilterMode::Linear,
-                ..SamplerDescriptor::default()
-            },
-        );
-        let sprite_uniform_constants =
-            sprite::UniformConstants::new(&instance, &sprite_texture, &sprite_sampler);
-        let sprite_mesh = sprite::Mesh::textured_rectangle(&instance, 800., 800.);
+        let sprites = Self::create_sprites(&instance);
 
         Ok(Self {
             window,
             instance,
             pipeline,
             projection_transform,
-            sprite_texture,
-            sprite_sampler,
-            sprite_uniform_constants,
-            sprite_mesh,
+            sprites,
+            current_color: Color::WHITE,
+            target_color: Color::WHITE,
         })
     }
 
@@ -136,9 +305,10 @@ impl EventHandler<ApplicationError, ApplicationEvent> for ApplicationImpl {
         Ok(ControlFlow::Continue)
     }
 
-    fn on_variable_update(&mut self, _dt: std::time::Duration) -> Result<ControlFlow, Self::Error> {
+    fn on_variable_update(&mut self, dt: std::time::Duration) -> Result<ControlFlow, Self::Error> {
+        self.update_color(dt);
         let push_constants =
-            sprite::PushConstants::new(&convert(self.projection_transform), Color::WHITE);
+            sprite::PushConstants::new(&convert(self.projection_transform), self.current_color);
 
         let frame = self.window.current_frame()?;
         let mut cmd_sequence = CommandSequence::new(&self.instance);
@@ -148,17 +318,19 @@ impl EventHandler<ApplicationError, ApplicationEvent> for ApplicationImpl {
                 &self.pipeline.render_pass_requirements(),
                 &RenderPassOperations::default(),
             );
-            rpass.draw_sprite(
-                &self.pipeline,
-                iter::once(sprite::DrawCommandDescriptor {
-                    uniform_constants: &self.sprite_uniform_constants,
-                    draw_mesh_commands: iter::once(sprite::DrawMeshCommandDescriptor {
-                        mesh: &self.sprite_mesh,
-                        index_range: 0..self.sprite_mesh.index_count(),
-                        push_constants: &push_constants,
+            for sprite in &self.sprites {
+                rpass.draw_sprite(
+                    &self.pipeline,
+                    iter::once(sprite::DrawCommandDescriptor {
+                        uniform_constants: &sprite.uniform_constants,
+                        draw_mesh_commands: iter::once(sprite::DrawMeshCommandDescriptor {
+                            mesh: &sprite.mesh,
+                            index_range: 0..sprite.mesh.index_count(),
+                            push_constants: &push_constants,
+                        }),
                     }),
-                }),
-            );
+                );
+            }
         }
         cmd_sequence.submit(&self.instance);
         Ok(ControlFlow::Continue)

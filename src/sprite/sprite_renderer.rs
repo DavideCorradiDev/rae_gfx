@@ -20,6 +20,16 @@ impl Vertex {
             texture_coordinates,
         }
     }
+
+    pub fn from_points(
+        position: &geometry2::Point<f32>,
+        texture_coordinates: &geometry2::Point<f32>,
+    ) -> Self {
+        Self {
+            position: [position.x, position.y],
+            texture_coordinates: [texture_coordinates.x, texture_coordinates.y],
+        }
+    }
 }
 
 unsafe impl bytemuck::Zeroable for Vertex {
@@ -35,18 +45,65 @@ pub type Index = core::Index;
 pub type Mesh = core::IndexedMesh<Vertex>;
 
 pub trait MeshTemplates {
-    fn textured_rectangle(instance: &core::Instance, width: f32, height: f32) -> Self;
+    fn rectangle(instance: &core::Instance, width: f32, height: f32) -> Self;
+    fn quad(instance: &core::Instance, v1: &Vertex, v2: &Vertex) -> Self;
 }
 
 impl MeshTemplates for Mesh {
-    fn textured_rectangle(instance: &core::Instance, width: f32, height: f32) -> Self {
+    fn rectangle(instance: &core::Instance, width: f32, height: f32) -> Self {
         let vertex_list = vec![
             Vertex::new([0., 0.], [0., 0.]),
-            Vertex::new([width, 0.], [1., 0.]),
-            Vertex::new([width, height], [1., 1.]),
             Vertex::new([0., height], [0., 1.]),
+            Vertex::new([width, height], [1., 1.]),
+            Vertex::new([width, 0.], [1., 0.]),
         ];
-        let index_list = vec![0, 3, 1, 1, 3, 2];
+        let index_list = vec![0, 1, 3, 3, 1, 2];
+        Self::new(instance, &vertex_list, &index_list)
+    }
+
+    fn quad(instance: &core::Instance, v1: &Vertex, v2: &Vertex) -> Self {
+        let (lp, rp, lt, rt) = {
+            if v1.position[0] <= v2.position[0] {
+                (
+                    v1.position[0],
+                    v2.position[0],
+                    v1.texture_coordinates[0],
+                    v2.texture_coordinates[0],
+                )
+            } else {
+                (
+                    v2.position[0],
+                    v1.position[0],
+                    v2.texture_coordinates[0],
+                    v1.texture_coordinates[0],
+                )
+            }
+        };
+        let (tp, bp, tt, bt) = {
+            if v1.position[1] <= v2.position[1] {
+                (
+                    v1.position[1],
+                    v2.position[1],
+                    v1.texture_coordinates[1],
+                    v2.texture_coordinates[1],
+                )
+            } else {
+                (
+                    v2.position[1],
+                    v1.position[1],
+                    v2.texture_coordinates[1],
+                    v1.texture_coordinates[1],
+                )
+            }
+        };
+
+        let vertex_list = vec![
+            Vertex::new([lp, tp], [lt, tt]),
+            Vertex::new([lp, bp], [lt, bt]),
+            Vertex::new([rp, bp], [rt, bt]),
+            Vertex::new([rp, tp], [rt, tt]),
+        ];
+        let index_list = vec![0, 1, 3, 3, 1, 2];
         Self::new(instance, &vertex_list, &index_list)
     }
 }
