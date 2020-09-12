@@ -29,8 +29,8 @@ struct ApplicationImpl {
     instance: Instance,
     pipeline: sprite::RenderPipeline,
     projection_transform: Projective<f32>,
-    sprite_texture: TextureView,
-    sprite_sampler: Sampler,
+    // sprite_texture: TextureView,
+    // sprite_sampler: Sampler,
     sprite_uniform_constants: sprite::UniformConstants,
     sprite_mesh: sprite::Mesh,
 }
@@ -115,8 +115,8 @@ impl EventHandler<ApplicationError, ApplicationEvent> for ApplicationImpl {
             instance,
             pipeline,
             projection_transform,
-            sprite_texture,
-            sprite_sampler,
+            // sprite_texture,
+            // sprite_sampler,
             sprite_uniform_constants,
             sprite_mesh,
         })

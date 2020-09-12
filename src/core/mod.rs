@@ -31,6 +31,3 @@ pub use command_sequence::*;
 
 mod mesh;
 pub use mesh::*;
-
-mod sampled_texture;
-pub use sampled_texture::*;
