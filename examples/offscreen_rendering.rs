@@ -11,7 +11,8 @@ use rae_app::{
 
 use rae_math::{
     conversion::convert,
-    geometry2::{OrthographicProjection, Point, Projective, Similarity, Translation, UnitComplex},
+    geometry2::{OrthographicProjection, Projective, Similarity, Translation, UnitComplex},
+    geometry3,
 };
 
 use rae_gfx::{
@@ -33,10 +34,58 @@ struct ApplicationImpl {
     projection_transform: Projective<f32>,
     current_angle: f32,
     current_color: Color,
+    target_color: Color,
 }
 
 impl ApplicationImpl {
     const SAMPLE_COUNT: SampleCount = 8;
+
+    fn update_color(&mut self, dt: std::time::Duration) {
+        #[cfg_attr(rustfmt, rustfmt_skip)]
+        const COLORS: [Color; 8] = [
+            Color { r: 0., g: 0., b: 0., a: 1., },
+            Color { r: 1., g: 0., b: 0., a: 1., },
+            Color { r: 0., g: 1., b: 0., a: 1., },
+            Color { r: 0., g: 0., b: 1., a: 1., },
+            Color { r: 1., g: 1., b: 0., a: 1., },
+            Color { r: 1., g: 0., b: 1., a: 1., },
+            Color { r: 0., g: 1., b: 1., a: 1., },
+            Color { r: 1., g: 1., b: 1., a: 1., },
+        ];
+        const COLOR_CHANGE_SPEED: f64 = 1.;
+
+        if self.current_color != self.target_color {
+            let current_color = geometry3::Point::new(
+                self.current_color.r,
+                self.current_color.g,
+                self.current_color.b,
+            );
+            let target_color = geometry3::Point::new(
+                self.target_color.r,
+                self.target_color.g,
+                self.target_color.b,
+            );
+            let next_color = current_color
+                + (target_color - current_color).normalize()
+                    * COLOR_CHANGE_SPEED
+                    * dt.as_secs_f64();
+
+            self.current_color.r = num::clamp(next_color[0], 0., 1.);
+            self.current_color.g = num::clamp(next_color[1], 0., 1.);
+            self.current_color.b = num::clamp(next_color[2], 0., 1.);
+        } else {
+            let mut rng = rand::thread_rng();
+            self.target_color = COLORS[rng.gen_range(0, COLORS.len() - 1)];
+        }
+    }
+
+    pub fn update_angle(&mut self, dt: std::time::Duration) {
+        const ANGULAR_SPEED: f32 = std::f32::consts::PI * 0.25;
+        self.current_angle = self.current_angle + ANGULAR_SPEED * dt.as_secs_f32();
+        while self.current_angle >= std::f32::consts::PI * 2. {
+            self.current_angle = self.current_angle - std::f32::consts::PI * 2.;
+        }
+    }
 
     pub fn generate_push_constant(&self) -> shape2::PushConstants {
         let object_transform = Similarity::<f32>::from_parts(
@@ -117,6 +166,7 @@ impl EventHandler<ApplicationError, ApplicationEvent> for ApplicationImpl {
             projection_transform,
             current_angle: 0.,
             current_color: Color::WHITE,
+            target_color: Color::WHITE,
         })
     }
 
@@ -139,11 +189,8 @@ impl EventHandler<ApplicationError, ApplicationEvent> for ApplicationImpl {
     }
 
     fn on_variable_update(&mut self, dt: std::time::Duration) -> Result<ControlFlow, Self::Error> {
-        const ANGULAR_SPEED: f32 = std::f32::consts::PI * 0.25;
-        self.current_angle = self.current_angle + ANGULAR_SPEED * dt.as_secs_f32();
-        while self.current_angle >= std::f32::consts::PI * 2. {
-            self.current_angle = self.current_angle - std::f32::consts::PI * 2.;
-        }
+        self.update_color(dt);
+        self.update_angle(dt);
 
         let current_triangle_constants = self.generate_push_constant();
 
