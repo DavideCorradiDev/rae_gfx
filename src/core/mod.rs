@@ -17,6 +17,9 @@ pub use wgpu::{
     VertexStateDescriptor,
 };
 
+mod size;
+pub use size::*;
+
 mod instance;
 pub use instance::*;
 
@@ -25,6 +28,9 @@ pub use canvas::*;
 
 mod canvas_window;
 pub use canvas_window::*;
+
+mod canvas_texture;
+pub use canvas_texture::*;
 
 mod command_sequence;
 pub use command_sequence::*;
