@@ -24,15 +24,18 @@ use rae_gfx::{
 };
 
 #[derive(Debug)]
+struct Sprite {
+    uniform_constants: sprite::UniformConstants,
+    mesh: sprite::Mesh,
+}
+
+#[derive(Debug)]
 struct ApplicationImpl {
     window: CanvasWindow,
     instance: Instance,
     pipeline: sprite::RenderPipeline,
     projection_transform: Projective<f32>,
-    // sprite_texture: TextureView,
-    // sprite_sampler: Sampler,
-    sprite_uniform_constants: sprite::UniformConstants,
-    sprite_mesh: sprite::Mesh,
+    sprites: Vec<Sprite>,
 }
 
 impl ApplicationImpl {
@@ -92,33 +95,36 @@ impl EventHandler<ApplicationError, ApplicationEvent> for ApplicationImpl {
             .into_rgba();
         let sprite_texture =
             Texture::from_image(&instance, &image).create_view(&TextureViewDescriptor::default());
-        let sprite_sampler = Sampler::new(
-            &instance,
-            &SamplerDescriptor {
-                address_mode_u: AddressMode::ClampToEdge,
-                address_mode_v: AddressMode::ClampToEdge,
-                mag_filter: FilterMode::Nearest,
-                min_filter: FilterMode::Linear,
-                ..SamplerDescriptor::default()
-            },
-        );
-        let sprite_uniform_constants =
-            sprite::UniformConstants::new(&instance, &sprite_texture, &sprite_sampler);
-        let sprite_mesh = sprite::Mesh::quad(
-            &instance,
-            &sprite::Vertex::new([0., 0.], [0., 0.]),
-            &sprite::Vertex::new([800., 800.], [0.8, 1.2]),
-        );
+
+        let mut sprites = Vec::new();
+        sprites.push(Sprite {
+            uniform_constants: sprite::UniformConstants::new(
+                &instance,
+                &sprite_texture,
+                &Sampler::new(
+                    &instance,
+                    &SamplerDescriptor {
+                        address_mode_u: AddressMode::ClampToEdge,
+                        address_mode_v: AddressMode::ClampToEdge,
+                        mag_filter: FilterMode::Nearest,
+                        min_filter: FilterMode::Linear,
+                        ..SamplerDescriptor::default()
+                    },
+                ),
+            ),
+            mesh: sprite::Mesh::quad(
+                &instance,
+                &sprite::Vertex::new([0., 0.], [0., 0.]),
+                &sprite::Vertex::new([800., 800.], [0.8, 1.2]),
+            ),
+        });
 
         Ok(Self {
             window,
             instance,
             pipeline,
             projection_transform,
-            // sprite_texture,
-            // sprite_sampler,
-            sprite_uniform_constants,
-            sprite_mesh,
+            sprites,
         })
     }
 
@@ -152,17 +158,19 @@ impl EventHandler<ApplicationError, ApplicationEvent> for ApplicationImpl {
                 &self.pipeline.render_pass_requirements(),
                 &RenderPassOperations::default(),
             );
-            rpass.draw_sprite(
-                &self.pipeline,
-                iter::once(sprite::DrawCommandDescriptor {
-                    uniform_constants: &self.sprite_uniform_constants,
-                    draw_mesh_commands: iter::once(sprite::DrawMeshCommandDescriptor {
-                        mesh: &self.sprite_mesh,
-                        index_range: 0..self.sprite_mesh.index_count(),
-                        push_constants: &push_constants,
+            for sprite in &self.sprites {
+                rpass.draw_sprite(
+                    &self.pipeline,
+                    iter::once(sprite::DrawCommandDescriptor {
+                        uniform_constants: &sprite.uniform_constants,
+                        draw_mesh_commands: iter::once(sprite::DrawMeshCommandDescriptor {
+                            mesh: &sprite.mesh,
+                            index_range: 0..sprite.mesh.index_count(),
+                            push_constants: &push_constants,
+                        }),
                     }),
-                }),
-            );
+                );
+            }
         }
         cmd_sequence.submit(&self.instance);
         Ok(ControlFlow::Continue)
