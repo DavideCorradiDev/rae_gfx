@@ -20,6 +20,16 @@ impl Vertex {
             texture_coordinates,
         }
     }
+
+    pub fn from_geometry(
+        position: &geometry2::Point<f32>,
+        texture_coordinates: &geometry2::Point<f32>,
+    ) -> Self {
+        Self {
+            position: [position.x, position.y],
+            texture_coordinates: [texture_coordinates.x, texture_coordinates.y],
+        }
+    }
 }
 
 unsafe impl bytemuck::Zeroable for Vertex {

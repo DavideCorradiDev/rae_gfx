@@ -9,13 +9,17 @@ use crate::{core, core::IndexedMeshRenderer};
 
 #[derive(Debug, PartialEq, Clone, Copy, serde::Serialize, serde::Deserialize)]
 pub struct Vertex {
-    pub position: geometry2::Point<f32>,
+    pub position: [f32; 2],
 }
 
 impl Vertex {
     pub fn new(position: [f32; 2]) -> Self {
+        Self { position }
+    }
+
+    pub fn from_geometry(position: &geometry2::Point<f32>) -> Self {
         Self {
-            position: geometry2::Point::from(position),
+            position: [position.x, position.y],
         }
     }
 }
