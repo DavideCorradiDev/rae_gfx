@@ -6,21 +6,23 @@ use super::{
 #[derive(Debug)]
 pub struct CanvasSwapChainFrame<'a> {
     pub frame: SwapChainFrame,
-    pub backbuffer: Option<&'a TextureView>,
+    pub multisampled_buffer: Option<&'a TextureView>,
     pub format: ColorBufferFormat,
     pub sample_count: SampleCount,
 }
 
 #[derive(Debug)]
 pub struct CanvasColorBuffer<'a> {
-    pub buffer: &'a TextureView,
+    pub main_buffer: &'a TextureView,
+    pub multisampled_buffer: Option<&'a TextureView>,
     pub format: ColorBufferFormat,
     pub sample_count: SampleCount,
 }
 
 #[derive(Debug)]
 pub struct CanvasDepthStencilBuffer<'a> {
-    pub buffer: &'a TextureView,
+    pub main_buffer: &'a TextureView,
+    pub multisampled_buffer: Option<&'a TextureView>,
     pub format: DepthStencilBufferFormat,
     pub sample_count: SampleCount,
 }

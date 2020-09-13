@@ -33,14 +33,15 @@ impl Default for CanvasWindowDescriptor {
 #[derive(Debug)]
 struct ColorBuffer {
     format: ColorBufferFormat,
-    backbuffer: Option<TextureView>,
+    multisampled_buffer: Option<TextureView>,
     swap_chain: SwapChain,
 }
 
 #[derive(Debug)]
 struct DepthStencilBuffer {
     format: DepthStencilBufferFormat,
-    buffer: TextureView,
+    multisampled_buffer: Option<TextureView>,
+    main_buffer: TextureView,
 }
 
 #[derive(Debug)]
@@ -273,24 +274,33 @@ impl CanvasWindow {
     ) -> Option<DepthStencilBuffer> {
         match format {
             Some(format) => {
-                let texture = Texture::new(
-                    instance,
-                    &TextureDescriptor {
-                        size: Extent3d {
-                            width: size.width,
-                            height: size.height,
-                            depth: 1,
-                        },
-                        mip_level_count: 1,
-                        sample_count,
-                        dimension: TextureDimension::D2,
-                        format: TextureFormat::from(format),
-                        usage: TextureUsage::OUTPUT_ATTACHMENT,
-                        label: None,
+                let mut tex_desc = TextureDescriptor {
+                    size: Extent3d {
+                        width: size.width,
+                        height: size.height,
+                        depth: 1,
                     },
-                );
+                    mip_level_count: 1,
+                    sample_count,
+                    dimension: TextureDimension::D2,
+                    format: TextureFormat::from(format),
+                    usage: TextureUsage::OUTPUT_ATTACHMENT,
+                    label: None,
+                };
+                let main_buffer = Texture::new(instance, &tex_desc)
+                    .create_view(&TextureViewDescriptor::default());
+                let multisampled_buffer = if sample_count > 0 {
+                    tex_desc.sample_count = sample_count;
+                    Some(
+                        Texture::new(instance, &tex_desc)
+                            .create_view(&TextureViewDescriptor::default()),
+                    )
+                } else {
+                    None
+                };
                 Some(DepthStencilBuffer {
-                    buffer: texture.create_view(&TextureViewDescriptor::default()),
+                    main_buffer,
+                    multisampled_buffer,
                     format,
                 })
             }
@@ -320,8 +330,8 @@ impl CanvasWindow {
                 present_mode: PresentMode::Mailbox,
             },
         );
-        let backbuffer = if sample_count > 1 {
-            let backbuffer_texture = Texture::new(
+        let multisampled_buffer = if sample_count > 1 {
+            let multisampling_buffer_texture = Texture::new(
                 instance,
                 &TextureDescriptor {
                     size: Extent3d {
@@ -337,13 +347,13 @@ impl CanvasWindow {
                     label: None,
                 },
             );
-            Some(backbuffer_texture.create_view(&TextureViewDescriptor::default()))
+            Some(multisampling_buffer_texture.create_view(&TextureViewDescriptor::default()))
         } else {
             None
         };
         ColorBuffer {
             format,
-            backbuffer,
+            multisampled_buffer,
             swap_chain,
         }
     }
@@ -353,23 +363,30 @@ impl Canvas for CanvasWindow {
     fn current_frame(&mut self) -> Result<CanvasFrame, SwapChainError> {
         let swap_chain_frame = {
             let frame = self.color_buffer.swap_chain.get_current_frame()?;
-            let backbuffer = match self.color_buffer.backbuffer {
+            let multisampled_buffer = match self.color_buffer.multisampled_buffer {
                 Some(ref v) => Some(v),
                 None => None,
             };
             Some(CanvasSwapChainFrame {
                 frame,
-                backbuffer,
+                multisampled_buffer,
                 format: self.color_buffer.format,
                 sample_count: self.sample_count,
             })
         };
         let depth_stencil_buffer = match &self.depth_stencil_buffer {
-            Some(depth_stencil_buffer) => Some(CanvasDepthStencilBuffer {
-                buffer: &depth_stencil_buffer.buffer,
-                format: depth_stencil_buffer.format,
-                sample_count: self.sample_count,
-            }),
+            Some(depth_stencil_buffer) => {
+                let multisampled_buffer = match depth_stencil_buffer.multisampled_buffer {
+                    Some(ref v) => Some(v),
+                    None => None,
+                };
+                Some(CanvasDepthStencilBuffer {
+                    main_buffer: &depth_stencil_buffer.main_buffer,
+                    multisampled_buffer,
+                    format: depth_stencil_buffer.format,
+                    sample_count: self.sample_count,
+                })
+            }
             None => None,
         };
         Ok(CanvasFrame {

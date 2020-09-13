@@ -70,8 +70,8 @@ impl CommandSequence {
         if required_color_buffer_count > 0 {
             if let Some(swap_chain_frame) = &canvas_frame.swap_chain_frame {
                 let frame_view = &swap_chain_frame.frame.output.view;
-                let (attachment, resolve_target) = match swap_chain_frame.backbuffer {
-                    Some(backbuffer) => (backbuffer, Some(frame_view)),
+                let (attachment, resolve_target) = match swap_chain_frame.multisampled_buffer {
+                    Some(ms_buffer) => (ms_buffer, Some(frame_view)),
                     None => (frame_view, None),
                 };
                 color_attachments.push(RenderPassColorAttachmentDescriptor {
@@ -89,13 +89,17 @@ impl CommandSequence {
                 .color_buffers
                 .get(i)
                 .expect("Not enough color buffers");
+            let (attachment, resolve_target) = match color_buffer.multisampled_buffer {
+                Some(ms_buffer) => (ms_buffer, Some(color_buffer.main_buffer)),
+                None => (color_buffer.main_buffer, None),
+            };
             let ops = match operations.color_operations.get(i) {
                 Some(v) => *v,
                 None => Operations::default(),
             };
             color_attachments.push(RenderPassColorAttachmentDescriptor {
-                attachment: color_buffer.buffer,
-                resolve_target: None,
+                attachment,
+                resolve_target,
                 ops,
             })
         }
@@ -103,8 +107,11 @@ impl CommandSequence {
         // Define depth stencil attachments.
         let depth_stencil_attachment = match requirements.depth_stencil_buffer_format {
             Some(_) => {
-                let attachment = match &canvas_frame.depth_stencil_buffer {
-                    Some(v) => v.buffer,
+                let (attachment, resolve_target) = match &canvas_frame.depth_stencil_buffer {
+                    Some(ds_buffer) => match ds_buffer.multisampled_buffer {
+                        Some(ms_buffer) => (ms_buffer, Some(ds_buffer.main_buffer)),
+                        None => (ds_buffer.main_buffer, None),
+                    },
                     None => panic!(
                         "Failed to begin render pass (A depth stencil buffer was required by the \
                          pipeline but none was available in the canvas frame)",

@@ -11,9 +11,7 @@ use rae_app::{
 
 use rae_math::{
     conversion::convert,
-    geometry2::{
-        OrthographicProjection, Projective, Similarity, Transform, Translation, UnitComplex,
-    },
+    geometry2::{OrthographicProjection, Similarity, Translation, UnitComplex},
     geometry3,
 };
 
@@ -208,7 +206,7 @@ impl EventHandler<ApplicationError, ApplicationEvent> for ApplicationImpl {
     fn on_resized(
         &mut self,
         wid: WindowId,
-        size: window::PhysicalSize<u32>,
+        _size: window::PhysicalSize<u32>,
     ) -> Result<ControlFlow, Self::Error> {
         if wid == self.window.id() {
             self.window.update_buffers(&self.instance);
