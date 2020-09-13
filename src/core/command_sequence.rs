@@ -54,7 +54,7 @@ impl CommandSequence {
         let mut color_attachments = Vec::new();
         let mut required_color_buffer_count = requirements.color_buffer_formats.len();
         let available_color_buffer_count = canvas_frame.color_buffers.len()
-            + match &canvas_frame.swap_chain_frame {
+            + match &canvas_frame.swap_chain {
                 Some(_) => 1,
                 None => 0,
             };
@@ -68,7 +68,7 @@ impl CommandSequence {
 
         // Main swapchain attachment.
         if required_color_buffer_count > 0 {
-            if let Some(swap_chain_frame) = &canvas_frame.swap_chain_frame {
+            if let Some(swap_chain_frame) = &canvas_frame.swap_chain {
                 let frame_view = &swap_chain_frame.frame.output.view;
                 let (attachment, resolve_target) = match swap_chain_frame.multisampled_buffer {
                     Some(ms_buffer) => (ms_buffer, Some(frame_view)),
