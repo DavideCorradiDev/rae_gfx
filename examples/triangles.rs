@@ -226,7 +226,7 @@ impl EventHandler<ApplicationError, ApplicationEvent> for ApplicationImpl {
                 &frame,
                 &self.pipeline.render_pass_requirements(),
                 &RenderPassOperations {
-                    swap_chain_frame_operations: Some(rae_gfx::core::Operations {
+                    swap_chain_operations: Some(rae_gfx::core::Operations {
                         load: rae_gfx::core::LoadOp::Load,
                         store: true,
                     }),

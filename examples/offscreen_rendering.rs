@@ -256,7 +256,7 @@ impl EventHandler<ApplicationError, ApplicationEvent> for ApplicationImpl {
                     &frame,
                     &self.sprite_pipeline.render_pass_requirements(),
                     &RenderPassOperations {
-                        swap_chain_frame_operations: Some(ColorOperations {
+                        swap_chain_operations: Some(ColorOperations {
                             load: LoadOp::Clear(Color::WHITE),
                             store: true,
                         }),

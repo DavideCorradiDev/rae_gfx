@@ -16,7 +16,7 @@ pub struct RenderPassRequirements {
 
 #[derive(Debug, PartialEq, Clone)]
 pub struct RenderPassOperations {
-    pub swap_chain_frame_operations: Option<ColorOperations>,
+    pub swap_chain_operations: Option<ColorOperations>,
     pub color_operations: Vec<ColorOperations>,
     pub depth_operations: Option<DepthOperations>,
     pub stencil_operations: Option<StencilOperations>,
@@ -25,7 +25,7 @@ pub struct RenderPassOperations {
 impl Default for RenderPassOperations {
     fn default() -> Self {
         RenderPassOperations {
-            swap_chain_frame_operations: None,
+            swap_chain_operations: None,
             color_operations: Vec::new(),
             depth_operations: None,
             stencil_operations: None,
@@ -51,7 +51,6 @@ impl CommandSequence {
         operations: &RenderPassOperations,
     ) -> RenderPass<'a> {
         // Define color attachments.
-        let mut color_attachments = Vec::new();
         let mut required_color_buffer_count = requirements.color_buffer_formats.len();
         let available_color_buffer_count = canvas_frame.color_buffers.len()
             + match &canvas_frame.swap_chain {
@@ -65,14 +64,15 @@ impl CommandSequence {
             required_color_buffer_count,
             available_color_buffer_count
         );
+        let mut color_attachments = Vec::with_capacity(required_color_buffer_count);
 
         // Main swapchain attachment.
         if required_color_buffer_count > 0 {
-            if let Some(swap_chain_frame) = &canvas_frame.swap_chain {
+            if let Some(swap_chain) = &canvas_frame.swap_chain {
                 color_attachments.push(RenderPassColorAttachmentDescriptor {
-                    attachment: swap_chain_frame.attachment(),
-                    resolve_target: swap_chain_frame.resolve_target(),
-                    ops: operations.swap_chain_frame_operations.unwrap_or_default(),
+                    attachment: swap_chain.attachment(),
+                    resolve_target: swap_chain.resolve_target(),
+                    ops: operations.swap_chain_operations.unwrap_or_default(),
                 });
                 required_color_buffer_count = required_color_buffer_count - 1;
             }
