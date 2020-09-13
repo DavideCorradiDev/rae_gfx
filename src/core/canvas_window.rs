@@ -82,17 +82,12 @@ impl CanvasWindow {
         desc: &CanvasWindowDescriptor,
     ) -> Self {
         let surface_size = window.inner_size();
-        let depth_stencil_buffer = Self::create_depth_stencil_buffer(
-            instance,
-            &surface_size,
-            desc.depth_stencil_buffer_format,
-            desc.sample_count,
-        );
-        let color_buffer = Self::create_color_buffer(
+        let (color_buffer, depth_stencil_buffer) = Self::create_buffers(
             instance,
             &surface,
             &surface_size,
             desc.color_buffer_format,
+            desc.depth_stencil_buffer_format,
             desc.sample_count,
         );
         Self {
@@ -123,19 +118,16 @@ impl CanvasWindow {
     pub fn update_buffers(&mut self, instance: &Instance) {
         let current_size = self.inner_size();
         if self.surface_size != current_size {
-            self.depth_stencil_buffer = Self::create_depth_stencil_buffer(
-                instance,
-                &current_size,
-                self.depth_stencil_buffer_format(),
-                self.sample_count,
-            );
-            self.color_buffer = Self::create_color_buffer(
+            let (color_buffer, depth_stencil_buffer) = Self::create_buffers(
                 instance,
                 &self.surface,
                 &current_size,
                 self.color_buffer_format(),
+                self.depth_stencil_buffer_format(),
                 self.sample_count,
             );
+            self.color_buffer = color_buffer;
+            self.depth_stencil_buffer = depth_stencil_buffer;
             self.surface_size = current_size;
         }
     }
@@ -265,33 +257,50 @@ impl CanvasWindow {
         self.window.set_cursor_visible(visible)
     }
 
+    fn create_buffers(
+        instance: &Instance,
+        surface: &Surface,
+        size: &window::PhysicalSize<u32>,
+        color_format: ColorBufferFormat,
+        depth_stencil_format: Option<DepthStencilBufferFormat>,
+        sample_count: SampleCount,
+    ) -> (ColorBuffer, Option<DepthStencilBuffer>) {
+        let color_buffer =
+            Self::create_color_buffer(instance, surface, size, color_format, sample_count);
+        let depth_stencil_buffer = match depth_stencil_format {
+            Some(format) => Some(Self::create_depth_stencil_buffer(
+                instance,
+                size,
+                format,
+                sample_count,
+            )),
+            None => None,
+        };
+        (color_buffer, depth_stencil_buffer)
+    }
+
     fn create_depth_stencil_buffer(
         instance: &Instance,
         size: &window::PhysicalSize<u32>,
-        format: Option<DepthStencilBufferFormat>,
+        format: DepthStencilBufferFormat,
         sample_count: SampleCount,
-    ) -> Option<DepthStencilBuffer> {
-        match format {
-            Some(format) => {
-                let tex_desc = TextureDescriptor {
-                    size: Extent3d {
-                        width: size.width,
-                        height: size.height,
-                        depth: 1,
-                    },
-                    mip_level_count: 1,
-                    sample_count,
-                    dimension: TextureDimension::D2,
-                    format: TextureFormat::from(format),
-                    usage: TextureUsage::OUTPUT_ATTACHMENT,
-                    label: None,
-                };
-                let buffer = Texture::new(instance, &tex_desc)
-                    .create_view(&TextureViewDescriptor::default());
-                Some(DepthStencilBuffer { buffer, format })
-            }
-            None => None,
-        }
+    ) -> DepthStencilBuffer {
+        let tex_desc = TextureDescriptor {
+            size: Extent3d {
+                width: size.width,
+                height: size.height,
+                depth: 1,
+            },
+            mip_level_count: 1,
+            sample_count,
+            dimension: TextureDimension::D2,
+            format: TextureFormat::from(format),
+            usage: TextureUsage::OUTPUT_ATTACHMENT,
+            label: None,
+        };
+        let buffer =
+            Texture::new(instance, &tex_desc).create_view(&TextureViewDescriptor::default());
+        DepthStencilBuffer { buffer, format }
     }
 
     fn create_color_buffer(

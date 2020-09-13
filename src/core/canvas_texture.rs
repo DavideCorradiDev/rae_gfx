@@ -49,24 +49,13 @@ pub struct CanvasTexture {
 
 impl CanvasTexture {
     pub fn new(instance: &Instance, desc: &CanvasTextureDescriptor) -> Self {
-        let color_buffer = match desc.color_buffer_format {
-            Some(format) => Some(Self::create_color_buffer(
-                instance,
-                &desc.size,
-                format,
-                desc.sample_count,
-            )),
-            None => None,
-        };
-        let depth_stencil_buffer = match desc.depth_stencil_buffer_format {
-            Some(format) => Some(Self::create_depth_stencil_buffer(
-                instance,
-                &desc.size,
-                format,
-                desc.sample_count,
-            )),
-            None => None,
-        };
+        let (color_buffer, depth_stencil_buffer) = Self::create_buffers(
+            instance,
+            &desc.size,
+            desc.color_buffer_format,
+            desc.depth_stencil_buffer_format,
+            desc.sample_count,
+        );
         assert!(
             color_buffer.is_some() || depth_stencil_buffer.is_some(),
             "No main_buffer defined for a CanvasTexture"
@@ -113,6 +102,34 @@ impl CanvasTexture {
             Some(v) => Some(v.format),
             None => None,
         }
+    }
+
+    fn create_buffers(
+        instance: &Instance,
+        size: &Size<u32>,
+        color_format: Option<ColorBufferFormat>,
+        depth_stencil_format: Option<DepthStencilBufferFormat>,
+        sample_count: SampleCount,
+    ) -> (Option<ColorBuffer>, Option<DepthStencilBuffer>) {
+        let color_buffer = match color_format {
+            Some(format) => Some(Self::create_color_buffer(
+                instance,
+                &size,
+                format,
+                sample_count,
+            )),
+            None => None,
+        };
+        let depth_stencil_buffer = match depth_stencil_format {
+            Some(format) => Some(Self::create_depth_stencil_buffer(
+                instance,
+                &size,
+                format,
+                sample_count,
+            )),
+            None => None,
+        };
+        (color_buffer, depth_stencil_buffer)
     }
 
     fn create_color_buffer(
