@@ -62,14 +62,18 @@ impl CommandSequence {
         );
         let mut color_attachments = Vec::with_capacity(required_color_buffer_count);
 
-        // Main swapchain attachment.
         for i in 0..required_color_buffer_count {
+            let required_format = requirements.color_buffer_formats[i];
             let ops = match operations.color_operations.get(i) {
                 Some(v) => *v,
                 None => Operations::default(),
             };
             if i == 0 && canvas_frame.swap_chain.is_some() {
                 let swap_chain = canvas_frame.swap_chain.as_ref().unwrap();
+                assert!(
+                    required_format == swap_chain.format(),
+                    "Incompatible swap chain format"
+                );
                 color_attachments.push(RenderPassColorAttachmentDescriptor {
                     attachment: swap_chain.attachment(),
                     resolve_target: swap_chain.resolve_target(),
@@ -81,6 +85,10 @@ impl CommandSequence {
                     .color_buffers
                     .get(buffer_index)
                     .expect("Not enough color buffers");
+                assert!(
+                    required_format == color_buffer.format(),
+                    "Incompatible color buffer format"
+                );
                 color_attachments.push(RenderPassColorAttachmentDescriptor {
                     attachment: color_buffer.attachment(),
                     resolve_target: color_buffer.resolve_target(),
@@ -91,16 +99,19 @@ impl CommandSequence {
 
         // Define depth stencil attachments.
         let depth_stencil_attachment = match requirements.depth_stencil_buffer_format {
-            Some(_) => match &canvas_frame.depth_stencil_buffer {
-                Some(ds_buffer) => Some(RenderPassDepthStencilAttachmentDescriptor {
-                    attachment: ds_buffer.attachment(),
-                    depth_ops: operations.depth_operations,
-                    stencil_ops: operations.stencil_operations,
-                }),
-                None => panic!(
-                    "Failed to begin render pass (A depth stencil buffer was required by the \
-                     pipeline but none was available in the canvas frame)",
-                ),
+            Some(required_format) => match &canvas_frame.depth_stencil_buffer {
+                Some(ds_buffer) => {
+                    assert!(
+                        required_format == ds_buffer.format(),
+                        "Incompatible depth stencil buffer format"
+                    );
+                    Some(RenderPassDepthStencilAttachmentDescriptor {
+                        attachment: ds_buffer.attachment(),
+                        depth_ops: operations.depth_operations,
+                        stencil_ops: operations.stencil_operations,
+                    })
+                }
+                None => panic!("Unavailable depth stencil buffer"),
             },
             None => None,
         };
