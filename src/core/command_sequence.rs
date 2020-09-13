@@ -16,7 +16,6 @@ pub struct RenderPassRequirements {
 
 #[derive(Debug, PartialEq, Clone)]
 pub struct RenderPassOperations {
-    pub swap_chain_operations: Option<ColorOperations>,
     pub color_operations: Vec<ColorOperations>,
     pub depth_operations: Option<DepthOperations>,
     pub stencil_operations: Option<StencilOperations>,
@@ -25,7 +24,6 @@ pub struct RenderPassOperations {
 impl Default for RenderPassOperations {
     fn default() -> Self {
         RenderPassOperations {
-            swap_chain_operations: None,
             color_operations: Vec::new(),
             depth_operations: None,
             stencil_operations: None,
@@ -51,12 +49,10 @@ impl CommandSequence {
         operations: &RenderPassOperations,
     ) -> RenderPass<'a> {
         // Define color attachments.
-        let mut required_color_buffer_count = requirements.color_buffer_formats.len();
-        let available_color_buffer_count = canvas_frame.color_buffers.len()
-            + match &canvas_frame.swap_chain {
-                Some(_) => 1,
-                None => 0,
-            };
+        let has_swap_chain = canvas_frame.swap_chain.is_some();
+        let required_color_buffer_count = requirements.color_buffer_formats.len();
+        let available_color_buffer_count =
+            canvas_frame.color_buffers.len() + if has_swap_chain { 1 } else { 0 };
         assert!(
             required_color_buffer_count <= available_color_buffer_count,
             "Failed to begin render pass ({} color buffers were required by the pipeline but only \
@@ -67,32 +63,30 @@ impl CommandSequence {
         let mut color_attachments = Vec::with_capacity(required_color_buffer_count);
 
         // Main swapchain attachment.
-        if required_color_buffer_count > 0 {
-            if let Some(swap_chain) = &canvas_frame.swap_chain {
-                color_attachments.push(RenderPassColorAttachmentDescriptor {
-                    attachment: swap_chain.attachment(),
-                    resolve_target: swap_chain.resolve_target(),
-                    ops: operations.swap_chain_operations.unwrap_or_default(),
-                });
-                required_color_buffer_count = required_color_buffer_count - 1;
-            }
-        }
-
-        // Other color attachments.
         for i in 0..required_color_buffer_count {
-            let color_buffer = canvas_frame
-                .color_buffers
-                .get(i)
-                .expect("Not enough color buffers");
             let ops = match operations.color_operations.get(i) {
                 Some(v) => *v,
                 None => Operations::default(),
             };
-            color_attachments.push(RenderPassColorAttachmentDescriptor {
-                attachment: color_buffer.attachment(),
-                resolve_target: color_buffer.resolve_target(),
-                ops,
-            })
+            if i == 0 && canvas_frame.swap_chain.is_some() {
+                let swap_chain = canvas_frame.swap_chain.as_ref().unwrap();
+                color_attachments.push(RenderPassColorAttachmentDescriptor {
+                    attachment: swap_chain.attachment(),
+                    resolve_target: swap_chain.resolve_target(),
+                    ops,
+                });
+            } else {
+                let buffer_index = i - if has_swap_chain { 1 } else { 0 };
+                let color_buffer = canvas_frame
+                    .color_buffers
+                    .get(buffer_index)
+                    .expect("Not enough color buffers");
+                color_attachments.push(RenderPassColorAttachmentDescriptor {
+                    attachment: color_buffer.attachment(),
+                    resolve_target: color_buffer.resolve_target(),
+                    ops,
+                })
+            }
         }
 
         // Define depth stencil attachments.
