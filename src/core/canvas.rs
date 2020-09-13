@@ -9,10 +9,10 @@ pub type CanvasSize = Size<u32>;
 
 #[derive(Debug)]
 pub struct CanvasSwapChainRef<'a> {
-    frame: SwapChainFrame,
-    multisampled_buffer: Option<&'a TextureView>,
     format: ColorBufferFormat,
     sample_count: SampleCount,
+    multisampled_buffer: Option<&'a TextureView>,
+    frame: SwapChainFrame,
 }
 
 impl<'a> CanvasSwapChainRef<'a> {
@@ -35,10 +35,7 @@ impl<'a> CanvasSwapChainRef<'a> {
     }
 
     pub fn multisampled_buffer(&self) -> Option<&TextureView> {
-        match self.multisampled_buffer {
-            Some(v) => Some(&v),
-            None => None,
-        }
+        self.multisampled_buffer
     }
 
     pub fn format(&self) -> ColorBufferFormat {
@@ -126,27 +123,134 @@ impl CanvasSwapChain {
             None => None,
         };
         Ok(CanvasSwapChainRef {
-            frame,
-            multisampled_buffer,
             format: self.format,
             sample_count: self.sample_count,
+            multisampled_buffer,
+            frame,
         })
     }
 }
 
 #[derive(Debug)]
 pub struct CanvasColorBufferRef<'a> {
-    pub main_buffer: &'a TextureView,
-    pub multisampled_buffer: Option<&'a TextureView>,
+    format: ColorBufferFormat,
+    sample_count: SampleCount,
+    multisampled_buffer: Option<&'a TextureView>,
+    main_buffer: &'a TextureView,
+}
+
+impl<'a> CanvasColorBufferRef<'a> {
+    pub fn attachment(&self) -> &TextureView {
+        match self.multisampled_buffer {
+            Some(v) => &v,
+            None => &self.main_buffer,
+        }
+    }
+
+    pub fn resolve_target(&self) -> Option<&TextureView> {
+        match self.multisampled_buffer {
+            Some(_) => Some(&self.main_buffer),
+            None => None,
+        }
+    }
+
+    pub fn main_buffer(&self) -> &TextureView {
+        self.main_buffer
+    }
+
+    pub fn multisampled_buffer(&self) -> Option<&TextureView> {
+        self.multisampled_buffer
+    }
+
+    pub fn format(&self) -> ColorBufferFormat {
+        self.format
+    }
+
+    pub fn sample_count(&self) -> SampleCount {
+        self.sample_count
+    }
+}
+
+#[derive(Debug)]
+pub struct CanvasColorBufferDescriptor {
+    pub size: Size<u32>,
     pub format: ColorBufferFormat,
     pub sample_count: SampleCount,
 }
 
 #[derive(Debug)]
+pub struct CanvasColorBuffer {
+    format: ColorBufferFormat,
+    sample_count: SampleCount,
+    multisampled_buffer: Option<TextureView>,
+    main_buffer: TextureView,
+}
+
+impl CanvasColorBuffer {
+    pub fn new(instance: &Instance, desc: &CanvasColorBufferDescriptor) -> Self {
+        let mut tex_desc = TextureDescriptor {
+            size: Extent3d {
+                width: desc.size.width(),
+                height: desc.size.height(),
+                depth: 1,
+            },
+            mip_level_count: 1,
+            sample_count: 1,
+            dimension: TextureDimension::D2,
+            format: TextureFormat::from(desc.format),
+            usage: TextureUsage::SAMPLED | TextureUsage::OUTPUT_ATTACHMENT,
+            label: None,
+        };
+
+        let main_buffer =
+            Texture::new(instance, &tex_desc).create_view(&TextureViewDescriptor::default());
+
+        let multisampled_buffer = if desc.sample_count > 1 {
+            tex_desc.sample_count = desc.sample_count;
+            Some(Texture::new(instance, &tex_desc).create_view(&TextureViewDescriptor::default()))
+        } else {
+            None
+        };
+
+        Self {
+            format: desc.format,
+            sample_count: desc.sample_count,
+            multisampled_buffer,
+            main_buffer,
+        }
+    }
+
+    pub fn texture_view(&self) -> &TextureView {
+        &self.main_buffer
+    }
+
+    pub fn format(&self) -> ColorBufferFormat {
+        self.format
+    }
+
+    pub fn sample_count(&self) -> SampleCount {
+        self.sample_count
+    }
+
+    pub fn reference(&self) -> CanvasColorBufferRef {
+        let multisampled_buffer = match self.multisampled_buffer {
+            Some(ref v) => Some(v),
+            None => None,
+        };
+        CanvasColorBufferRef {
+            format: self.format,
+            sample_count: self.sample_count,
+            multisampled_buffer,
+            main_buffer: &self.main_buffer,
+        }
+    }
+}
+
+#[derive(Debug)]
 pub struct CanvasDepthStencilBufferRef<'a> {
-    pub buffer: &'a TextureView,
     pub format: DepthStencilBufferFormat,
     pub sample_count: SampleCount,
+    pub buffer: &'a TextureView,
 }
 
 #[derive(Debug)]

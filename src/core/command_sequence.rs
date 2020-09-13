@@ -84,17 +84,13 @@ impl CommandSequence {
                 .color_buffers
                 .get(i)
                 .expect("Not enough color buffers");
-            let (attachment, resolve_target) = match color_buffer.multisampled_buffer {
-                Some(ms_buffer) => (ms_buffer, Some(color_buffer.main_buffer)),
-                None => (color_buffer.main_buffer, None),
-            };
             let ops = match operations.color_operations.get(i) {
                 Some(v) => *v,
                 None => Operations::default(),
             };
             color_attachments.push(RenderPassColorAttachmentDescriptor {
-                attachment,
-                resolve_target,
+                attachment: color_buffer.attachment(),
+                resolve_target: color_buffer.resolve_target(),
                 ops,
             })
         }
