@@ -69,14 +69,9 @@ impl CommandSequence {
         // Main swapchain attachment.
         if required_color_buffer_count > 0 {
             if let Some(swap_chain_frame) = &canvas_frame.swap_chain {
-                let frame_view = &swap_chain_frame.frame.output.view;
-                let (attachment, resolve_target) = match swap_chain_frame.multisampled_buffer {
-                    Some(ms_buffer) => (ms_buffer, Some(frame_view)),
-                    None => (frame_view, None),
-                };
                 color_attachments.push(RenderPassColorAttachmentDescriptor {
-                    attachment,
-                    resolve_target,
+                    attachment: swap_chain_frame.attachment(),
+                    resolve_target: swap_chain_frame.resolve_target(),
                     ops: operations.swap_chain_frame_operations.unwrap_or_default(),
                 });
                 required_color_buffer_count = required_color_buffer_count - 1;

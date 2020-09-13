@@ -8,6 +8,49 @@ use super::{
 pub type CanvasSize = Size<u32>;
 
 #[derive(Debug)]
+pub struct CanvasSwapChainRef<'a> {
+    frame: SwapChainFrame,
+    multisampled_buffer: Option<&'a TextureView>,
+    format: ColorBufferFormat,
+    sample_count: SampleCount,
+}
+
+impl<'a> CanvasSwapChainRef<'a> {
+    pub fn attachment(&self) -> &TextureView {
+        match self.multisampled_buffer {
+            Some(v) => &v,
+            None => &self.frame.output.view,
+        }
+    }
+
+    pub fn resolve_target(&self) -> Option<&TextureView> {
+        match self.multisampled_buffer {
+            Some(_) => Some(&self.frame.output.view),
+            None => None,
+        }
+    }
+
+    pub fn frame(&self) -> &SwapChainFrame {
+        &self.frame
+    }
+
+    pub fn multisampled_buffer(&self) -> Option<&TextureView> {
+        match self.multisampled_buffer {
+            Some(v) => Some(&v),
+            None => None,
+        }
+    }
+
+    pub fn format(&self) -> ColorBufferFormat {
+        self.format
+    }
+
+    pub fn sample_count(&self) -> SampleCount {
+        self.sample_count
+    }
+}
+
+#[derive(Debug)]
 pub struct CanvasSwapChainDescriptor {
     pub size: Size<u32>,
     pub format: ColorBufferFormat,
@@ -20,14 +63,6 @@ pub struct CanvasSwapChain {
     sample_count: SampleCount,
     multisampled_buffer: Option<TextureView>,
     swap_chain: SwapChain,
-}
-
-#[derive(Debug)]
-pub struct CanvasSwapChainRef<'a> {
-    pub frame: SwapChainFrame,
-    pub multisampled_buffer: Option<&'a TextureView>,
-    pub format: ColorBufferFormat,
-    pub sample_count: SampleCount,
 }
 
 impl CanvasSwapChain {
