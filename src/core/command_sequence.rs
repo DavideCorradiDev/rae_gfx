@@ -99,7 +99,7 @@ impl CommandSequence {
         let depth_stencil_attachment = match requirements.depth_stencil_buffer_format {
             Some(_) => match &canvas_frame.depth_stencil_buffer {
                 Some(ds_buffer) => Some(RenderPassDepthStencilAttachmentDescriptor {
-                    attachment: ds_buffer.buffer,
+                    attachment: ds_buffer.attachment(),
                     depth_ops: operations.depth_operations,
                     stencil_ops: operations.stencil_operations,
                 }),

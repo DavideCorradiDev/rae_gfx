@@ -7,11 +7,9 @@ use rae_app::{
 };
 
 use super::{
-    Canvas, CanvasDepthStencilBufferRef, CanvasFrame, CanvasSwapChain, CanvasSwapChainDescriptor,
-    CanvasSwapChainRef, ColorBufferFormat, DepthStencilBufferFormat, Extent3d, Instance,
-    PresentMode, SampleCount, Size, Surface, SwapChain, SwapChainDescriptor, SwapChainError,
-    Texture, TextureDescriptor, TextureDimension, TextureFormat, TextureUsage, TextureView,
-    TextureViewDescriptor,
+    Canvas, CanvasDepthStencilBuffer, CanvasDepthStencilBufferDescriptor, CanvasFrame,
+    CanvasSwapChain, CanvasSwapChainDescriptor, ColorBufferFormat, DepthStencilBufferFormat,
+    Instance, SampleCount, Size, Surface, SwapChainError,
 };
 
 #[derive(Debug, PartialEq, Clone, serde::Serialize, serde::Deserialize)]
@@ -32,16 +30,10 @@ impl Default for CanvasWindowDescriptor {
 }
 
 #[derive(Debug)]
-struct DepthStencilBuffer {
-    format: DepthStencilBufferFormat,
-    buffer: TextureView,
-}
-
-#[derive(Debug)]
 pub struct CanvasWindow {
     surface_size: window::PhysicalSize<u32>,
     sample_count: SampleCount,
-    depth_stencil_buffer: Option<DepthStencilBuffer>,
+    depth_stencil_buffer: Option<CanvasDepthStencilBuffer>,
     swap_chain: CanvasSwapChain,
     surface: Surface,
     window: Window,
@@ -104,7 +96,7 @@ impl CanvasWindow {
 
     pub fn depth_stencil_buffer_format(&self) -> Option<DepthStencilBufferFormat> {
         match &self.depth_stencil_buffer {
-            Some(v) => Some(v.format),
+            Some(v) => Some(v.format()),
             None => None,
         }
     }
@@ -258,7 +250,7 @@ impl CanvasWindow {
         color_format: ColorBufferFormat,
         depth_stencil_format: Option<DepthStencilBufferFormat>,
         sample_count: SampleCount,
-    ) -> (CanvasSwapChain, Option<DepthStencilBuffer>) {
+    ) -> (CanvasSwapChain, Option<CanvasDepthStencilBuffer>) {
         let swap_chain = CanvasSwapChain::new(
             instance,
             surface,
@@ -269,39 +261,17 @@ impl CanvasWindow {
             },
         );
         let depth_stencil_buffer = match depth_stencil_format {
-            Some(format) => Some(Self::create_depth_stencil_buffer(
+            Some(format) => Some(CanvasDepthStencilBuffer::new(
                 instance,
-                size,
-                format,
-                sample_count,
+                &CanvasDepthStencilBufferDescriptor {
+                    size: Size::new(size.width, size.height),
+                    format,
+                    sample_count,
+                },
             )),
             None => None,
         };
         (swap_chain, depth_stencil_buffer)
-    }
-
-    fn create_depth_stencil_buffer(
-        instance: &Instance,
-        size: &window::PhysicalSize<u32>,
-        format: DepthStencilBufferFormat,
-        sample_count: SampleCount,
-    ) -> DepthStencilBuffer {
-        let tex_desc = TextureDescriptor {
-            size: Extent3d {
-                width: size.width,
-                height: size.height,
-                depth: 1,
-            },
-            mip_level_count: 1,
-            sample_count,
-            dimension: TextureDimension::D2,
-            format: TextureFormat::from(format),
-            usage: TextureUsage::OUTPUT_ATTACHMENT,
-            label: None,
-        };
-        let buffer =
-            Texture::new(instance, &tex_desc).create_view(&TextureViewDescriptor::default());
-        DepthStencilBuffer { buffer, format }
     }
 }
 
@@ -309,11 +279,7 @@ impl Canvas for CanvasWindow {
     fn current_frame(&mut self) -> Result<CanvasFrame, SwapChainError> {
         let swap_chain = Some(self.swap_chain.reference()?);
         let depth_stencil_buffer = match &self.depth_stencil_buffer {
-            Some(depth_stencil_buffer) => Some(CanvasDepthStencilBufferRef {
-                buffer: &depth_stencil_buffer.buffer,
-                format: depth_stencil_buffer.format,
-                sample_count: self.sample_count,
-            }),
+            Some(depth_stencil_buffer) => Some(depth_stencil_buffer.reference()),
             None => None,
         };
         Ok(CanvasFrame {
