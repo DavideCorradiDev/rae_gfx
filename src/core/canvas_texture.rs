@@ -171,15 +171,12 @@ impl CanvasTexture {
             usage: TextureUsage::SAMPLED | TextureUsage::OUTPUT_ATTACHMENT,
             label: None,
         };
-
         let buffer =
             Texture::new(instance, &tex_desc).create_view(&TextureViewDescriptor::default());
-
         DepthStencilBuffer { buffer, format }
     }
 }
 
-// TODO: remove code duplication in the varios Color/Depth Buffer structs.
 impl Canvas for CanvasTexture {
     fn current_frame(&mut self) -> Result<CanvasFrame, SwapChainError> {
         let color_buffers = match &self.color_buffer {
