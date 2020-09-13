@@ -40,8 +40,7 @@ struct ColorBuffer {
 #[derive(Debug)]
 struct DepthStencilBuffer {
     format: DepthStencilBufferFormat,
-    multisampled_buffer: Option<TextureView>,
-    main_buffer: TextureView,
+    buffer: TextureView,
 }
 
 #[derive(Debug)]
@@ -274,7 +273,7 @@ impl CanvasWindow {
     ) -> Option<DepthStencilBuffer> {
         match format {
             Some(format) => {
-                let mut tex_desc = TextureDescriptor {
+                let tex_desc = TextureDescriptor {
                     size: Extent3d {
                         width: size.width,
                         height: size.height,
@@ -287,22 +286,9 @@ impl CanvasWindow {
                     usage: TextureUsage::OUTPUT_ATTACHMENT,
                     label: None,
                 };
-                let main_buffer = Texture::new(instance, &tex_desc)
+                let buffer = Texture::new(instance, &tex_desc)
                     .create_view(&TextureViewDescriptor::default());
-                let multisampled_buffer = if sample_count > 0 {
-                    tex_desc.sample_count = sample_count;
-                    Some(
-                        Texture::new(instance, &tex_desc)
-                            .create_view(&TextureViewDescriptor::default()),
-                    )
-                } else {
-                    None
-                };
-                Some(DepthStencilBuffer {
-                    main_buffer,
-                    multisampled_buffer,
-                    format,
-                })
+                Some(DepthStencilBuffer { buffer, format })
             }
             None => None,
         }
@@ -375,18 +361,11 @@ impl Canvas for CanvasWindow {
             })
         };
         let depth_stencil_buffer = match &self.depth_stencil_buffer {
-            Some(depth_stencil_buffer) => {
-                let multisampled_buffer = match depth_stencil_buffer.multisampled_buffer {
-                    Some(ref v) => Some(v),
-                    None => None,
-                };
-                Some(CanvasDepthStencilBuffer {
-                    main_buffer: &depth_stencil_buffer.main_buffer,
-                    multisampled_buffer,
-                    format: depth_stencil_buffer.format,
-                    sample_count: self.sample_count,
-                })
-            }
+            Some(depth_stencil_buffer) => Some(CanvasDepthStencilBuffer {
+                buffer: &depth_stencil_buffer.buffer,
+                format: depth_stencil_buffer.format,
+                sample_count: self.sample_count,
+            }),
             None => None,
         };
         Ok(CanvasFrame {

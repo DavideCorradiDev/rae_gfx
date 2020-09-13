@@ -36,8 +36,7 @@ struct ColorBuffer {
 #[derive(Debug)]
 struct DepthStencilBuffer {
     format: DepthStencilBufferFormat,
-    multisampled_buffer: Option<TextureView>,
-    main_buffer: TextureView,
+    buffer: TextureView,
 }
 
 #[derive(Debug)]
@@ -51,35 +50,21 @@ pub struct CanvasTexture {
 impl CanvasTexture {
     pub fn new(instance: &Instance, desc: &CanvasTextureDescriptor) -> Self {
         let color_buffer = match desc.color_buffer_format {
-            Some(format) => {
-                let (main_buffer, multisampled_buffer) = Self::create_texture_views(
-                    instance,
-                    &desc.size,
-                    TextureFormat::from(format),
-                    desc.sample_count,
-                );
-                Some(ColorBuffer {
-                    format,
-                    multisampled_buffer,
-                    main_buffer,
-                })
-            }
+            Some(format) => Some(Self::create_color_buffer(
+                instance,
+                &desc.size,
+                format,
+                desc.sample_count,
+            )),
             None => None,
         };
         let depth_stencil_buffer = match desc.depth_stencil_buffer_format {
-            Some(format) => {
-                let (main_buffer, multisampled_buffer) = Self::create_texture_views(
-                    instance,
-                    &desc.size,
-                    TextureFormat::from(format),
-                    desc.sample_count,
-                );
-                Some(DepthStencilBuffer {
-                    format,
-                    multisampled_buffer,
-                    main_buffer,
-                })
-            }
+            Some(format) => Some(Self::create_depth_stencil_buffer(
+                instance,
+                &desc.size,
+                format,
+                desc.sample_count,
+            )),
             None => None,
         };
         assert!(
@@ -130,12 +115,12 @@ impl CanvasTexture {
         }
     }
 
-    fn create_texture_views(
+    fn create_color_buffer(
         instance: &Instance,
         size: &Size<u32>,
-        format: TextureFormat,
+        format: ColorBufferFormat,
         sample_count: SampleCount,
-    ) -> (TextureView, Option<TextureView>) {
+    ) -> ColorBuffer {
         let mut tex_desc = TextureDescriptor {
             size: Extent3d {
                 width: size.width(),
@@ -145,22 +130,52 @@ impl CanvasTexture {
             mip_level_count: 1,
             sample_count: 1,
             dimension: TextureDimension::D2,
-            format,
+            format: TextureFormat::from(format),
             usage: TextureUsage::SAMPLED | TextureUsage::OUTPUT_ATTACHMENT,
             label: None,
         };
 
-        let tex_view =
+        let main_buffer =
             Texture::new(instance, &tex_desc).create_view(&TextureViewDescriptor::default());
 
-        let multisampled_tex_view = if sample_count > 0 {
+        let multisampled_buffer = if sample_count > 1 {
             tex_desc.sample_count = sample_count;
             Some(Texture::new(instance, &tex_desc).create_view(&TextureViewDescriptor::default()))
         } else {
             None
         };
 
-        (tex_view, multisampled_tex_view)
+        ColorBuffer {
+            main_buffer,
+            multisampled_buffer,
+            format,
+        }
+    }
+
+    fn create_depth_stencil_buffer(
+        instance: &Instance,
+        size: &Size<u32>,
+        format: DepthStencilBufferFormat,
+        sample_count: SampleCount,
+    ) -> DepthStencilBuffer {
+        let tex_desc = TextureDescriptor {
+            size: Extent3d {
+                width: size.width(),
+                height: size.height(),
+                depth: 1,
+            },
+            mip_level_count: 1,
+            sample_count,
+            dimension: TextureDimension::D2,
+            format: TextureFormat::from(format),
+            usage: TextureUsage::SAMPLED | TextureUsage::OUTPUT_ATTACHMENT,
+            label: None,
+        };
+
+        let buffer =
+            Texture::new(instance, &tex_desc).create_view(&TextureViewDescriptor::default());
+
+        DepthStencilBuffer { buffer, format }
     }
 }
 
@@ -183,18 +198,11 @@ impl Canvas for CanvasTexture {
             None => Vec::new(),
         };
         let depth_stencil_buffer = match &self.depth_stencil_buffer {
-            Some(depth_stencil_buffer) => {
-                let multisampled_buffer = match depth_stencil_buffer.multisampled_buffer {
-                    Some(ref v) => Some(v),
-                    None => None,
-                };
-                Some(CanvasDepthStencilBuffer {
-                    main_buffer: &depth_stencil_buffer.main_buffer,
-                    multisampled_buffer,
-                    format: depth_stencil_buffer.format,
-                    sample_count: self.sample_count,
-                })
-            }
+            Some(depth_stencil_buffer) => Some(CanvasDepthStencilBuffer {
+                buffer: &depth_stencil_buffer.buffer,
+                format: depth_stencil_buffer.format,
+                sample_count: self.sample_count,
+            }),
             None => None,
         };
         Ok(CanvasFrame {

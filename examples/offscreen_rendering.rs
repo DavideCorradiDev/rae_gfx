@@ -44,7 +44,7 @@ struct ApplicationImpl {
 }
 
 impl ApplicationImpl {
-    const SAMPLE_COUNT: SampleCount = 1;
+    const SAMPLE_COUNT: SampleCount = 8;
 
     fn update_color(&mut self, dt: std::time::Duration) {
         #[cfg_attr(rustfmt, rustfmt_skip)]

@@ -106,23 +106,17 @@ impl CommandSequence {
 
         // Define depth stencil attachments.
         let depth_stencil_attachment = match requirements.depth_stencil_buffer_format {
-            Some(_) => {
-                let (attachment, resolve_target) = match &canvas_frame.depth_stencil_buffer {
-                    Some(ds_buffer) => match ds_buffer.multisampled_buffer {
-                        Some(ms_buffer) => (ms_buffer, Some(ds_buffer.main_buffer)),
-                        None => (ds_buffer.main_buffer, None),
-                    },
-                    None => panic!(
-                        "Failed to begin render pass (A depth stencil buffer was required by the \
-                         pipeline but none was available in the canvas frame)",
-                    ),
-                };
-                Some(RenderPassDepthStencilAttachmentDescriptor {
-                    attachment,
+            Some(_) => match &canvas_frame.depth_stencil_buffer {
+                Some(ds_buffer) => Some(RenderPassDepthStencilAttachmentDescriptor {
+                    attachment: ds_buffer.buffer,
                     depth_ops: operations.depth_operations,
                     stencil_ops: operations.stencil_operations,
-                })
-            }
+                }),
+                None => panic!(
+                    "Failed to begin render pass (A depth stencil buffer was required by the \
+                     pipeline but none was available in the canvas frame)",
+                ),
+            },
             None => None,
         };
 

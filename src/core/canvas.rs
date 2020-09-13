@@ -21,8 +21,7 @@ pub struct CanvasColorBuffer<'a> {
 
 #[derive(Debug)]
 pub struct CanvasDepthStencilBuffer<'a> {
-    pub main_buffer: &'a TextureView,
-    pub multisampled_buffer: Option<&'a TextureView>,
+    pub buffer: &'a TextureView,
     pub format: DepthStencilBufferFormat,
     pub sample_count: SampleCount,
 }
