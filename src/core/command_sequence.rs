@@ -16,7 +16,6 @@ pub struct RenderPassRequirements {
 
 #[derive(Debug, PartialEq, Clone)]
 pub struct RenderPassOperations {
-    pub swap_chain_frame_operations: Option<ColorOperations>,
     pub color_operations: Vec<ColorOperations>,
     pub depth_operations: Option<DepthOperations>,
     pub stencil_operations: Option<StencilOperations>,
@@ -25,7 +24,6 @@ pub struct RenderPassOperations {
 impl Default for RenderPassOperations {
     fn default() -> Self {
         RenderPassOperations {
-            swap_chain_frame_operations: None,
             color_operations: Vec::new(),
             depth_operations: None,
             stencil_operations: None,
@@ -51,13 +49,10 @@ impl CommandSequence {
         operations: &RenderPassOperations,
     ) -> RenderPass<'a> {
         // Define color attachments.
-        let mut color_attachments = Vec::new();
-        let mut required_color_buffer_count = requirements.color_buffer_formats.len();
-        let available_color_buffer_count = canvas_frame.color_buffers.len()
-            + match &canvas_frame.swap_chain_frame {
-                Some(_) => 1,
-                None => 0,
-            };
+        let has_swap_chain = canvas_frame.swap_chain.is_some();
+        let required_color_buffer_count = requirements.color_buffer_formats.len();
+        let available_color_buffer_count =
+            canvas_frame.color_buffers.len() + if has_swap_chain { 1 } else { 0 };
         assert!(
             required_color_buffer_count <= available_color_buffer_count,
             "Failed to begin render pass ({} color buffers were required by the pipeline but only \
@@ -65,57 +60,59 @@ impl CommandSequence {
             required_color_buffer_count,
             available_color_buffer_count
         );
+        let mut color_attachments = Vec::with_capacity(required_color_buffer_count);
 
-        // Main swapchain attachment.
-        if required_color_buffer_count > 0 {
-            if let Some(swap_chain_frame) = &canvas_frame.swap_chain_frame {
-                let frame_view = &swap_chain_frame.frame.output.view;
-                let (attachment, resolve_target) = match swap_chain_frame.backbuffer {
-                    Some(backbuffer) => (backbuffer, Some(frame_view)),
-                    None => (frame_view, None),
-                };
-                color_attachments.push(RenderPassColorAttachmentDescriptor {
-                    attachment,
-                    resolve_target,
-                    ops: operations.swap_chain_frame_operations.unwrap_or_default(),
-                });
-            }
-            required_color_buffer_count = required_color_buffer_count - 1;
-        }
-
-        // Other color attachments.
         for i in 0..required_color_buffer_count {
-            let color_buffer = canvas_frame
-                .color_buffers
-                .get(i)
-                .expect("Not enough color buffers");
+            let required_format = requirements.color_buffer_formats[i];
             let ops = match operations.color_operations.get(i) {
                 Some(v) => *v,
                 None => Operations::default(),
             };
-            color_attachments.push(RenderPassColorAttachmentDescriptor {
-                attachment: color_buffer.buffer,
-                resolve_target: None,
-                ops,
-            })
+            if i == 0 && canvas_frame.swap_chain.is_some() {
+                let swap_chain = canvas_frame.swap_chain.as_ref().unwrap();
+                assert!(
+                    required_format == swap_chain.format(),
+                    "Incompatible swap chain format"
+                );
+                color_attachments.push(RenderPassColorAttachmentDescriptor {
+                    attachment: swap_chain.attachment(),
+                    resolve_target: swap_chain.resolve_target(),
+                    ops,
+                });
+            } else {
+                let buffer_index = i - if has_swap_chain { 1 } else { 0 };
+                let color_buffer = canvas_frame
+                    .color_buffers
+                    .get(buffer_index)
+                    .expect("Not enough color buffers");
+                assert!(
+                    required_format == color_buffer.format(),
+                    "Incompatible color buffer format"
+                );
+                color_attachments.push(RenderPassColorAttachmentDescriptor {
+                    attachment: color_buffer.attachment(),
+                    resolve_target: color_buffer.resolve_target(),
+                    ops,
+                })
+            }
         }
 
         // Define depth stencil attachments.
         let depth_stencil_attachment = match requirements.depth_stencil_buffer_format {
-            Some(_) => {
-                let attachment = match &canvas_frame.depth_stencil_buffer {
-                    Some(v) => v.buffer,
-                    None => panic!(
-                        "Failed to begin render pass (A depth stencil buffer was required by the \
-                         pipeline but none was available in the canvas frame)",
-                    ),
-                };
-                Some(RenderPassDepthStencilAttachmentDescriptor {
-                    attachment,
-                    depth_ops: operations.depth_operations,
-                    stencil_ops: operations.stencil_operations,
-                })
-            }
+            Some(required_format) => match &canvas_frame.depth_stencil_buffer {
+                Some(ds_buffer) => {
+                    assert!(
+                        required_format == ds_buffer.format(),
+                        "Incompatible depth stencil buffer format"
+                    );
+                    Some(RenderPassDepthStencilAttachmentDescriptor {
+                        attachment: ds_buffer.attachment(),
+                        depth_ops: operations.depth_operations,
+                        stencil_ops: operations.stencil_operations,
+                    })
+                }
+                None => panic!("Unavailable depth stencil buffer"),
+            },
             None => None,
         };
 
