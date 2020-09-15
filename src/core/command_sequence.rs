@@ -1,7 +1,7 @@
 use std::{default::Default, iter};
 
 use super::{
-    CanvasFrameRef, ColorBufferFormat, ColorOperations, CommandEncoder, CommandEncoderDescriptor,
+    CanvasFrame, ColorBufferFormat, ColorOperations, CommandEncoder, CommandEncoderDescriptor,
     DepthOperations, DepthStencilBufferFormat, Instance, Operations, RenderPass,
     RenderPassColorAttachmentDescriptor, RenderPassDepthStencilAttachmentDescriptor,
     RenderPassDescriptor, SampleCount, StencilOperations,
@@ -44,7 +44,7 @@ impl CommandSequence {
 
     pub fn begin_render_pass<'a>(
         &'a mut self,
-        canvas_frame: &'a CanvasFrameRef,
+        canvas_frame: &'a CanvasFrame,
         requirements: &RenderPassRequirements,
         operations: &RenderPassOperations,
     ) -> RenderPass<'a> {

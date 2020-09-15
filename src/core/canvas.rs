@@ -313,22 +313,22 @@ impl CanvasDepthStencilBuffer {
 }
 
 #[derive(Debug)]
-pub struct CanvasFrameRef<'a> {
+pub struct CanvasFrame<'a> {
     pub swap_chain: Option<CanvasSwapChainRef<'a>>,
     pub color_buffers: Vec<CanvasColorBufferRef<'a>>,
     pub depth_stencil_buffer: Option<CanvasDepthStencilBufferRef<'a>>,
 }
 
 #[derive(Debug, Clone)]
-pub struct CanvasFrameSwapChainDescriptor<'a> {
+pub struct CanvasBufferSwapChainDescriptor<'a> {
     pub surface: &'a Surface,
     pub format: ColorBufferFormat,
 }
 
 #[derive(Debug, Clone)]
-pub struct CanvasFrameDescriptor<'a> {
+pub struct CanvasBufferDescriptor<'a> {
     pub size: CanvasSize,
-    pub swap_chain_descriptor: Option<CanvasFrameSwapChainDescriptor<'a>>,
+    pub swap_chain_descriptor: Option<CanvasBufferSwapChainDescriptor<'a>>,
     pub color_buffer_formats: Vec<ColorBufferFormat>,
     pub depth_stencil_buffer_format: Option<DepthStencilBufferFormat>,
     pub sample_count: SampleCount,
@@ -342,7 +342,7 @@ pub struct CanvasBuffer {
 }
 
 impl CanvasBuffer {
-    pub fn new(instance: &Instance, desc: &CanvasFrameDescriptor) -> Self {
+    pub fn new(instance: &Instance, desc: &CanvasBufferDescriptor) -> Self {
         let swap_chain = match &desc.swap_chain_descriptor {
             Some(sc_desc) => Some(CanvasSwapChain::new(
                 instance,
@@ -391,8 +391,31 @@ impl CanvasBuffer {
             depth_stencil_buffer,
         }
     }
+
+    pub fn current_frame(&mut self) -> Result<CanvasFrame, SwapChainError> {
+        let swap_chain = match &mut self.swap_chain {
+            Some(swap_chain) => Some(swap_chain.reference()?),
+            None => None,
+        };
+
+        let mut color_buffers = Vec::with_capacity(self.color_buffers.len());
+        for color_buffer in self.color_buffers.iter() {
+            color_buffers.push(color_buffer.reference());
+        }
+
+        let depth_stencil_buffer = match &self.depth_stencil_buffer {
+            Some(depth_stencil_buffer) => Some(depth_stencil_buffer.reference()),
+            None => None,
+        };
+
+        Ok(CanvasFrame {
+            swap_chain,
+            color_buffers,
+            depth_stencil_buffer,
+        })
+    }
 }
 
 pub trait Canvas {
-    fn current_frame(&mut self) -> Result<CanvasFrameRef, SwapChainError>;
+    fn current_frame(&mut self) -> Result<CanvasFrame, SwapChainError>;
 }

@@ -2,8 +2,8 @@ use std::default::Default;
 
 use super::{
     Canvas, CanvasColorBuffer, CanvasColorBufferDescriptor, CanvasDepthStencilBuffer,
-    CanvasDepthStencilBufferDescriptor, CanvasFrameRef, ColorBufferFormat,
-    DepthStencilBufferFormat, Instance, SampleCount, Size, SwapChainError, TextureView,
+    CanvasDepthStencilBufferDescriptor, CanvasFrame, ColorBufferFormat, DepthStencilBufferFormat,
+    Instance, SampleCount, Size, SwapChainError, TextureView,
 };
 
 #[derive(Debug, PartialEq, Clone, serde::Serialize, serde::Deserialize)]
@@ -124,7 +124,7 @@ impl CanvasTexture {
 }
 
 impl Canvas for CanvasTexture {
-    fn current_frame(&mut self) -> Result<CanvasFrameRef, SwapChainError> {
+    fn current_frame(&mut self) -> Result<CanvasFrame, SwapChainError> {
         let color_buffers = match &self.color_buffer {
             Some(color_buffer) => vec![color_buffer.reference()],
             None => Vec::new(),
@@ -133,7 +133,7 @@ impl Canvas for CanvasTexture {
             Some(depth_stencil_buffer) => Some(depth_stencil_buffer.reference()),
             None => None,
         };
-        Ok(CanvasFrameRef {
+        Ok(CanvasFrame {
             swap_chain: None,
             color_buffers,
             depth_stencil_buffer,
