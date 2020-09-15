@@ -7,10 +7,9 @@ use rae_app::{
 };
 
 use super::{
-    Canvas, CanvasBuffer, CanvasBufferDescriptor, CanvasBufferSwapChainDescriptor,
-    CanvasDepthStencilBuffer, CanvasDepthStencilBufferDescriptor, CanvasFrame, CanvasSize,
-    CanvasSwapChain, CanvasSwapChainDescriptor, ColorBufferFormat, DepthStencilBufferFormat,
-    Instance, SampleCount, Size, Surface, SwapChainError,
+    Canvas, CanvasBuffer, CanvasBufferDescriptor, CanvasBufferSwapChainDescriptor, CanvasFrame,
+    CanvasSize, ColorBufferFormat, DepthStencilBufferFormat, Instance, SampleCount, Surface,
+    SwapChainError,
 };
 
 #[derive(Debug, PartialEq, Clone, serde::Serialize, serde::Deserialize)]
@@ -240,37 +239,6 @@ impl CanvasWindow {
 
     pub fn set_cursor_visible(&self, visible: bool) {
         self.window.set_cursor_visible(visible)
-    }
-
-    fn create_buffers(
-        instance: &Instance,
-        surface: &Surface,
-        size: &window::PhysicalSize<u32>,
-        color_format: ColorBufferFormat,
-        depth_stencil_format: Option<DepthStencilBufferFormat>,
-        sample_count: SampleCount,
-    ) -> (CanvasSwapChain, Option<CanvasDepthStencilBuffer>) {
-        let swap_chain = CanvasSwapChain::new(
-            instance,
-            surface,
-            &CanvasSwapChainDescriptor {
-                size: Size::new(size.width, size.height),
-                format: color_format,
-                sample_count,
-            },
-        );
-        let depth_stencil_buffer = match depth_stencil_format {
-            Some(format) => Some(CanvasDepthStencilBuffer::new(
-                instance,
-                &CanvasDepthStencilBufferDescriptor {
-                    size: Size::new(size.width, size.height),
-                    format,
-                    sample_count,
-                },
-            )),
-            None => None,
-        };
-        (swap_chain, depth_stencil_buffer)
     }
 }
 

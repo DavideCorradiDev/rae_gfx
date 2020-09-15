@@ -1,10 +1,8 @@
 use std::default::Default;
 
 use super::{
-    Canvas, CanvasBuffer, CanvasBufferDescriptor, CanvasColorBuffer, CanvasColorBufferDescriptor,
-    CanvasDepthStencilBuffer, CanvasDepthStencilBufferDescriptor, CanvasFrame, CanvasSize,
-    ColorBufferFormat, DepthStencilBufferFormat, Instance, SampleCount, Size, SwapChainError,
-    TextureView,
+    Canvas, CanvasBuffer, CanvasBufferDescriptor, CanvasFrame, CanvasSize, ColorBufferFormat,
+    DepthStencilBufferFormat, Instance, SampleCount, Size, SwapChainError, TextureView,
 };
 
 #[derive(Debug, PartialEq, Clone, serde::Serialize, serde::Deserialize)]
