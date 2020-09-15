@@ -336,6 +336,8 @@ pub struct CanvasBufferDescriptor<'a> {
 
 #[derive(Debug)]
 pub struct CanvasBuffer {
+    size: CanvasSize,
+    pub sample_count: SampleCount,
     swap_chain: Option<CanvasSwapChain>,
     color_buffers: Vec<CanvasColorBuffer>,
     depth_stencil_buffer: Option<CanvasDepthStencilBuffer>,
@@ -386,10 +388,32 @@ impl CanvasBuffer {
         );
 
         Self {
+            size: desc.size,
+            sample_count: desc.sample_count,
             swap_chain,
             color_buffers,
             depth_stencil_buffer,
         }
+    }
+
+    pub fn canvas_size(&self) -> &CanvasSize {
+        &self.size
+    }
+
+    pub fn sample_count(&self) -> SampleCount {
+        self.sample_count
+    }
+
+    pub fn swap_chain(&self) -> Option<&CanvasSwapChain> {
+        self.swap_chain.as_ref()
+    }
+
+    pub fn color_buffers(&self) -> &Vec<CanvasColorBuffer> {
+        &self.color_buffers
+    }
+
+    pub fn depth_stencil_buffer(&self) -> Option<&CanvasDepthStencilBuffer> {
+        self.depth_stencil_buffer.as_ref()
     }
 
     pub fn current_frame(&mut self) -> Result<CanvasFrame, SwapChainError> {
@@ -418,4 +442,6 @@ impl CanvasBuffer {
 
 pub trait Canvas {
     fn current_frame(&mut self) -> Result<CanvasFrame, SwapChainError>;
+    fn canvas_size(&self) -> &CanvasSize;
+    fn sample_count(&self) -> SampleCount;
 }

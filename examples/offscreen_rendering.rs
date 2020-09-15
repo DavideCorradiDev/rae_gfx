@@ -182,11 +182,11 @@ impl EventHandler<ApplicationError, ApplicationEvent> for ApplicationImpl {
             },
         );
 
-        let canvas_color_buffer = canvas
-            .color_buffer()
+        let canvas_texture_view = canvas
+            .color_texture_view()
             .expect("The canvas color buffer doesn't exist");
         let sprite_uniform_constants =
-            sprite::UniformConstants::new(&instance, canvas_color_buffer, &sampler);
+            sprite::UniformConstants::new(&instance, canvas_texture_view, &sampler);
 
         Ok(Self {
             window,
@@ -209,7 +209,7 @@ impl EventHandler<ApplicationError, ApplicationEvent> for ApplicationImpl {
         _size: window::PhysicalSize<u32>,
     ) -> Result<ControlFlow, Self::Error> {
         if wid == self.window.id() {
-            self.window.update_buffers(&self.instance);
+            self.window.update_buffer(&self.instance);
         }
         Ok(ControlFlow::Continue)
     }

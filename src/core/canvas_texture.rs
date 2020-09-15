@@ -1,9 +1,10 @@
 use std::default::Default;
 
 use super::{
-    Canvas, CanvasColorBuffer, CanvasColorBufferDescriptor, CanvasDepthStencilBuffer,
-    CanvasDepthStencilBufferDescriptor, CanvasFrame, ColorBufferFormat, DepthStencilBufferFormat,
-    Instance, SampleCount, Size, SwapChainError, TextureView,
+    Canvas, CanvasBuffer, CanvasBufferDescriptor, CanvasColorBuffer, CanvasColorBufferDescriptor,
+    CanvasDepthStencilBuffer, CanvasDepthStencilBufferDescriptor, CanvasFrame, CanvasSize,
+    ColorBufferFormat, DepthStencilBufferFormat, Instance, SampleCount, Size, SwapChainError,
+    TextureView,
 };
 
 #[derive(Debug, PartialEq, Clone, serde::Serialize, serde::Deserialize)]
@@ -27,116 +28,68 @@ impl Default for CanvasTextureDescriptor {
 
 #[derive(Debug)]
 pub struct CanvasTexture {
-    size: Size<u32>,
-    sample_count: SampleCount,
-    depth_stencil_buffer: Option<CanvasDepthStencilBuffer>,
-    color_buffer: Option<CanvasColorBuffer>,
+    canvas_buffer: CanvasBuffer,
 }
 
 impl CanvasTexture {
     pub fn new(instance: &Instance, desc: &CanvasTextureDescriptor) -> Self {
-        let (color_buffer, depth_stencil_buffer) = Self::create_buffers(
+        let canvas_buffer = CanvasBuffer::new(
             instance,
-            &desc.size,
-            desc.color_buffer_format,
-            desc.depth_stencil_buffer_format,
-            desc.sample_count,
+            &CanvasBufferDescriptor {
+                size: desc.size,
+                swap_chain_descriptor: None,
+                color_buffer_formats: match desc.color_buffer_format {
+                    Some(format) => vec![format],
+                    None => Vec::new(),
+                },
+                depth_stencil_buffer_format: desc.depth_stencil_buffer_format,
+                sample_count: desc.sample_count,
+            },
         );
-        assert!(
-            color_buffer.is_some() || depth_stencil_buffer.is_some(),
-            "No main_buffer defined for a CanvasTexture"
-        );
-        Self {
-            size: desc.size,
-            sample_count: desc.sample_count,
-            color_buffer,
-            depth_stencil_buffer,
-        }
-    }
-
-    pub fn size(&self) -> &Size<u32> {
-        &self.size
-    }
-
-    pub fn sample_count(&self) -> SampleCount {
-        self.sample_count
-    }
-
-    pub fn color_buffer(&self) -> Option<&TextureView> {
-        match &self.color_buffer {
-            Some(v) => Some(v.texture_view()),
-            None => None,
-        }
+        Self { canvas_buffer }
     }
 
     pub fn color_buffer_format(&self) -> Option<ColorBufferFormat> {
-        match &self.color_buffer {
-            Some(v) => Some(v.format()),
-            None => None,
-        }
-    }
-
-    pub fn depth_stencil_buffer(&self) -> Option<&TextureView> {
-        match &self.depth_stencil_buffer {
-            Some(v) => Some(v.texture_view()),
-            None => None,
+        if self.canvas_buffer.color_buffers().is_empty() {
+            None
+        } else {
+            Some(self.canvas_buffer.color_buffers()[0].format())
         }
     }
 
     pub fn depth_stencil_buffer_format(&self) -> Option<DepthStencilBufferFormat> {
-        match &self.depth_stencil_buffer {
+        match &self.canvas_buffer.depth_stencil_buffer() {
             Some(v) => Some(v.format()),
             None => None,
         }
     }
 
-    fn create_buffers(
-        instance: &Instance,
-        size: &Size<u32>,
-        color_format: Option<ColorBufferFormat>,
-        depth_stencil_format: Option<DepthStencilBufferFormat>,
-        sample_count: SampleCount,
-    ) -> (Option<CanvasColorBuffer>, Option<CanvasDepthStencilBuffer>) {
-        let color_buffer = match color_format {
-            Some(format) => Some(CanvasColorBuffer::new(
-                instance,
-                &CanvasColorBufferDescriptor {
-                    size: *size,
-                    format,
-                    sample_count,
-                },
-            )),
+    pub fn color_texture_view(&self) -> Option<&TextureView> {
+        if self.canvas_buffer.color_buffers().is_empty() {
+            None
+        } else {
+            Some(self.canvas_buffer.color_buffers()[0].texture_view())
+        }
+    }
+
+    pub fn depth_stencil_texture_view(&self) -> Option<&TextureView> {
+        match &self.canvas_buffer.depth_stencil_buffer() {
+            Some(v) => Some(v.texture_view()),
             None => None,
-        };
-        let depth_stencil_buffer = match depth_stencil_format {
-            Some(format) => Some(CanvasDepthStencilBuffer::new(
-                instance,
-                &CanvasDepthStencilBufferDescriptor {
-                    size: *size,
-                    format,
-                    sample_count,
-                },
-            )),
-            None => None,
-        };
-        (color_buffer, depth_stencil_buffer)
+        }
     }
 }
 
 impl Canvas for CanvasTexture {
     fn current_frame(&mut self) -> Result<CanvasFrame, SwapChainError> {
-        let color_buffers = match &self.color_buffer {
-            Some(color_buffer) => vec![color_buffer.reference()],
-            None => Vec::new(),
-        };
-        let depth_stencil_buffer = match &self.depth_stencil_buffer {
-            Some(depth_stencil_buffer) => Some(depth_stencil_buffer.reference()),
-            None => None,
-        };
-        Ok(CanvasFrame {
-            swap_chain: None,
-            color_buffers,
-            depth_stencil_buffer,
-        })
+        self.canvas_buffer.current_frame()
+    }
+
+    fn canvas_size(&self) -> &CanvasSize {
+        self.canvas_buffer.canvas_size()
+    }
+
+    fn sample_count(&self) -> SampleCount {
+        self.canvas_buffer.sample_count()
     }
 }
