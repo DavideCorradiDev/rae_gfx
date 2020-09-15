@@ -35,13 +35,13 @@ impl CanvasTexture {
             instance,
             &CanvasBufferDescriptor {
                 size: desc.size,
+                sample_count: desc.sample_count,
                 swap_chain_descriptor: None,
                 color_buffer_formats: match desc.color_buffer_format {
                     Some(format) => vec![format],
                     None => Vec::new(),
                 },
                 depth_stencil_buffer_format: desc.depth_stencil_buffer_format,
-                sample_count: desc.sample_count,
             },
         );
         Self { canvas_buffer }
