@@ -313,12 +313,12 @@ impl CanvasDepthStencilBuffer {
 }
 
 #[derive(Debug)]
-pub struct CanvasFrame<'a> {
+pub struct CanvasFrameRef<'a> {
     pub swap_chain: Option<CanvasSwapChainRef<'a>>,
     pub color_buffers: Vec<CanvasColorBufferRef<'a>>,
     pub depth_stencil_buffer: Option<CanvasDepthStencilBufferRef<'a>>,
 }
 
 pub trait Canvas {
-    fn current_frame(&mut self) -> Result<CanvasFrame, SwapChainError>;
+    fn current_frame(&mut self) -> Result<CanvasFrameRef, SwapChainError>;
 }

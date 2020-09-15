@@ -7,7 +7,7 @@ use rae_app::{
 };
 
 use super::{
-    Canvas, CanvasDepthStencilBuffer, CanvasDepthStencilBufferDescriptor, CanvasFrame,
+    Canvas, CanvasDepthStencilBuffer, CanvasDepthStencilBufferDescriptor, CanvasFrameRef,
     CanvasSwapChain, CanvasSwapChainDescriptor, ColorBufferFormat, DepthStencilBufferFormat,
     Instance, SampleCount, Size, Surface, SwapChainError,
 };
@@ -276,13 +276,13 @@ impl CanvasWindow {
 }
 
 impl Canvas for CanvasWindow {
-    fn current_frame(&mut self) -> Result<CanvasFrame, SwapChainError> {
+    fn current_frame(&mut self) -> Result<CanvasFrameRef, SwapChainError> {
         let swap_chain = Some(self.swap_chain.reference()?);
         let depth_stencil_buffer = match &self.depth_stencil_buffer {
             Some(depth_stencil_buffer) => Some(depth_stencil_buffer.reference()),
             None => None,
         };
-        Ok(CanvasFrame {
+        Ok(CanvasFrameRef {
             swap_chain,
             color_buffers: Vec::new(),
             depth_stencil_buffer,
