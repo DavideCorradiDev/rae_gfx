@@ -263,6 +263,20 @@ mod tests {
     }
 
     #[test]
+    fn color_f32_to_color_conversion_limits() {
+        let color = Color::from(ColorF32 {
+            r: -1.,
+            g: -2.,
+            b: 2.,
+            a: 30.,
+        });
+        expect_that!(&color.r, eq(0));
+        expect_that!(&color.g, eq(0));
+        expect_that!(&color.b, eq(255));
+        expect_that!(&color.a, eq(255));
+    }
+
+    #[test]
     fn color_to_color_f64_conversion() {
         let color = ColorF64::from(Color {
             r: 0,
@@ -288,6 +302,20 @@ mod tests {
         expect_that!(&color.g, eq(255));
         expect_that!(&color.b, eq(76));
         expect_that!(&color.a, eq(114));
+    }
+
+    #[test]
+    fn color_f64_to_color_conversion_limits() {
+        let color = Color::from(ColorF64 {
+            r: -1.,
+            g: -2.,
+            b: 2.,
+            a: 30.,
+        });
+        expect_that!(&color.r, eq(0));
+        expect_that!(&color.g, eq(0));
+        expect_that!(&color.b, eq(255));
+        expect_that!(&color.a, eq(255));
     }
 
     #[test]
