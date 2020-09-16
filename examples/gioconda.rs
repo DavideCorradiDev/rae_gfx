@@ -198,7 +198,7 @@ impl ApplicationImpl {
             ColorF32::CYAN,
             ColorF32::MAGENTA
         ];
-        const COLOR_CHANGE_SPEED: f32 = 255.;
+        const COLOR_CHANGE_SPEED: f32 = 1.;
 
         if self.current_color != self.target_color {
             let current_color = geometry3::Point::new(
