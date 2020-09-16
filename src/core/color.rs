@@ -206,3 +206,115 @@ impl From<Color> for ColorF32 {
         Self { r, g, b, a }
     }
 }
+
+impl From<ColorF32> for ColorF64 {
+    fn from(c: ColorF32) -> Self {
+        Self {
+            r: c.r as f64,
+            g: c.g as f64,
+            b: c.b as f64,
+            a: c.a as f64,
+        }
+    }
+}
+
+impl From<ColorF64> for ColorF32 {
+    fn from(c: ColorF64) -> Self {
+        Self {
+            r: c.r as f32,
+            g: c.g as f32,
+            b: c.b as f32,
+            a: c.a as f32,
+        }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use galvanic_assert::{matchers::*, *};
+
+    #[test]
+    fn color_to_color_f32_conversion() {
+        let color = ColorF32::from(Color {
+            r: 0,
+            g: 255,
+            b: 121,
+            a: 217,
+        });
+        expect_that!(&color.r, close_to(0., 1e-16));
+        expect_that!(&color.g, close_to(1., 1e-16));
+        expect_that!(&color.b, close_to(121. / 255., 1e-16));
+        expect_that!(&color.a, close_to(217. / 255., 1e-16));
+    }
+
+    #[test]
+    fn color_f32_to_color_conversion() {
+        let color = Color::from(ColorF32 {
+            r: 0.,
+            g: 1.,
+            b: 0.3,
+            a: 0.45,
+        });
+        expect_that!(&color.r, eq(0));
+        expect_that!(&color.g, eq(255));
+        expect_that!(&color.b, eq(76));
+        expect_that!(&color.a, eq(114));
+    }
+
+    #[test]
+    fn color_to_color_f64_conversion() {
+        let color = ColorF64::from(Color {
+            r: 0,
+            g: 255,
+            b: 121,
+            a: 217,
+        });
+        expect_that!(&color.r, close_to(0., 1e-16));
+        expect_that!(&color.g, close_to(1., 1e-16));
+        expect_that!(&color.b, close_to(121. / 255., 1e-16));
+        expect_that!(&color.a, close_to(217. / 255., 1e-16));
+    }
+
+    #[test]
+    fn color_f64_to_color_conversion() {
+        let color = Color::from(ColorF64 {
+            r: 0.,
+            g: 1.,
+            b: 0.3,
+            a: 0.45,
+        });
+        expect_that!(&color.r, eq(0));
+        expect_that!(&color.g, eq(255));
+        expect_that!(&color.b, eq(76));
+        expect_that!(&color.a, eq(114));
+    }
+
+    #[test]
+    fn color_f32_to_color_f64_conversion() {
+        let color = ColorF64::from(ColorF32 {
+            r: 0.,
+            g: 1.,
+            b: 0.25,
+            a: 0.75,
+        });
+        expect_that!(&color.r, close_to(0., 1e-16));
+        expect_that!(&color.g, close_to(1., 1e-16));
+        expect_that!(&color.b, close_to(0.25, 1e-16));
+        expect_that!(&color.a, close_to(0.75, 1e-16));
+    }
+
+    #[test]
+    fn color_f64_to_color_f32_conversion() {
+        let color = ColorF32::from(ColorF64 {
+            r: 0.,
+            g: 1.,
+            b: 0.3,
+            a: 0.45,
+        });
+        expect_that!(&color.r, close_to(0., 1e-16));
+        expect_that!(&color.g, close_to(1., 1e-16));
+        expect_that!(&color.b, close_to(0.3, 1e-16));
+        expect_that!(&color.a, close_to(0.45, 1e-16));
+    }
+}

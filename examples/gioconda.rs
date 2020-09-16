@@ -17,7 +17,7 @@ use rae_math::{
 
 use rae_gfx::{
     core::{
-        AddressMode, Canvas, CanvasWindow, CanvasWindowDescriptor, Color, CommandSequence,
+        AddressMode, Canvas, CanvasWindow, CanvasWindowDescriptor, ColorF32, CommandSequence,
         FilterMode, Instance, InstanceCreationError, InstanceDescriptor, RenderPassOperations,
         SampleCount, Sampler, SamplerDescriptor, SwapChainError, Texture, TextureViewDescriptor,
     },
@@ -38,8 +38,8 @@ struct ApplicationImpl {
     pipeline: sprite::RenderPipeline,
     projection_transform: Projective<f32>,
     sprites: Vec<Sprite>,
-    current_color: Color,
-    target_color: Color,
+    current_color: ColorF32,
+    target_color: ColorF32,
 }
 
 impl ApplicationImpl {
@@ -188,37 +188,37 @@ impl ApplicationImpl {
 
     fn update_color(&mut self, dt: std::time::Duration) {
         #[cfg_attr(rustfmt, rustfmt_skip)]
-        const COLORS: [Color; 8] = [
-            Color::WHITE,
-            Color::BLACK,
-            Color::RED,
-            Color::GREEN,
-            Color::BLUE,
-            Color::YELLOW,
-            Color::CYAN,
-            Color::MAGENTA
+        const COLORS: [ColorF32; 8] = [
+            ColorF32::WHITE,
+            ColorF32::BLACK,
+            ColorF32::RED,
+            ColorF32::GREEN,
+            ColorF32::BLUE,
+            ColorF32::YELLOW,
+            ColorF32::CYAN,
+            ColorF32::MAGENTA
         ];
         const COLOR_CHANGE_SPEED: f32 = 255.;
 
         if self.current_color != self.target_color {
             let current_color = geometry3::Point::new(
-                self.current_color.r as f32,
-                self.current_color.g as f32,
-                self.current_color.b as f32,
+                self.current_color.r,
+                self.current_color.g,
+                self.current_color.b,
             );
             let target_color = geometry3::Point::new(
-                self.target_color.r as f32,
-                self.target_color.g as f32,
-                self.target_color.b as f32,
+                self.target_color.r,
+                self.target_color.g,
+                self.target_color.b,
             );
             let next_color = current_color
                 + (target_color - current_color).normalize()
                     * COLOR_CHANGE_SPEED
                     * dt.as_secs_f32();
 
-            self.current_color.r = num::clamp(next_color[0], 0., 255.) as u8;
-            self.current_color.g = num::clamp(next_color[1], 0., 255.) as u8;
-            self.current_color.b = num::clamp(next_color[2], 0., 255.) as u8;
+            self.current_color.r = num::clamp(next_color[0], 0., 1.);
+            self.current_color.g = num::clamp(next_color[1], 0., 1.);
+            self.current_color.b = num::clamp(next_color[2], 0., 1.);
         } else {
             let mut rng = rand::thread_rng();
             self.target_color = COLORS[rng.gen_range(0, COLORS.len() - 1)];
@@ -282,8 +282,8 @@ impl EventHandler<ApplicationError, ApplicationEvent> for ApplicationImpl {
             pipeline,
             projection_transform,
             sprites,
-            current_color: Color::WHITE,
-            target_color: Color::WHITE,
+            current_color: ColorF32::WHITE,
+            target_color: ColorF32::WHITE,
         })
     }
 

@@ -115,10 +115,10 @@ pub struct PushConstants {
 }
 
 impl PushConstants {
-    pub fn new(transform: &geometry2::Transform<f32>, color: core::Color) -> Self {
+    pub fn new(transform: &geometry2::Transform<f32>, color: core::ColorF32) -> Self {
         Self {
             transform: transform.to_homogeneous3(),
-            color: core::ColorF32::from(color),
+            color,
         }
     }
 
