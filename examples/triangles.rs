@@ -118,10 +118,10 @@ impl EventHandler<ApplicationError, ApplicationEvent> for ApplicationImpl {
         ]);
 
         let current_color = Color {
-            r: 1.,
-            g: 1.,
-            b: 1.,
-            a: 0.75,
+            r: 255,
+            g: 255,
+            b: 255,
+            a: 191,
         };
 
         Ok(Self {
@@ -181,9 +181,9 @@ impl EventHandler<ApplicationError, ApplicationEvent> for ApplicationImpl {
                     .push(self.generate_push_constant());
                 let mut rng = rand::thread_rng();
                 self.current_scaling = rng.gen_range(0.25, 4.);
-                self.current_color.r = rng.gen_range(0., 1.);
-                self.current_color.g = rng.gen_range(0., 1.);
-                self.current_color.b = rng.gen_range(0., 1.);
+                self.current_color.r = rng.gen_range(0, 255);
+                self.current_color.g = rng.gen_range(0, 255);
+                self.current_color.b = rng.gen_range(0, 255);
             }
         }
         Ok(ControlFlow::Continue)

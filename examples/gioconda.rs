@@ -189,36 +189,36 @@ impl ApplicationImpl {
     fn update_color(&mut self, dt: std::time::Duration) {
         #[cfg_attr(rustfmt, rustfmt_skip)]
         const COLORS: [Color; 8] = [
-            Color { r: 0., g: 0., b: 0., a: 1., },
-            Color { r: 1., g: 0., b: 0., a: 1., },
-            Color { r: 0., g: 1., b: 0., a: 1., },
-            Color { r: 0., g: 0., b: 1., a: 1., },
-            Color { r: 1., g: 1., b: 0., a: 1., },
-            Color { r: 1., g: 0., b: 1., a: 1., },
-            Color { r: 0., g: 1., b: 1., a: 1., },
-            Color { r: 1., g: 1., b: 1., a: 1., },
+            Color::WHITE,
+            Color::BLACK,
+            Color::RED,
+            Color::GREEN,
+            Color::BLUE,
+            Color::YELLOW,
+            Color::CYAN,
+            Color::MAGENTA
         ];
-        const COLOR_CHANGE_SPEED: f64 = 1.;
+        const COLOR_CHANGE_SPEED: f32 = 255.;
 
         if self.current_color != self.target_color {
             let current_color = geometry3::Point::new(
-                self.current_color.r,
-                self.current_color.g,
-                self.current_color.b,
+                self.current_color.r as f32,
+                self.current_color.g as f32,
+                self.current_color.b as f32,
             );
             let target_color = geometry3::Point::new(
-                self.target_color.r,
-                self.target_color.g,
-                self.target_color.b,
+                self.target_color.r as f32,
+                self.target_color.g as f32,
+                self.target_color.b as f32,
             );
             let next_color = current_color
                 + (target_color - current_color).normalize()
                     * COLOR_CHANGE_SPEED
-                    * dt.as_secs_f64();
+                    * dt.as_secs_f32();
 
-            self.current_color.r = num::clamp(next_color[0], 0., 1.);
-            self.current_color.g = num::clamp(next_color[1], 0., 1.);
-            self.current_color.b = num::clamp(next_color[2], 0., 1.);
+            self.current_color.r = num::clamp(next_color[0], 0., 255.) as u8;
+            self.current_color.g = num::clamp(next_color[1], 0., 255.) as u8;
+            self.current_color.b = num::clamp(next_color[2], 0., 255.) as u8;
         } else {
             let mut rng = rand::thread_rng();
             self.target_color = COLORS[rng.gen_range(0, COLORS.len() - 1)];

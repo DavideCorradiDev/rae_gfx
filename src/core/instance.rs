@@ -11,7 +11,7 @@ use raw_window_handle::HasRawWindowHandle;
 
 use super::{
     AdapterInfo, Backend, BindGroupDescriptor, BindGroupLayoutDescriptor, BufferAddress,
-    BufferDescriptor, BufferInitDescriptor, Color, CommandBuffer, CommandEncoderDescriptor,
+    BufferDescriptor, BufferInitDescriptor, ColorF64, CommandBuffer, CommandEncoderDescriptor,
     Extent3d, Features, Limits, Maintain, Operations, Origin3d, PipelineLayoutDescriptor,
     PowerPreference, RenderBundleEncoderDescriptor, RenderPipelineDescriptor, SamplerDescriptor,
     ShaderModuleSource, SwapChainDescriptor, TextureCopyView, TextureDataLayout, TextureDescriptor,
@@ -19,7 +19,7 @@ use super::{
 };
 
 pub type SampleCount = u32;
-pub type ColorOperations = Operations<Color>;
+pub type ColorOperations = Operations<ColorF64>;
 pub type DepthOperations = Operations<f32>;
 pub type StencilOperations = Operations<u32>;
 
