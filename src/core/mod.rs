@@ -2,12 +2,12 @@ pub use wgpu::{
     include_spirv, util::BufferInitDescriptor, AdapterInfo, AddressMode, BackendBit as Backend,
     BindGroupDescriptor, BindGroupEntry, BindGroupLayoutDescriptor, BindGroupLayoutEntry,
     BindingResource, BindingType, BlendDescriptor, BlendFactor, BlendOperation, BufferAddress,
-    BufferDescriptor, BufferSlice, BufferUsage, Color, ColorStateDescriptor, ColorWrite,
-    CommandBuffer, CommandEncoderDescriptor, CompareFunction, CullMode,
-    DepthStencilStateDescriptor, Extent3d, Features, FilterMode, FrontFace, IndexFormat,
-    InputStepMode, Limits, LoadOp, Maintain, Operations, Origin3d, PipelineLayoutDescriptor,
-    PowerPreference, PresentMode, PrimitiveTopology, ProgrammableStageDescriptor,
-    PushConstantRange, RasterizationStateDescriptor, RenderBundleEncoderDescriptor, RenderPass,
+    BufferDescriptor, BufferSlice, BufferUsage, ColorStateDescriptor, ColorWrite, CommandBuffer,
+    CommandEncoderDescriptor, CompareFunction, CullMode, DepthStencilStateDescriptor, Extent3d,
+    Features, FilterMode, FrontFace, IndexFormat, InputStepMode, Limits, LoadOp, Maintain,
+    Operations, Origin3d, PipelineLayoutDescriptor, PowerPreference, PresentMode,
+    PrimitiveTopology, ProgrammableStageDescriptor, PushConstantRange,
+    RasterizationStateDescriptor, RenderBundleEncoderDescriptor, RenderPass,
     RenderPassColorAttachmentDescriptor, RenderPassDepthStencilAttachmentDescriptor,
     RenderPassDescriptor, RenderPipelineDescriptor, SamplerDescriptor, ShaderModuleSource,
     ShaderStage, StencilStateDescriptor, SwapChainDescriptor, SwapChainError, SwapChainFrame,
@@ -19,6 +19,9 @@ pub use wgpu::{
 
 mod size;
 pub use size::*;
+
+mod color;
+pub use color::*;
 
 mod instance;
 pub use instance::*;

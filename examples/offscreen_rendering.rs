@@ -18,7 +18,7 @@ use rae_math::{
 use rae_gfx::{
     core::{
         AddressMode, Canvas, CanvasTexture, CanvasTextureDescriptor, CanvasWindow,
-        CanvasWindowDescriptor, Color, ColorOperations, CommandSequence, Instance,
+        CanvasWindowDescriptor, ColorF32, ColorF64, ColorOperations, CommandSequence, Instance,
         InstanceCreationError, InstanceDescriptor, LoadOp, RenderPassOperations, SampleCount,
         Sampler, SamplerDescriptor, Size, SwapChainError,
     },
@@ -39,8 +39,8 @@ struct ApplicationImpl {
     quad_mesh: sprite::Mesh,
     sprite_uniform_constants: sprite::UniformConstants,
     current_angle: f32,
-    current_color: Color,
-    target_color: Color,
+    current_color: ColorF32,
+    target_color: ColorF32,
 }
 
 impl ApplicationImpl {
@@ -48,17 +48,17 @@ impl ApplicationImpl {
 
     fn update_color(&mut self, dt: std::time::Duration) {
         #[cfg_attr(rustfmt, rustfmt_skip)]
-        const COLORS: [Color; 8] = [
-            Color { r: 0., g: 0., b: 0., a: 1., },
-            Color { r: 1., g: 0., b: 0., a: 1., },
-            Color { r: 0., g: 1., b: 0., a: 1., },
-            Color { r: 0., g: 0., b: 1., a: 1., },
-            Color { r: 1., g: 1., b: 0., a: 1., },
-            Color { r: 1., g: 0., b: 1., a: 1., },
-            Color { r: 0., g: 1., b: 1., a: 1., },
-            Color { r: 1., g: 1., b: 1., a: 1., },
+        const COLORS: [ColorF32; 8] = [
+            ColorF32::WHITE,
+            ColorF32::BLACK,
+            ColorF32::RED,
+            ColorF32::GREEN,
+            ColorF32::BLUE,
+            ColorF32::YELLOW,
+            ColorF32::CYAN,
+            ColorF32::MAGENTA
         ];
-        const COLOR_CHANGE_SPEED: f64 = 1.;
+        const COLOR_CHANGE_SPEED: f32 = 1.;
 
         if self.current_color != self.target_color {
             let current_color = geometry3::Point::new(
@@ -74,7 +74,7 @@ impl ApplicationImpl {
             let next_color = current_color
                 + (target_color - current_color).normalize()
                     * COLOR_CHANGE_SPEED
-                    * dt.as_secs_f64();
+                    * dt.as_secs_f32();
 
             self.current_color.r = num::clamp(next_color[0], 0., 1.);
             self.current_color.g = num::clamp(next_color[1], 0., 1.);
@@ -108,7 +108,7 @@ impl ApplicationImpl {
 
     pub fn generate_blit_push_constants(&self) -> sprite::PushConstants {
         let projection_transform = OrthographicProjection::new(0., 1., 1., 0.).to_projective();
-        sprite::PushConstants::new(&convert(projection_transform), Color::WHITE)
+        sprite::PushConstants::new(&convert(projection_transform), ColorF32::WHITE)
     }
 }
 
@@ -198,8 +198,8 @@ impl EventHandler<ApplicationError, ApplicationEvent> for ApplicationImpl {
             quad_mesh,
             sprite_uniform_constants,
             current_angle: 0.,
-            current_color: Color::WHITE,
-            target_color: Color::WHITE,
+            current_color: ColorF32::WHITE,
+            target_color: ColorF32::WHITE,
         })
     }
 
@@ -229,7 +229,7 @@ impl EventHandler<ApplicationError, ApplicationEvent> for ApplicationImpl {
                     &self.shape2_pipeline.render_pass_requirements(),
                     &RenderPassOperations {
                         color_operations: vec![ColorOperations {
-                            load: LoadOp::Clear(Color::BLACK),
+                            load: LoadOp::Clear(ColorF64::BLACK),
                             store: true,
                         }],
                         ..RenderPassOperations::default()
@@ -257,7 +257,7 @@ impl EventHandler<ApplicationError, ApplicationEvent> for ApplicationImpl {
                     &self.sprite_pipeline.render_pass_requirements(),
                     &RenderPassOperations {
                         color_operations: vec![ColorOperations {
-                            load: LoadOp::Clear(Color::WHITE),
+                            load: LoadOp::Clear(ColorF64::WHITE),
                             store: true,
                         }],
                         ..RenderPassOperations::default()

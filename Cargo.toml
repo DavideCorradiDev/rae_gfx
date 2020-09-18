@@ -15,12 +15,13 @@ raw-window-handle = { version = "0.3" }
 serde = { version = "1.0", features = ["derive"] }
 futures = { version = "0.3" }
 num-traits = { version = "0.2" }
+num = "0.3"
 bytemuck = { version = "1.4" }
+as-slice = { version = "0.1" }
 
 [dev-dependencies]
 galvanic-assert = "0.8"
 rand = "0.7"
-num = "0.3"
 
 [build-dependencies]
 rae_shader = { git = "https://github.com/DavideCorradiDev/rae_shader.git", tag = "v0.1.2" }

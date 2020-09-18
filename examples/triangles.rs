@@ -16,7 +16,7 @@ use rae_math::{
 
 use rae_gfx::{
     core::{
-        Canvas, CanvasWindow, CanvasWindowDescriptor, Color, CommandSequence, Instance,
+        Canvas, CanvasWindow, CanvasWindowDescriptor, ColorF32, CommandSequence, Instance,
         InstanceCreationError, InstanceDescriptor, RenderPassOperations, SampleCount,
         SwapChainError,
     },
@@ -35,7 +35,7 @@ struct ApplicationImpl {
     current_position: Point<f32>,
     current_angle: f32,
     current_scaling: f32,
-    current_color: Color,
+    current_color: ColorF32,
 }
 
 impl ApplicationImpl {
@@ -117,7 +117,7 @@ impl EventHandler<ApplicationError, ApplicationEvent> for ApplicationImpl {
             window_size.height as f32 / 2.,
         ]);
 
-        let current_color = Color {
+        let current_color = ColorF32 {
             r: 1.,
             g: 1.,
             b: 1.,
