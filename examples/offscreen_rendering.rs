@@ -1,7 +1,5 @@
 use std::iter;
 
-use rand::Rng;
-
 use rae_app::{
     application::Application,
     event::{ControlFlow, EventHandler, EventLoop},
@@ -12,21 +10,24 @@ use rae_app::{
 use rae_math::{
     conversion::convert,
     geometry2::{OrthographicProjection, Similarity, Translation, UnitComplex},
-    geometry3,
 };
 
 use rae_gfx::{
     core::{
-        AddressMode, Canvas, CanvasTexture, CanvasTextureDescriptor, CanvasWindow,
+        AddressMode, Canvas, CanvasColorBufferFormat, CanvasColorBufferUsage, CanvasTexture,
+        CanvasTextureColorBufferDescriptor, CanvasTextureDescriptor, CanvasWindow,
         CanvasWindowDescriptor, ColorF32, ColorF64, ColorOperations, CommandSequence, Instance,
-        InstanceCreationError, InstanceDescriptor, LoadOp, RenderPassOperations, SampleCount,
-        Sampler, SamplerDescriptor, Size, SwapChainError,
+        InstanceDescriptor, LoadOp, RenderPassOperations, SampleCount, Sampler, SamplerDescriptor,
+        Size,
     },
     shape2,
     shape2::Renderer as Shape2Renderer,
     sprite,
     sprite::{MeshTemplates as SpriteMeshTemplates, Renderer as SpriteRenderer},
 };
+
+mod example_app;
+use example_app::*;
 
 #[derive(Debug)]
 struct ApplicationImpl {
@@ -39,51 +40,11 @@ struct ApplicationImpl {
     quad_mesh: sprite::Mesh,
     sprite_uniform_constants: sprite::UniformConstants,
     current_angle: f32,
-    current_color: ColorF32,
-    target_color: ColorF32,
+    color: ChangingColor,
 }
 
 impl ApplicationImpl {
     const SAMPLE_COUNT: SampleCount = 8;
-
-    fn update_color(&mut self, dt: std::time::Duration) {
-        #[cfg_attr(rustfmt, rustfmt_skip)]
-        const COLORS: [ColorF32; 8] = [
-            ColorF32::WHITE,
-            ColorF32::BLACK,
-            ColorF32::RED,
-            ColorF32::GREEN,
-            ColorF32::BLUE,
-            ColorF32::YELLOW,
-            ColorF32::CYAN,
-            ColorF32::MAGENTA
-        ];
-        const COLOR_CHANGE_SPEED: f32 = 1.;
-
-        if self.current_color != self.target_color {
-            let current_color = geometry3::Point::new(
-                self.current_color.r,
-                self.current_color.g,
-                self.current_color.b,
-            );
-            let target_color = geometry3::Point::new(
-                self.target_color.r,
-                self.target_color.g,
-                self.target_color.b,
-            );
-            let next_color = current_color
-                + (target_color - current_color).normalize()
-                    * COLOR_CHANGE_SPEED
-                    * dt.as_secs_f32();
-
-            self.current_color.r = num::clamp(next_color[0], 0., 1.);
-            self.current_color.g = num::clamp(next_color[1], 0., 1.);
-            self.current_color.b = num::clamp(next_color[2], 0., 1.);
-        } else {
-            let mut rng = rand::thread_rng();
-            self.target_color = COLORS[rng.gen_range(0, COLORS.len() - 1)];
-        }
-    }
 
     pub fn update_angle(&mut self, dt: std::time::Duration) {
         const ANGULAR_SPEED: f32 = std::f32::consts::PI * 0.25;
@@ -102,7 +63,7 @@ impl ApplicationImpl {
         );
         shape2::PushConstants::new(
             &convert(projection_transform * object_transform),
-            self.current_color,
+            *self.color.current_color(),
         )
     }
 
@@ -142,6 +103,10 @@ impl EventHandler<ApplicationError, ApplicationEvent> for ApplicationImpl {
             &CanvasTextureDescriptor {
                 size: Size::new(100, 100),
                 sample_count: Self::SAMPLE_COUNT,
+                color_buffer_descriptor: Some(CanvasTextureColorBufferDescriptor {
+                    format: CanvasColorBufferFormat::default(),
+                    usage: CanvasColorBufferUsage::SAMPLED,
+                }),
                 ..CanvasTextureDescriptor::default()
             },
         );
@@ -188,6 +153,8 @@ impl EventHandler<ApplicationError, ApplicationEvent> for ApplicationImpl {
         let sprite_uniform_constants =
             sprite::UniformConstants::new(&instance, canvas_texture_view, &sampler);
 
+        let color = ChangingColor::new(ColorF32::WHITE, ColorF32::WHITE);
+
         Ok(Self {
             window,
             canvas,
@@ -198,8 +165,7 @@ impl EventHandler<ApplicationError, ApplicationEvent> for ApplicationImpl {
             quad_mesh,
             sprite_uniform_constants,
             current_angle: 0.,
-            current_color: ColorF32::WHITE,
-            target_color: ColorF32::WHITE,
+            color,
         })
     }
 
@@ -215,7 +181,7 @@ impl EventHandler<ApplicationError, ApplicationEvent> for ApplicationImpl {
     }
 
     fn on_variable_update(&mut self, dt: std::time::Duration) -> Result<ControlFlow, Self::Error> {
-        self.update_color(dt);
+        self.color.update(dt);
         self.update_angle(dt);
 
         {
@@ -278,59 +244,6 @@ impl EventHandler<ApplicationError, ApplicationEvent> for ApplicationImpl {
             cmd_sequence.submit(&self.instance);
         }
         Ok(ControlFlow::Continue)
-    }
-}
-
-type ApplicationEvent = ();
-
-#[derive(Debug)]
-enum ApplicationError {
-    WindowCreationFailed(window::OsError),
-    InstanceCreationFailed(InstanceCreationError),
-    RenderFrameCreationFailed(SwapChainError),
-}
-
-impl std::fmt::Display for ApplicationError {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match self {
-            ApplicationError::WindowCreationFailed(e) => {
-                write!(f, "Window creation failed ({})", e)
-            }
-            ApplicationError::InstanceCreationFailed(e) => {
-                write!(f, "Instance creation failed ({})", e)
-            }
-            ApplicationError::RenderFrameCreationFailed(e) => {
-                write!(f, "Render frame creation failed ({})", e)
-            }
-        }
-    }
-}
-
-impl std::error::Error for ApplicationError {
-    fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
-        match self {
-            ApplicationError::WindowCreationFailed(e) => Some(e),
-            ApplicationError::InstanceCreationFailed(e) => Some(e),
-            ApplicationError::RenderFrameCreationFailed(e) => Some(e),
-        }
-    }
-}
-
-impl From<window::OsError> for ApplicationError {
-    fn from(e: window::OsError) -> Self {
-        ApplicationError::WindowCreationFailed(e)
-    }
-}
-
-impl From<InstanceCreationError> for ApplicationError {
-    fn from(e: InstanceCreationError) -> Self {
-        ApplicationError::InstanceCreationFailed(e)
-    }
-}
-
-impl From<SwapChainError> for ApplicationError {
-    fn from(e: SwapChainError) -> Self {
-        ApplicationError::RenderFrameCreationFailed(e)
     }
 }
 
