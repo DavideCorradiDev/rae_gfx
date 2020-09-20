@@ -51,16 +51,7 @@ impl CommandSequence {
         // Define color attachments.
         let has_swap_chain = canvas_frame.swap_chain().is_some();
         let required_color_buffer_count = requirements.color_buffer_formats.len();
-        let available_color_buffer_count =
-            canvas_frame.color_buffers().len() + if has_swap_chain { 1 } else { 0 };
-        assert!(
-            required_color_buffer_count <= available_color_buffer_count,
-            "Failed to begin render pass (required color buffers: {}, available color buffers: {})",
-            required_color_buffer_count,
-            available_color_buffer_count
-        );
         let mut color_attachments = Vec::with_capacity(required_color_buffer_count);
-
         for i in 0..required_color_buffer_count {
             let required_format = requirements.color_buffer_formats[i];
             let ops = match operations.color_operations.get(i) {
@@ -218,10 +209,7 @@ mod tests {
     }
 
     #[test]
-    #[should_panic(
-        expected = "Failed to begin render pass (required color buffers: 1, available color \
-                    buffers: 0)"
-    )]
+    #[should_panic(expected = "Not enough color buffers")]
     fn begin_render_pass_error_not_enough_color_buffers() {
         let instance = Instance::new(&InstanceDescriptor::default()).unwrap();
         let mut cmd_seq = CommandSequence::new(&instance);
