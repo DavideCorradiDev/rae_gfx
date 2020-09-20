@@ -126,4 +126,200 @@ mod tests {
             eq(CanvasColorBufferFormat::default())
         );
     }
+
+    #[test]
+    fn custom_size() {
+        let instance = Instance::new(&InstanceDescriptor::default()).unwrap();
+        let mut texture = CanvasTexture::new(
+            &instance,
+            &CanvasTextureDescriptor {
+                size: CanvasSize::new(20, 30),
+                ..CanvasTextureDescriptor::default()
+            },
+        );
+
+        expect_that!(texture.canvas_size(), eq(CanvasSize::new(20, 30)));
+        expect_that!(&texture.sample_count(), eq(1));
+        expect_that!(
+            &texture.color_buffer_format(),
+            eq(Some(CanvasColorBufferFormat::default()))
+        );
+        expect_that!(&texture.depth_stencil_buffer_format(), eq(None));
+
+        let frame = texture.current_frame().unwrap();
+        expect_that!(frame.swap_chain().is_none());
+        expect_that!(&frame.color_buffers().len(), eq(1));
+        expect_that!(frame.depth_stencil_buffer().is_none());
+
+        let color_buffer_ref = &frame.color_buffers()[0];
+        expect_that!(&color_buffer_ref.sample_count(), eq(1));
+        expect_that!(
+            &color_buffer_ref.format(),
+            eq(CanvasColorBufferFormat::default())
+        );
+    }
+
+    #[test]
+    fn multisampled() {
+        let instance = Instance::new(&InstanceDescriptor::default()).unwrap();
+        let mut texture = CanvasTexture::new(
+            &instance,
+            &CanvasTextureDescriptor {
+                sample_count: 2,
+                ..CanvasTextureDescriptor::default()
+            },
+        );
+
+        expect_that!(texture.canvas_size(), eq(CanvasSize::new(1, 1)));
+        expect_that!(&texture.sample_count(), eq(2));
+        expect_that!(
+            &texture.color_buffer_format(),
+            eq(Some(CanvasColorBufferFormat::default()))
+        );
+        expect_that!(&texture.depth_stencil_buffer_format(), eq(None));
+
+        let frame = texture.current_frame().unwrap();
+        expect_that!(frame.swap_chain().is_none());
+        expect_that!(&frame.color_buffers().len(), eq(1));
+        expect_that!(frame.depth_stencil_buffer().is_none());
+
+        let color_buffer_ref = &frame.color_buffers()[0];
+        expect_that!(&color_buffer_ref.sample_count(), eq(2));
+        expect_that!(
+            &color_buffer_ref.format(),
+            eq(CanvasColorBufferFormat::default())
+        );
+    }
+
+    #[test]
+    fn with_depth_buffer() {
+        let instance = Instance::new(&InstanceDescriptor::default()).unwrap();
+        let mut texture = CanvasTexture::new(
+            &instance,
+            &CanvasTextureDescriptor {
+                depth_stencil_buffer_format: Some(CanvasDepthStencilBufferFormat::Depth24Plus),
+                ..CanvasTextureDescriptor::default()
+            },
+        );
+
+        expect_that!(texture.canvas_size(), eq(CanvasSize::new(1, 1)));
+        expect_that!(&texture.sample_count(), eq(1));
+        expect_that!(
+            &texture.color_buffer_format(),
+            eq(Some(CanvasColorBufferFormat::default()))
+        );
+        expect_that!(
+            &texture.depth_stencil_buffer_format(),
+            eq(Some(CanvasDepthStencilBufferFormat::Depth24Plus))
+        );
+
+        let frame = texture.current_frame().unwrap();
+        expect_that!(frame.swap_chain().is_none());
+        expect_that!(&frame.color_buffers().len(), eq(1));
+        expect_that!(frame.depth_stencil_buffer().is_some());
+
+        let color_buffer_ref = &frame.color_buffers()[0];
+        expect_that!(&color_buffer_ref.sample_count(), eq(1));
+        expect_that!(
+            &color_buffer_ref.format(),
+            eq(CanvasColorBufferFormat::default())
+        );
+
+        let ds_buffer_ref = frame.depth_stencil_buffer().unwrap();
+        expect_that!(&ds_buffer_ref.sample_count(), eq(1));
+        expect_that!(
+            &ds_buffer_ref.format(),
+            eq(CanvasDepthStencilBufferFormat::Depth24Plus)
+        );
+    }
+
+    #[test]
+    fn only_depth_buffer() {
+        let instance = Instance::new(&InstanceDescriptor::default()).unwrap();
+        let mut texture = CanvasTexture::new(
+            &instance,
+            &CanvasTextureDescriptor {
+                color_buffer_format: None,
+                depth_stencil_buffer_format: Some(CanvasDepthStencilBufferFormat::Depth24Plus),
+                ..CanvasTextureDescriptor::default()
+            },
+        );
+
+        expect_that!(texture.canvas_size(), eq(CanvasSize::new(1, 1)));
+        expect_that!(&texture.sample_count(), eq(1));
+        expect_that!(&texture.color_buffer_format(), eq(None));
+        expect_that!(
+            &texture.depth_stencil_buffer_format(),
+            eq(Some(CanvasDepthStencilBufferFormat::Depth24Plus))
+        );
+
+        let frame = texture.current_frame().unwrap();
+        expect_that!(frame.swap_chain().is_none());
+        expect_that!(&frame.color_buffers().is_empty());
+        expect_that!(frame.depth_stencil_buffer().is_some());
+
+        let ds_buffer_ref = frame.depth_stencil_buffer().unwrap();
+        expect_that!(&ds_buffer_ref.sample_count(), eq(1));
+        expect_that!(
+            &ds_buffer_ref.format(),
+            eq(CanvasDepthStencilBufferFormat::Depth24Plus)
+        );
+    }
+
+    #[test]
+    fn multisampled_with_depth_buffer() {
+        let instance = Instance::new(&InstanceDescriptor::default()).unwrap();
+        let mut texture = CanvasTexture::new(
+            &instance,
+            &CanvasTextureDescriptor {
+                sample_count: 2,
+                depth_stencil_buffer_format: Some(CanvasDepthStencilBufferFormat::Depth24Plus),
+                ..CanvasTextureDescriptor::default()
+            },
+        );
+
+        expect_that!(texture.canvas_size(), eq(CanvasSize::new(1, 1)));
+        expect_that!(&texture.sample_count(), eq(2));
+        expect_that!(
+            &texture.color_buffer_format(),
+            eq(Some(CanvasColorBufferFormat::default()))
+        );
+        expect_that!(
+            &texture.depth_stencil_buffer_format(),
+            eq(Some(CanvasDepthStencilBufferFormat::Depth24Plus))
+        );
+
+        let frame = texture.current_frame().unwrap();
+        expect_that!(frame.swap_chain().is_none());
+        expect_that!(&frame.color_buffers().len(), eq(1));
+        expect_that!(frame.depth_stencil_buffer().is_some());
+
+        let color_buffer_ref = &frame.color_buffers()[0];
+        expect_that!(&color_buffer_ref.sample_count(), eq(2));
+        expect_that!(
+            &color_buffer_ref.format(),
+            eq(CanvasColorBufferFormat::default())
+        );
+
+        let ds_buffer_ref = frame.depth_stencil_buffer().unwrap();
+        expect_that!(&ds_buffer_ref.sample_count(), eq(2));
+        expect_that!(
+            &ds_buffer_ref.format(),
+            eq(CanvasDepthStencilBufferFormat::Depth24Plus)
+        );
+    }
+
+    #[test]
+    #[should_panic(expected = "No buffer defined for a canvas buffer")]
+    fn no_buffer_error() {
+        let instance = Instance::new(&InstanceDescriptor::default()).unwrap();
+        let _texture = CanvasTexture::new(
+            &instance,
+            &CanvasTextureDescriptor {
+                color_buffer_format: None,
+                depth_stencil_buffer_format: None,
+                ..CanvasTextureDescriptor::default()
+            },
+        );
+    }
 }
