@@ -93,6 +93,7 @@ pub struct CanvasSwapChainDescriptor {
 
 #[derive(Debug)]
 pub struct CanvasSwapChain {
+    size: CanvasSize,
     sample_count: SampleCount,
     format: CanvasColorBufferFormat,
     multisampled_buffer: Option<TextureView>,
@@ -138,6 +139,7 @@ impl CanvasSwapChain {
             None
         };
         Self {
+            size: desc.size,
             sample_count: desc.sample_count,
             format: desc.format,
             multisampled_buffer,
@@ -145,12 +147,16 @@ impl CanvasSwapChain {
         }
     }
 
-    pub fn format(&self) -> CanvasColorBufferFormat {
-        self.format
+    pub fn size(&self) -> &CanvasSize {
+        &self.size
     }
 
     pub fn sample_count(&self) -> SampleCount {
         self.sample_count
+    }
+
+    pub fn format(&self) -> CanvasColorBufferFormat {
+        self.format
     }
 
     pub fn reference(&mut self) -> Result<CanvasSwapChainRef, SwapChainError> {
@@ -523,7 +529,41 @@ mod tests {
 
     use galvanic_assert::{matchers::*, *};
 
+    use rae_app::{
+        event::{EventLoop, EventLoopAnyThread},
+        window::WindowBuilder,
+    };
+
     use crate::core::InstanceDescriptor;
+
+    #[test]
+    fn canvas_swap_chain() {
+        let event_loop = EventLoop::<()>::new_any_thread();
+        let window = WindowBuilder::new()
+            .with_visible(false)
+            .build(&event_loop)
+            .unwrap();
+        let (instance, surface) = unsafe {
+            Instance::new_with_compatible_window(&InstanceDescriptor::default(), &window).unwrap()
+        };
+
+        let swap_chain = CanvasSwapChain::new(
+            &instance,
+            &surface,
+            &CanvasSwapChainDescriptor {
+                sample_count: 2,
+                format: CanvasColorBufferFormat::Bgra8Unorm,
+                size: CanvasSize::new(12, 20),
+            },
+        );
+
+        expect_that!(&swap_chain.sample_count(), eq(2));
+        expect_that!(
+            &swap_chain.format(),
+            eq(CanvasColorBufferFormat::Bgra8Unorm)
+        );
+        expect_that!(swap_chain.size(), eq(CanvasSize::new(12, 20)));
+    }
 
     #[test]
     fn canvas_color_buffer() {
