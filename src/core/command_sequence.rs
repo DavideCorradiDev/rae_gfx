@@ -55,8 +55,7 @@ impl CommandSequence {
             canvas_frame.color_buffers().len() + if has_swap_chain { 1 } else { 0 };
         assert!(
             required_color_buffer_count <= available_color_buffer_count,
-            "Failed to begin render pass ({} color buffers were required by the pipeline but only \
-             {} were available in the canvas frame)",
+            "Failed to begin render pass (required color buffers: {}, available color buffers: {})",
             required_color_buffer_count,
             available_color_buffer_count
         );
@@ -71,8 +70,9 @@ impl CommandSequence {
             if i == 0 && has_swap_chain {
                 let swap_chain = canvas_frame.swap_chain().unwrap();
                 assert!(
-                    required_format == swap_chain.format(),
-                    "Incompatible swap chain format"
+                    required_format == swap_chain.format()
+                        && requirements.sample_count == swap_chain.sample_count(),
+                    "Incompatible swap chain"
                 );
                 color_attachments.push(RenderPassColorAttachmentDescriptor {
                     attachment: swap_chain.attachment(),
@@ -86,8 +86,9 @@ impl CommandSequence {
                     .get(buffer_index)
                     .expect("Not enough color buffers");
                 assert!(
-                    required_format == color_buffer.format(),
-                    "Incompatible color buffer format"
+                    required_format == color_buffer.format()
+                        && requirements.sample_count == color_buffer.sample_count(),
+                    "Incompatible color buffer"
                 );
                 color_attachments.push(RenderPassColorAttachmentDescriptor {
                     attachment: color_buffer.attachment(),
@@ -102,8 +103,9 @@ impl CommandSequence {
             Some(required_format) => match canvas_frame.depth_stencil_buffer() {
                 Some(ds_buffer) => {
                     assert!(
-                        required_format == ds_buffer.format(),
-                        "Incompatible depth stencil buffer format"
+                        required_format == ds_buffer.format()
+                            && requirements.sample_count == ds_buffer.sample_count(),
+                        "Incompatible depth stencil buffer"
                     );
                     Some(RenderPassDepthStencilAttachmentDescriptor {
                         attachment: ds_buffer.attachment(),
@@ -132,8 +134,6 @@ impl CommandSequence {
 #[cfg(test)]
 mod tests {
     use super::*;
-
-    use galvanic_assert::{matchers::*, *};
 
     use crate::core::{CanvasBuffer, CanvasBufferDescriptor, CanvasSize, InstanceDescriptor};
 
@@ -185,5 +185,150 @@ mod tests {
         }
 
         cmd_seq.submit(&instance);
+    }
+
+    #[test]
+    #[should_panic(expected = "Incompatible color buffer")]
+    fn begin_render_pass_error_incompatible_sample_count() {
+        let instance = Instance::new(&InstanceDescriptor::default()).unwrap();
+        let mut cmd_seq = CommandSequence::new(&instance);
+        let mut buffer = CanvasBuffer::new(
+            &instance,
+            &CanvasBufferDescriptor {
+                size: CanvasSize::new(12, 20),
+                sample_count: 1,
+                swap_chain_descriptor: None,
+                color_buffer_formats: vec![CanvasColorBufferFormat::default()],
+                depth_stencil_buffer_format: Some(CanvasDepthStencilBufferFormat::Depth32Float),
+            },
+        );
+
+        {
+            let frame = buffer.current_frame().unwrap();
+            let _rpass = cmd_seq.begin_render_pass(
+                &frame,
+                &RenderPassRequirements {
+                    sample_count: 2,
+                    color_buffer_formats: vec![CanvasColorBufferFormat::default()],
+                    depth_stencil_buffer_format: Some(CanvasDepthStencilBufferFormat::Depth32Float),
+                },
+                &RenderPassOperations::default(),
+            );
+        }
+    }
+
+    #[test]
+    #[should_panic(
+        expected = "Failed to begin render pass (required color buffers: 1, available color \
+                    buffers: 0)"
+    )]
+    fn begin_render_pass_error_not_enough_color_buffers() {
+        let instance = Instance::new(&InstanceDescriptor::default()).unwrap();
+        let mut cmd_seq = CommandSequence::new(&instance);
+        let mut buffer = CanvasBuffer::new(
+            &instance,
+            &CanvasBufferDescriptor {
+                size: CanvasSize::new(12, 20),
+                sample_count: 2,
+                swap_chain_descriptor: None,
+                color_buffer_formats: Vec::new(),
+                depth_stencil_buffer_format: Some(CanvasDepthStencilBufferFormat::Depth32Float),
+            },
+        );
+
+        let frame = buffer.current_frame().unwrap();
+        let _rpass = cmd_seq.begin_render_pass(
+            &frame,
+            &RenderPassRequirements {
+                sample_count: 2,
+                color_buffer_formats: vec![CanvasColorBufferFormat::default()],
+                depth_stencil_buffer_format: Some(CanvasDepthStencilBufferFormat::Depth32Float),
+            },
+            &RenderPassOperations::default(),
+        );
+    }
+
+    #[test]
+    #[should_panic(expected = "Incompatible color buffer")]
+    fn begin_render_pass_error_wrong_color_buffer_format() {
+        let instance = Instance::new(&InstanceDescriptor::default()).unwrap();
+        let mut cmd_seq = CommandSequence::new(&instance);
+        let mut buffer = CanvasBuffer::new(
+            &instance,
+            &CanvasBufferDescriptor {
+                size: CanvasSize::new(12, 20),
+                sample_count: 2,
+                swap_chain_descriptor: None,
+                color_buffer_formats: vec![CanvasColorBufferFormat::Bgra8Unorm],
+                depth_stencil_buffer_format: None,
+            },
+        );
+
+        let frame = buffer.current_frame().unwrap();
+        let _rpass = cmd_seq.begin_render_pass(
+            &frame,
+            &RenderPassRequirements {
+                sample_count: 2,
+                color_buffer_formats: vec![CanvasColorBufferFormat::Bgra8UnormSrgb],
+                depth_stencil_buffer_format: None,
+            },
+            &RenderPassOperations::default(),
+        );
+    }
+
+    #[test]
+    #[should_panic(expected = "Unavailable depth stencil buffer")]
+    fn begin_render_pass_error_no_depth_stencil_buffer() {
+        let instance = Instance::new(&InstanceDescriptor::default()).unwrap();
+        let mut cmd_seq = CommandSequence::new(&instance);
+        let mut buffer = CanvasBuffer::new(
+            &instance,
+            &CanvasBufferDescriptor {
+                size: CanvasSize::new(12, 20),
+                sample_count: 2,
+                swap_chain_descriptor: None,
+                color_buffer_formats: vec![CanvasColorBufferFormat::default()],
+                depth_stencil_buffer_format: None,
+            },
+        );
+
+        let frame = buffer.current_frame().unwrap();
+        let _rpass = cmd_seq.begin_render_pass(
+            &frame,
+            &RenderPassRequirements {
+                sample_count: 2,
+                color_buffer_formats: vec![CanvasColorBufferFormat::default()],
+                depth_stencil_buffer_format: Some(CanvasDepthStencilBufferFormat::Depth32Float),
+            },
+            &RenderPassOperations::default(),
+        );
+    }
+
+    #[test]
+    #[should_panic(expected = "Incompatible depth stencil buffer")]
+    fn begin_render_pass_error_wrong_depth_stencil_buffer_format() {
+        let instance = Instance::new(&InstanceDescriptor::default()).unwrap();
+        let mut cmd_seq = CommandSequence::new(&instance);
+        let mut buffer = CanvasBuffer::new(
+            &instance,
+            &CanvasBufferDescriptor {
+                size: CanvasSize::new(12, 20),
+                sample_count: 2,
+                swap_chain_descriptor: None,
+                color_buffer_formats: Vec::new(),
+                depth_stencil_buffer_format: Some(CanvasDepthStencilBufferFormat::Depth24Plus),
+            },
+        );
+
+        let frame = buffer.current_frame().unwrap();
+        let _rpass = cmd_seq.begin_render_pass(
+            &frame,
+            &RenderPassRequirements {
+                sample_count: 2,
+                color_buffer_formats: Vec::new(),
+                depth_stencil_buffer_format: Some(CanvasDepthStencilBufferFormat::Depth32Float),
+            },
+            &RenderPassOperations::default(),
+        );
     }
 }
