@@ -1,17 +1,17 @@
 use std::{default::Default, iter};
 
 use super::{
-    CanvasFrame, ColorBufferFormat, ColorOperations, CommandEncoder, CommandEncoderDescriptor,
-    DepthOperations, DepthStencilBufferFormat, Instance, Operations, RenderPass,
-    RenderPassColorAttachmentDescriptor, RenderPassDepthStencilAttachmentDescriptor,
+    CanvasColorBufferFormat, CanvasFrame, ColorOperations, CommandEncoder,
+    CommandEncoderDescriptor, DepthOperations, CanvasDepthStencilBufferFormat, Instance, Operations,
+    RenderPass, RenderPassColorAttachmentDescriptor, RenderPassDepthStencilAttachmentDescriptor,
     RenderPassDescriptor, SampleCount, StencilOperations,
 };
 
 #[derive(Debug, PartialEq, Clone)]
 pub struct RenderPassRequirements {
     pub sample_count: SampleCount,
-    pub color_buffer_formats: Vec<ColorBufferFormat>,
-    pub depth_stencil_buffer_format: Option<DepthStencilBufferFormat>,
+    pub color_buffer_formats: Vec<CanvasColorBufferFormat>,
+    pub depth_stencil_buffer_format: Option<CanvasDepthStencilBufferFormat>,
 }
 
 #[derive(Debug, PartialEq, Clone)]

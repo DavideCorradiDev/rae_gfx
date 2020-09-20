@@ -7,24 +7,24 @@ use rae_app::{
 };
 
 use super::{
-    Canvas, CanvasBuffer, CanvasBufferDescriptor, CanvasBufferSwapChainDescriptor, CanvasFrame,
-    CanvasSize, ColorBufferFormat, DepthStencilBufferFormat, Instance, SampleCount, Surface,
-    SwapChainError,
+    Canvas, CanvasBuffer, CanvasBufferDescriptor, CanvasBufferSwapChainDescriptor,
+    CanvasColorBufferFormat, CanvasDepthStencilBufferFormat, CanvasFrame, CanvasSize, Instance,
+    SampleCount, Surface, SwapChainError,
 };
 
 #[derive(Debug, PartialEq, Clone, serde::Serialize, serde::Deserialize)]
 pub struct CanvasWindowDescriptor {
     pub sample_count: SampleCount,
-    pub color_buffer_format: ColorBufferFormat,
-    pub depth_stencil_buffer_format: Option<DepthStencilBufferFormat>,
+    pub color_buffer_format: CanvasColorBufferFormat,
+    pub depth_stencil_buffer_format: Option<CanvasDepthStencilBufferFormat>,
 }
 
 impl Default for CanvasWindowDescriptor {
     fn default() -> Self {
         Self {
             sample_count: 1,
-            color_buffer_format: ColorBufferFormat::default(),
-            depth_stencil_buffer_format: Some(DepthStencilBufferFormat::Depth32Float),
+            color_buffer_format: CanvasColorBufferFormat::default(),
+            depth_stencil_buffer_format: Some(CanvasDepthStencilBufferFormat::Depth32Float),
         }
     }
 }
@@ -85,11 +85,11 @@ impl CanvasWindow {
         }
     }
 
-    pub fn color_buffer_format(&self) -> ColorBufferFormat {
+    pub fn color_buffer_format(&self) -> CanvasColorBufferFormat {
         self.canvas_buffer.swap_chain().unwrap().format()
     }
 
-    pub fn depth_stencil_buffer_format(&self) -> Option<DepthStencilBufferFormat> {
+    pub fn depth_stencil_buffer_format(&self) -> Option<CanvasDepthStencilBufferFormat> {
         match &self.canvas_buffer.depth_stencil_buffer() {
             Some(v) => Some(v.format()),
             None => None,
@@ -393,7 +393,7 @@ mod tests {
                 height: 30,
             },
             &CanvasWindowDescriptor {
-                depth_stencil_buffer_format: Some(DepthStencilBufferFormat::Depth32Float),
+                depth_stencil_buffer_format: Some(CanvasDepthStencilBufferFormat::Depth32Float),
                 ..CanvasWindowDescriptor::default()
             },
         );
@@ -408,7 +408,7 @@ mod tests {
             },
             &CanvasWindowDescriptor {
                 sample_count: 2,
-                depth_stencil_buffer_format: Some(DepthStencilBufferFormat::Depth32Float),
+                depth_stencil_buffer_format: Some(CanvasDepthStencilBufferFormat::Depth32Float),
                 ..CanvasWindowDescriptor::default()
             },
         );
@@ -422,7 +422,7 @@ mod tests {
                 height: 30,
             },
             &CanvasWindowDescriptor {
-                color_buffer_format: ColorBufferFormat::Bgra8Unorm,
+                color_buffer_format: CanvasColorBufferFormat::Bgra8Unorm,
                 ..CanvasWindowDescriptor::default()
             },
         );

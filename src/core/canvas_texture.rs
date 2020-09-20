@@ -1,16 +1,17 @@
 use std::default::Default;
 
 use super::{
-    Canvas, CanvasBuffer, CanvasBufferDescriptor, CanvasFrame, CanvasSize, ColorBufferFormat,
-    DepthStencilBufferFormat, Instance, SampleCount, Size, SwapChainError, TextureView,
+    Canvas, CanvasBuffer, CanvasBufferDescriptor, CanvasColorBufferFormat,
+    CanvasDepthStencilBufferFormat, CanvasFrame, CanvasSize, Instance, SampleCount, Size,
+    SwapChainError, TextureView,
 };
 
 #[derive(Debug, PartialEq, Clone, serde::Serialize, serde::Deserialize)]
 pub struct CanvasTextureDescriptor {
     pub size: Size<u32>,
     pub sample_count: SampleCount,
-    pub color_buffer_format: Option<ColorBufferFormat>,
-    pub depth_stencil_buffer_format: Option<DepthStencilBufferFormat>,
+    pub color_buffer_format: Option<CanvasColorBufferFormat>,
+    pub depth_stencil_buffer_format: Option<CanvasDepthStencilBufferFormat>,
 }
 
 impl Default for CanvasTextureDescriptor {
@@ -18,8 +19,8 @@ impl Default for CanvasTextureDescriptor {
         Self {
             size: Size::new(1, 1),
             sample_count: 1,
-            color_buffer_format: Some(ColorBufferFormat::default()),
-            depth_stencil_buffer_format: Some(DepthStencilBufferFormat::Depth32Float),
+            color_buffer_format: Some(CanvasColorBufferFormat::default()),
+            depth_stencil_buffer_format: Some(CanvasDepthStencilBufferFormat::Depth32Float),
         }
     }
 }
@@ -47,7 +48,7 @@ impl CanvasTexture {
         Self { canvas_buffer }
     }
 
-    pub fn color_buffer_format(&self) -> Option<ColorBufferFormat> {
+    pub fn color_buffer_format(&self) -> Option<CanvasColorBufferFormat> {
         if self.canvas_buffer.color_buffers().is_empty() {
             None
         } else {
@@ -55,7 +56,7 @@ impl CanvasTexture {
         }
     }
 
-    pub fn depth_stencil_buffer_format(&self) -> Option<DepthStencilBufferFormat> {
+    pub fn depth_stencil_buffer_format(&self) -> Option<CanvasDepthStencilBufferFormat> {
         match &self.canvas_buffer.depth_stencil_buffer() {
             Some(v) => Some(v.format()),
             None => None,

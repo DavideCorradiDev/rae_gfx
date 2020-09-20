@@ -206,7 +206,7 @@ pub struct RenderPipelineDescriptor {
     pub color_blend: core::BlendDescriptor,
     pub alpha_blend: core::BlendDescriptor,
     pub write_mask: core::ColorWrite,
-    pub color_buffer_format: core::ColorBufferFormat,
+    pub color_buffer_format: core::CanvasColorBufferFormat,
     pub sample_count: core::SampleCount,
 }
 
@@ -224,7 +224,7 @@ impl Default for RenderPipelineDescriptor {
                 operation: core::BlendOperation::Max,
             },
             write_mask: core::ColorWrite::ALL,
-            color_buffer_format: core::ColorBufferFormat::default(),
+            color_buffer_format: core::CanvasColorBufferFormat::default(),
             sample_count: 1,
         }
     }
@@ -235,7 +235,7 @@ pub struct RenderPipeline {
     pipeline: core::RenderPipeline,
     bind_group_layout: core::BindGroupLayout,
     sample_count: core::SampleCount,
-    color_buffer_format: core::ColorBufferFormat,
+    color_buffer_format: core::CanvasColorBufferFormat,
 }
 
 impl RenderPipeline {

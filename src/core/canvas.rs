@@ -1,17 +1,16 @@
 use super::{
-    Extent3d, Instance, PresentMode, SampleCount,
-    Size, Surface, SwapChain, SwapChainDescriptor, SwapChainError, SwapChainFrame, Texture,
-    TextureDescriptor, TextureDimension, TextureFormat, TextureUsage, TextureView,
-    TextureViewDescriptor,
+    Extent3d, Instance, PresentMode, SampleCount, Size, Surface, SwapChain, SwapChainDescriptor,
+    SwapChainError, SwapChainFrame, Texture, TextureDescriptor, TextureDimension, TextureFormat,
+    TextureUsage, TextureView, TextureViewDescriptor,
 };
 
 #[derive(Debug, PartialEq, Eq, Clone, Copy, serde::Serialize, serde::Deserialize)]
-pub enum ColorBufferFormat {
+pub enum CanvasColorBufferFormat {
     Bgra8Unorm,
     Bgra8UnormSrgb,
 }
 
-impl Default for ColorBufferFormat {
+impl Default for CanvasColorBufferFormat {
     #[cfg(target_arch = "wasm32")]
     fn default() -> Self {
         Self::Bgra8Unorm
@@ -23,28 +22,28 @@ impl Default for ColorBufferFormat {
     }
 }
 
-impl From<ColorBufferFormat> for TextureFormat {
-    fn from(f: ColorBufferFormat) -> Self {
+impl From<CanvasColorBufferFormat> for TextureFormat {
+    fn from(f: CanvasColorBufferFormat) -> Self {
         match f {
-            ColorBufferFormat::Bgra8Unorm => TextureFormat::Bgra8Unorm,
-            ColorBufferFormat::Bgra8UnormSrgb => TextureFormat::Bgra8UnormSrgb,
+            CanvasColorBufferFormat::Bgra8Unorm => TextureFormat::Bgra8Unorm,
+            CanvasColorBufferFormat::Bgra8UnormSrgb => TextureFormat::Bgra8UnormSrgb,
         }
     }
 }
 
 #[derive(Debug, PartialEq, Eq, Clone, Copy, serde::Serialize, serde::Deserialize)]
-pub enum DepthStencilBufferFormat {
+pub enum CanvasDepthStencilBufferFormat {
     Depth32Float,
     Depth24Plus,
     Depth24PlusStencil8,
 }
 
-impl From<DepthStencilBufferFormat> for TextureFormat {
-    fn from(f: DepthStencilBufferFormat) -> Self {
+impl From<CanvasDepthStencilBufferFormat> for TextureFormat {
+    fn from(f: CanvasDepthStencilBufferFormat) -> Self {
         match f {
-            DepthStencilBufferFormat::Depth32Float => TextureFormat::Depth32Float,
-            DepthStencilBufferFormat::Depth24Plus => TextureFormat::Depth24Plus,
-            DepthStencilBufferFormat::Depth24PlusStencil8 => TextureFormat::Depth24PlusStencil8,
+            CanvasDepthStencilBufferFormat::Depth32Float => TextureFormat::Depth32Float,
+            CanvasDepthStencilBufferFormat::Depth24Plus => TextureFormat::Depth24Plus,
+            CanvasDepthStencilBufferFormat::Depth24PlusStencil8 => TextureFormat::Depth24PlusStencil8,
         }
     }
 }
@@ -54,7 +53,7 @@ pub type CanvasSize = Size<u32>;
 #[derive(Debug)]
 pub struct CanvasSwapChainRef<'a> {
     sample_count: SampleCount,
-    format: ColorBufferFormat,
+    format: CanvasColorBufferFormat,
     multisampled_buffer: Option<&'a TextureView>,
     frame: SwapChainFrame,
 }
@@ -74,7 +73,7 @@ impl<'a> CanvasSwapChainRef<'a> {
         }
     }
 
-    pub fn format(&self) -> ColorBufferFormat {
+    pub fn format(&self) -> CanvasColorBufferFormat {
         self.format
     }
 
@@ -87,13 +86,13 @@ impl<'a> CanvasSwapChainRef<'a> {
 pub struct CanvasSwapChainDescriptor {
     pub size: CanvasSize,
     pub sample_count: SampleCount,
-    pub format: ColorBufferFormat,
+    pub format: CanvasColorBufferFormat,
 }
 
 #[derive(Debug)]
 pub struct CanvasSwapChain {
     sample_count: SampleCount,
-    format: ColorBufferFormat,
+    format: CanvasColorBufferFormat,
     multisampled_buffer: Option<TextureView>,
     swap_chain: SwapChain,
 }
@@ -144,7 +143,7 @@ impl CanvasSwapChain {
         }
     }
 
-    pub fn format(&self) -> ColorBufferFormat {
+    pub fn format(&self) -> CanvasColorBufferFormat {
         self.format
     }
 
@@ -170,7 +169,7 @@ impl CanvasSwapChain {
 #[derive(Debug)]
 pub struct CanvasColorBufferRef<'a> {
     sample_count: SampleCount,
-    format: ColorBufferFormat,
+    format: CanvasColorBufferFormat,
     multisampled_buffer: Option<&'a TextureView>,
     main_buffer: &'a TextureView,
 }
@@ -190,7 +189,7 @@ impl<'a> CanvasColorBufferRef<'a> {
         }
     }
 
-    pub fn format(&self) -> ColorBufferFormat {
+    pub fn format(&self) -> CanvasColorBufferFormat {
         self.format
     }
 
@@ -203,13 +202,13 @@ impl<'a> CanvasColorBufferRef<'a> {
 pub struct CanvasColorBufferDescriptor {
     pub size: CanvasSize,
     pub sample_count: SampleCount,
-    pub format: ColorBufferFormat,
+    pub format: CanvasColorBufferFormat,
 }
 
 #[derive(Debug)]
 pub struct CanvasColorBuffer {
     sample_count: SampleCount,
-    format: ColorBufferFormat,
+    format: CanvasColorBufferFormat,
     multisampled_buffer: Option<TextureView>,
     main_buffer: TextureView,
 }
@@ -252,7 +251,7 @@ impl CanvasColorBuffer {
         &self.main_buffer
     }
 
-    pub fn format(&self) -> ColorBufferFormat {
+    pub fn format(&self) -> CanvasColorBufferFormat {
         self.format
     }
 
@@ -277,7 +276,7 @@ impl CanvasColorBuffer {
 #[derive(Debug)]
 pub struct CanvasDepthStencilBufferRef<'a> {
     sample_count: SampleCount,
-    format: DepthStencilBufferFormat,
+    format: CanvasDepthStencilBufferFormat,
     buffer: &'a TextureView,
 }
 
@@ -286,7 +285,7 @@ impl<'a> CanvasDepthStencilBufferRef<'a> {
         self.buffer
     }
 
-    pub fn format(&self) -> DepthStencilBufferFormat {
+    pub fn format(&self) -> CanvasDepthStencilBufferFormat {
         self.format
     }
 
@@ -299,13 +298,13 @@ impl<'a> CanvasDepthStencilBufferRef<'a> {
 pub struct CanvasDepthStencilBufferDescriptor {
     pub size: CanvasSize,
     pub sample_count: SampleCount,
-    pub format: DepthStencilBufferFormat,
+    pub format: CanvasDepthStencilBufferFormat,
 }
 
 #[derive(Debug)]
 pub struct CanvasDepthStencilBuffer {
     sample_count: SampleCount,
-    format: DepthStencilBufferFormat,
+    format: CanvasDepthStencilBufferFormat,
     buffer: TextureView,
 }
 
@@ -339,7 +338,7 @@ impl CanvasDepthStencilBuffer {
         &self.buffer
     }
 
-    pub fn format(&self) -> DepthStencilBufferFormat {
+    pub fn format(&self) -> CanvasDepthStencilBufferFormat {
         self.format
     }
 
@@ -366,7 +365,7 @@ pub struct CanvasFrame<'a> {
 #[derive(Debug, Clone)]
 pub struct CanvasBufferSwapChainDescriptor<'a> {
     pub surface: &'a Surface,
-    pub format: ColorBufferFormat,
+    pub format: CanvasColorBufferFormat,
 }
 
 #[derive(Debug, Clone)]
@@ -374,8 +373,8 @@ pub struct CanvasBufferDescriptor<'a> {
     pub size: CanvasSize,
     pub sample_count: SampleCount,
     pub swap_chain_descriptor: Option<CanvasBufferSwapChainDescriptor<'a>>,
-    pub color_buffer_formats: Vec<ColorBufferFormat>,
-    pub depth_stencil_buffer_format: Option<DepthStencilBufferFormat>,
+    pub color_buffer_formats: Vec<CanvasColorBufferFormat>,
+    pub depth_stencil_buffer_format: Option<CanvasDepthStencilBufferFormat>,
 }
 
 #[derive(Debug)]
