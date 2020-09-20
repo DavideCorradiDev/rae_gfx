@@ -24,7 +24,7 @@ impl Default for CanvasWindowDescriptor {
         Self {
             sample_count: 1,
             color_buffer_format: CanvasColorBufferFormat::default(),
-            depth_stencil_buffer_format: Some(CanvasDepthStencilBufferFormat::Depth32Float),
+            depth_stencil_buffer_format: None,
         }
     }
 }
@@ -372,8 +372,37 @@ mod tests {
     }
 
     #[test]
+    fn canvas_size() {
+        let window = create_window(
+            window::PhysicalSize {
+                width: 150,
+                height: 30,
+            },
+            &CanvasWindowDescriptor::default(),
+        );
+        expect_that!(window.canvas_size(), eq(CanvasSize::new(150, 30)));
+    }
+
+    #[test]
+    fn default_buffer_parameters() {
+        let window = create_window(
+            window::PhysicalSize {
+                width: 20,
+                height: 30,
+            },
+            &CanvasWindowDescriptor::default(),
+        );
+        expect_that!(&window.sample_count(), eq(1));
+        expect_that!(
+            &window.color_buffer_format(),
+            eq(CanvasColorBufferFormat::default())
+        );
+        expect_that!(&window.depth_stencil_buffer_format(), eq(None));
+    }
+
+    #[test]
     fn multisampled_window() {
-        let _window = create_window(
+        let window = create_window(
             window::PhysicalSize {
                 width: 20,
                 height: 30,
@@ -383,11 +412,17 @@ mod tests {
                 ..CanvasWindowDescriptor::default()
             },
         );
+        expect_that!(&window.sample_count(), eq(2));
+        expect_that!(
+            &window.color_buffer_format(),
+            eq(CanvasColorBufferFormat::default())
+        );
+        expect_that!(&window.depth_stencil_buffer_format(), eq(None));
     }
 
     #[test]
     fn with_depth_stencil_buffer() {
-        let _window = create_window(
+        let window = create_window(
             window::PhysicalSize {
                 width: 20,
                 height: 30,
@@ -396,12 +431,21 @@ mod tests {
                 depth_stencil_buffer_format: Some(CanvasDepthStencilBufferFormat::Depth32Float),
                 ..CanvasWindowDescriptor::default()
             },
+        );
+        expect_that!(&window.sample_count(), eq(1));
+        expect_that!(
+            &window.color_buffer_format(),
+            eq(CanvasColorBufferFormat::default())
+        );
+        expect_that!(
+            &window.depth_stencil_buffer_format(),
+            eq(Some(CanvasDepthStencilBufferFormat::Depth32Float))
         );
     }
 
     #[test]
     fn multisampled_with_depth_stencil_buffer() {
-        let _window = create_window(
+        let window = create_window(
             window::PhysicalSize {
                 width: 20,
                 height: 30,
@@ -412,11 +456,20 @@ mod tests {
                 ..CanvasWindowDescriptor::default()
             },
         );
+        expect_that!(&window.sample_count(), eq(2));
+        expect_that!(
+            &window.color_buffer_format(),
+            eq(CanvasColorBufferFormat::default())
+        );
+        expect_that!(
+            &window.depth_stencil_buffer_format(),
+            eq(Some(CanvasDepthStencilBufferFormat::Depth32Float))
+        );
     }
 
     #[test]
     fn non_default_color_buffer_format() {
-        let _window = create_window(
+        let window = create_window(
             window::PhysicalSize {
                 width: 20,
                 height: 30,
@@ -426,8 +479,11 @@ mod tests {
                 ..CanvasWindowDescriptor::default()
             },
         );
+        expect_that!(&window.sample_count(), eq(1));
+        expect_that!(
+            &window.color_buffer_format(),
+            eq(CanvasColorBufferFormat::Bgra8Unorm)
+        );
+        expect_that!(&window.depth_stencil_buffer_format(), eq(None));
     }
-
-    #[test]
-    fn canvas_size() {}
 }
