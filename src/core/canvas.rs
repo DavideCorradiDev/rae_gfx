@@ -75,12 +75,12 @@ impl<'a> CanvasSwapChainRef<'a> {
         }
     }
 
-    pub fn format(&self) -> CanvasColorBufferFormat {
-        self.format
-    }
-
     pub fn sample_count(&self) -> SampleCount {
         self.sample_count
+    }
+
+    pub fn format(&self) -> CanvasColorBufferFormat {
+        self.format
     }
 }
 
@@ -197,12 +197,12 @@ impl<'a> CanvasColorBufferRef<'a> {
         }
     }
 
-    pub fn format(&self) -> CanvasColorBufferFormat {
-        self.format
-    }
-
     pub fn sample_count(&self) -> SampleCount {
         self.sample_count
+    }
+
+    pub fn format(&self) -> CanvasColorBufferFormat {
+        self.format
     }
 }
 
@@ -299,12 +299,12 @@ impl<'a> CanvasDepthStencilBufferRef<'a> {
         self.buffer
     }
 
-    pub fn format(&self) -> CanvasDepthStencilBufferFormat {
-        self.format
-    }
-
     pub fn sample_count(&self) -> SampleCount {
         self.sample_count
+    }
+
+    pub fn format(&self) -> CanvasDepthStencilBufferFormat {
+        self.format
     }
 }
 
@@ -547,7 +547,7 @@ mod tests {
             Instance::new_with_compatible_window(&InstanceDescriptor::default(), &window).unwrap()
         };
 
-        let swap_chain = CanvasSwapChain::new(
+        let mut swap_chain = CanvasSwapChain::new(
             &instance,
             &surface,
             &CanvasSwapChainDescriptor {
@@ -563,6 +563,11 @@ mod tests {
             eq(CanvasColorBufferFormat::Bgra8Unorm)
         );
         expect_that!(swap_chain.size(), eq(CanvasSize::new(12, 20)));
+
+        let reference = swap_chain.reference().unwrap();
+        expect_that!(&reference.sample_count(), eq(2));
+        expect_that!(&reference.format(), eq(CanvasColorBufferFormat::Bgra8Unorm));
+        expect_that!(reference.resolve_target().is_some());
     }
 
     #[test]
@@ -580,6 +585,11 @@ mod tests {
         expect_that!(&buffer.sample_count(), eq(2));
         expect_that!(&buffer.format(), eq(CanvasColorBufferFormat::Bgra8Unorm));
         expect_that!(buffer.size(), eq(CanvasSize::new(12, 20)));
+
+        let reference = buffer.reference();
+        expect_that!(&reference.sample_count(), eq(2));
+        expect_that!(&reference.format(), eq(CanvasColorBufferFormat::Bgra8Unorm));
+        expect_that!(reference.resolve_target().is_some());
     }
 
     #[test]
@@ -600,5 +610,12 @@ mod tests {
             eq(CanvasDepthStencilBufferFormat::Depth32Float)
         );
         expect_that!(buffer.size(), eq(CanvasSize::new(12, 20)));
+
+        let reference = buffer.reference();
+        expect_that!(&reference.sample_count(), eq(2));
+        expect_that!(
+            &reference.format(),
+            eq(CanvasDepthStencilBufferFormat::Depth32Float)
+        );
     }
 }
