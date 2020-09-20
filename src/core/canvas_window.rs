@@ -266,6 +266,20 @@ mod tests {
 
     use crate::core::InstanceDescriptor;
 
+    fn create_window(
+        size: window::PhysicalSize<u32>,
+        desc: &CanvasWindowDescriptor,
+    ) -> CanvasWindow {
+        let instance = Instance::new(&InstanceDescriptor::default()).unwrap();
+        let event_loop = EventLoop::<()>::new_any_thread();
+        let window = WindowBuilder::new()
+            .with_inner_size(size)
+            .with_visible(false)
+            .build(&event_loop)
+            .unwrap();
+        unsafe { CanvasWindow::from_window(&instance, window, desc) }
+    }
+
     #[test]
     fn from_window() {
         let instance = Instance::new(&InstanceDescriptor::default()).unwrap();
@@ -356,4 +370,64 @@ mod tests {
         };
         expect_that!(&window1.id(), not(eq(window2.id())));
     }
+
+    #[test]
+    fn multisampled_window() {
+        let _window = create_window(
+            window::PhysicalSize {
+                width: 20,
+                height: 30,
+            },
+            &CanvasWindowDescriptor {
+                sample_count: 2,
+                ..CanvasWindowDescriptor::default()
+            },
+        );
+    }
+
+    #[test]
+    fn with_depth_stencil_buffer() {
+        let _window = create_window(
+            window::PhysicalSize {
+                width: 20,
+                height: 30,
+            },
+            &CanvasWindowDescriptor {
+                depth_stencil_buffer_format: Some(DepthStencilBufferFormat::Depth32Float),
+                ..CanvasWindowDescriptor::default()
+            },
+        );
+    }
+
+    #[test]
+    fn multisampled_with_depth_stencil_buffer() {
+        let _window = create_window(
+            window::PhysicalSize {
+                width: 20,
+                height: 30,
+            },
+            &CanvasWindowDescriptor {
+                sample_count: 2,
+                depth_stencil_buffer_format: Some(DepthStencilBufferFormat::Depth32Float),
+                ..CanvasWindowDescriptor::default()
+            },
+        );
+    }
+
+    #[test]
+    fn non_default_color_buffer_format() {
+        let _window = create_window(
+            window::PhysicalSize {
+                width: 20,
+                height: 30,
+            },
+            &CanvasWindowDescriptor {
+                color_buffer_format: ColorBufferFormat::Bgra8Unorm,
+                ..CanvasWindowDescriptor::default()
+            },
+        );
+    }
+
+    #[test]
+    fn canvas_size() {}
 }
