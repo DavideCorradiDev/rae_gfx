@@ -85,7 +85,7 @@ impl Canvas for CanvasTexture {
     }
 
     fn canvas_size(&self) -> &CanvasSize {
-        self.canvas_buffer.canvas_size()
+        self.canvas_buffer.size()
     }
 
     fn sample_count(&self) -> SampleCount {
