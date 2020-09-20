@@ -64,3 +64,41 @@ impl<'a> IndexedMeshRenderer<'a> for RenderPass<'a> {
         self.draw_indexed(index_range.clone(), 0, 0..1);
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    use galvanic_assert::{matchers::*, *};
+
+    use crate::core::InstanceDescriptor;
+
+    #[derive(Debug, PartialEq, Clone, Copy)]
+    struct Vertex {
+        pos: [f32; 2],
+    }
+
+    unsafe impl bytemuck::Zeroable for Vertex {
+        fn zeroed() -> Self {
+            Self { pos: [0., 0.] }
+        }
+    }
+
+    unsafe impl bytemuck::Pod for Vertex {}
+
+    #[test]
+    fn creation() {
+        let instance = Instance::new(&InstanceDescriptor::default()).unwrap();
+        let mesh = IndexedMesh::<Vertex>::new(
+            &instance,
+            &[
+                Vertex { pos: [1., 2.] },
+                Vertex { pos: [3., 4.] },
+                Vertex { pos: [5., 6.] },
+            ],
+            &[0, 1, 1, 2],
+        );
+
+        assert_that!(&mesh.index_count(), eq(4));
+    }
+}
