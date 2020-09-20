@@ -17,12 +17,14 @@ use rae_math::{
 use rae_gfx::{
     core::{
         Canvas, CanvasWindow, CanvasWindowDescriptor, ColorF32, CommandSequence, Instance,
-        InstanceCreationError, InstanceDescriptor, RenderPassOperations, SampleCount,
-        SwapChainError,
+        InstanceDescriptor, RenderPassOperations, SampleCount,
     },
     shape2,
     shape2::Renderer as Shape2Renderer,
 };
+
+mod example_app;
+use example_app::*;
 
 #[derive(Debug)]
 struct ApplicationImpl {
@@ -40,6 +42,14 @@ struct ApplicationImpl {
 
 impl ApplicationImpl {
     const SAMPLE_COUNT: SampleCount = 8;
+
+    pub fn update_angle(&mut self, dt: std::time::Duration) {
+        const ANGULAR_SPEED: f32 = std::f32::consts::PI * 0.25;
+        self.current_angle = self.current_angle + ANGULAR_SPEED * dt.as_secs_f32();
+        while self.current_angle >= std::f32::consts::PI * 2. {
+            self.current_angle = self.current_angle - std::f32::consts::PI * 2.;
+        }
+    }
 
     pub fn generate_push_constant(&self) -> shape2::PushConstants {
         let object_transform = Similarity::<f32>::from_parts(
@@ -102,8 +112,6 @@ impl EventHandler<ApplicationError, ApplicationEvent> for ApplicationImpl {
 
         let window_size = window.inner_size();
 
-        // This matrix will flip the y axis, so that screen coordinates follow mouse
-        // coordinates.
         let projection_transform = OrthographicProjection::new(
             0.,
             window_size.width as f32,
@@ -190,11 +198,7 @@ impl EventHandler<ApplicationError, ApplicationEvent> for ApplicationImpl {
     }
 
     fn on_variable_update(&mut self, dt: std::time::Duration) -> Result<ControlFlow, Self::Error> {
-        const ANGULAR_SPEED: f32 = std::f32::consts::PI * 0.25;
-        self.current_angle = self.current_angle + ANGULAR_SPEED * dt.as_secs_f32();
-        while self.current_angle >= std::f32::consts::PI * 2. {
-            self.current_angle = self.current_angle - std::f32::consts::PI * 2.;
-        }
+        self.update_angle(dt);
 
         let mut draw_static_triangle_commands = Vec::new();
         for saved_triangle_constant in self.saved_triangle_constants.iter() {
@@ -245,59 +249,6 @@ impl EventHandler<ApplicationError, ApplicationEvent> for ApplicationImpl {
 
         cmd_sequence.submit(&self.instance);
         Ok(ControlFlow::Continue)
-    }
-}
-
-type ApplicationEvent = ();
-
-#[derive(Debug)]
-enum ApplicationError {
-    WindowCreationFailed(window::OsError),
-    InstanceCreationFailed(InstanceCreationError),
-    RenderFrameCreationFailed(SwapChainError),
-}
-
-impl std::fmt::Display for ApplicationError {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match self {
-            ApplicationError::WindowCreationFailed(e) => {
-                write!(f, "Window creation failed ({})", e)
-            }
-            ApplicationError::InstanceCreationFailed(e) => {
-                write!(f, "Instance creation failed ({})", e)
-            }
-            ApplicationError::RenderFrameCreationFailed(e) => {
-                write!(f, "Render frame creation failed ({})", e)
-            }
-        }
-    }
-}
-
-impl std::error::Error for ApplicationError {
-    fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
-        match self {
-            ApplicationError::WindowCreationFailed(e) => Some(e),
-            ApplicationError::InstanceCreationFailed(e) => Some(e),
-            ApplicationError::RenderFrameCreationFailed(e) => Some(e),
-        }
-    }
-}
-
-impl From<window::OsError> for ApplicationError {
-    fn from(e: window::OsError) -> Self {
-        ApplicationError::WindowCreationFailed(e)
-    }
-}
-
-impl From<InstanceCreationError> for ApplicationError {
-    fn from(e: InstanceCreationError) -> Self {
-        ApplicationError::InstanceCreationFailed(e)
-    }
-}
-
-impl From<SwapChainError> for ApplicationError {
-    fn from(e: SwapChainError) -> Self {
-        ApplicationError::RenderFrameCreationFailed(e)
     }
 }
 

@@ -1,7 +1,5 @@
 use std::iter;
 
-use rand::Rng;
-
 use rae_app::{
     application::Application,
     event::{ControlFlow, EventHandler, EventLoop},
@@ -12,18 +10,20 @@ use rae_app::{
 use rae_math::{
     conversion::convert,
     geometry2::{OrthographicProjection, Projective},
-    geometry3,
 };
 
 use rae_gfx::{
     core::{
         AddressMode, Canvas, CanvasWindow, CanvasWindowDescriptor, ColorF32, CommandSequence,
-        FilterMode, Instance, InstanceCreationError, InstanceDescriptor, RenderPassOperations,
-        SampleCount, Sampler, SamplerDescriptor, SwapChainError, Texture, TextureViewDescriptor,
+        FilterMode, Instance, InstanceDescriptor, RenderPassOperations,
+        SampleCount, Sampler, SamplerDescriptor, Texture, TextureViewDescriptor,
     },
     sprite,
     sprite::{MeshTemplates as SpriteMeshTemplates, Renderer as SpriteRenderer},
 };
+
+mod example_app;
+use example_app::*;
 
 #[derive(Debug)]
 struct Sprite {
@@ -38,8 +38,7 @@ struct ApplicationImpl {
     pipeline: sprite::RenderPipeline,
     projection_transform: Projective<f32>,
     sprites: Vec<Sprite>,
-    current_color: ColorF32,
-    target_color: ColorF32,
+    color: ChangingColor,
 }
 
 impl ApplicationImpl {
@@ -185,45 +184,6 @@ impl ApplicationImpl {
             },
         ]
     }
-
-    fn update_color(&mut self, dt: std::time::Duration) {
-        #[cfg_attr(rustfmt, rustfmt_skip)]
-        const COLORS: [ColorF32; 8] = [
-            ColorF32::WHITE,
-            ColorF32::BLACK,
-            ColorF32::RED,
-            ColorF32::GREEN,
-            ColorF32::BLUE,
-            ColorF32::YELLOW,
-            ColorF32::CYAN,
-            ColorF32::MAGENTA
-        ];
-        const COLOR_CHANGE_SPEED: f32 = 1.;
-
-        if self.current_color != self.target_color {
-            let current_color = geometry3::Point::new(
-                self.current_color.r,
-                self.current_color.g,
-                self.current_color.b,
-            );
-            let target_color = geometry3::Point::new(
-                self.target_color.r,
-                self.target_color.g,
-                self.target_color.b,
-            );
-            let next_color = current_color
-                + (target_color - current_color).normalize()
-                    * COLOR_CHANGE_SPEED
-                    * dt.as_secs_f32();
-
-            self.current_color.r = num::clamp(next_color[0], 0., 1.);
-            self.current_color.g = num::clamp(next_color[1], 0., 1.);
-            self.current_color.b = num::clamp(next_color[2], 0., 1.);
-        } else {
-            let mut rng = rand::thread_rng();
-            self.target_color = COLORS[rng.gen_range(0, COLORS.len() - 1)];
-        }
-    }
 }
 
 impl EventHandler<ApplicationError, ApplicationEvent> for ApplicationImpl {
@@ -264,8 +224,6 @@ impl EventHandler<ApplicationError, ApplicationEvent> for ApplicationImpl {
 
         let window_size = window.inner_size();
 
-        // This matrix will flip the y axis, so that screen coordinates follow mouse
-        // coordinates.
         let projection_transform = OrthographicProjection::new(
             0.,
             window_size.width as f32,
@@ -276,14 +234,15 @@ impl EventHandler<ApplicationError, ApplicationEvent> for ApplicationImpl {
 
         let sprites = Self::create_sprites(&instance);
 
+        let color = ChangingColor::new(ColorF32::WHITE, ColorF32::WHITE);
+
         Ok(Self {
             window,
             instance,
             pipeline,
             projection_transform,
             sprites,
-            current_color: ColorF32::WHITE,
-            target_color: ColorF32::WHITE,
+            color,
         })
     }
 
@@ -306,9 +265,11 @@ impl EventHandler<ApplicationError, ApplicationEvent> for ApplicationImpl {
     }
 
     fn on_variable_update(&mut self, dt: std::time::Duration) -> Result<ControlFlow, Self::Error> {
-        self.update_color(dt);
-        let push_constants =
-            sprite::PushConstants::new(&convert(self.projection_transform), self.current_color);
+        self.color.update(dt);
+        let push_constants = sprite::PushConstants::new(
+            &convert(self.projection_transform),
+            *self.color.current_color(),
+        );
 
         let frame = self.window.current_frame()?;
         let mut cmd_sequence = CommandSequence::new(&self.instance);
@@ -334,59 +295,6 @@ impl EventHandler<ApplicationError, ApplicationEvent> for ApplicationImpl {
         }
         cmd_sequence.submit(&self.instance);
         Ok(ControlFlow::Continue)
-    }
-}
-
-type ApplicationEvent = ();
-
-#[derive(Debug)]
-enum ApplicationError {
-    WindowCreationFailed(window::OsError),
-    InstanceCreationFailed(InstanceCreationError),
-    RenderFrameCreationFailed(SwapChainError),
-}
-
-impl std::fmt::Display for ApplicationError {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match self {
-            ApplicationError::WindowCreationFailed(e) => {
-                write!(f, "Window creation failed ({})", e)
-            }
-            ApplicationError::InstanceCreationFailed(e) => {
-                write!(f, "Instance creation failed ({})", e)
-            }
-            ApplicationError::RenderFrameCreationFailed(e) => {
-                write!(f, "Render frame creation failed ({})", e)
-            }
-        }
-    }
-}
-
-impl std::error::Error for ApplicationError {
-    fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
-        match self {
-            ApplicationError::WindowCreationFailed(e) => Some(e),
-            ApplicationError::InstanceCreationFailed(e) => Some(e),
-            ApplicationError::RenderFrameCreationFailed(e) => Some(e),
-        }
-    }
-}
-
-impl From<window::OsError> for ApplicationError {
-    fn from(e: window::OsError) -> Self {
-        ApplicationError::WindowCreationFailed(e)
-    }
-}
-
-impl From<InstanceCreationError> for ApplicationError {
-    fn from(e: InstanceCreationError) -> Self {
-        ApplicationError::InstanceCreationFailed(e)
-    }
-}
-
-impl From<SwapChainError> for ApplicationError {
-    fn from(e: SwapChainError) -> Self {
-        ApplicationError::RenderFrameCreationFailed(e)
     }
 }
 
