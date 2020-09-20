@@ -159,20 +159,18 @@ impl CanvasWindow {
         self.update_buffer(instance);
     }
 
-    pub fn set_min_inner_size<S>(&mut self, instance: &Instance, min_size: Option<S>)
+    pub fn set_min_inner_size<S>(&mut self, min_size: Option<S>)
     where
         S: Into<window::Size>,
     {
         self.window.set_min_inner_size(min_size);
-        self.update_buffer(instance);
     }
 
-    pub fn set_max_inner_size<S>(&mut self, instance: &Instance, max_size: Option<S>)
+    pub fn set_max_inner_size<S>(&mut self, max_size: Option<S>)
     where
         S: Into<window::Size>,
     {
         self.window.set_max_inner_size(max_size);
-        self.update_buffer(instance);
     }
 
     pub fn set_title(&self, title: &str) {
@@ -381,6 +379,45 @@ mod tests {
             &CanvasWindowDescriptor::default(),
         );
         expect_that!(window.canvas_size(), eq(CanvasSize::new(150, 30)));
+    }
+
+    #[test]
+    fn canvas_size_after_resizing() {
+        let instance = Instance::new(&InstanceDescriptor::default()).unwrap();
+        let event_loop = EventLoop::<()>::new_any_thread();
+        let window = WindowBuilder::new()
+            .with_inner_size(window::PhysicalSize {
+                width: 150,
+                height: 30,
+            })
+            .with_visible(false)
+            .build(&event_loop)
+            .unwrap();
+        let mut window = unsafe {
+            CanvasWindow::from_window(&instance, window, &CanvasWindowDescriptor::default())
+        };
+
+        window.set_inner_size(
+            &instance,
+            window::PhysicalSize {
+                width: 200,
+                height: 60,
+            },
+        );
+        expect_that!(window.canvas_size(), eq(CanvasSize::new(200, 60)));
+
+        // Changing the min or max size doesn't directly influence the window size.
+        window.set_min_inner_size(Some(window::PhysicalSize::<u32> {
+            width: 250,
+            height: 100,
+        }));
+        expect_that!(window.canvas_size(), eq(CanvasSize::new(200, 60)));
+
+        window.set_max_inner_size(Some(window::PhysicalSize::<u32> {
+            width: 180,
+            height: 80,
+        }));
+        expect_that!(window.canvas_size(), eq(CanvasSize::new(200, 60)));
     }
 
     #[test]
