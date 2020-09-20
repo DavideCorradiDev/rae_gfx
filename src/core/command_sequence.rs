@@ -126,7 +126,10 @@ impl CommandSequence {
 mod tests {
     use super::*;
 
-    use crate::core::{CanvasBuffer, CanvasBufferDescriptor, CanvasSize, InstanceDescriptor};
+    use crate::core::{
+        CanvasBuffer, CanvasBufferColorBufferDescriptor, CanvasBufferDescriptor,
+        CanvasColorBufferUsage, CanvasSize, InstanceDescriptor,
+    };
 
     #[test]
     fn creation() {
@@ -144,7 +147,10 @@ mod tests {
                 size: CanvasSize::new(12, 20),
                 sample_count: 2,
                 swap_chain_descriptor: None,
-                color_buffer_formats: vec![CanvasColorBufferFormat::default()],
+                color_buffer_descriptors: vec![CanvasBufferColorBufferDescriptor {
+                    format: CanvasColorBufferFormat::default(),
+                    usage: CanvasColorBufferUsage::empty(),
+                }],
                 depth_stencil_buffer_format: Some(CanvasDepthStencilBufferFormat::Depth32Float),
             },
         );
@@ -189,7 +195,10 @@ mod tests {
                 size: CanvasSize::new(12, 20),
                 sample_count: 1,
                 swap_chain_descriptor: None,
-                color_buffer_formats: vec![CanvasColorBufferFormat::default()],
+                color_buffer_descriptors: vec![CanvasBufferColorBufferDescriptor {
+                    format: CanvasColorBufferFormat::default(),
+                    usage: CanvasColorBufferUsage::empty(),
+                }],
                 depth_stencil_buffer_format: Some(CanvasDepthStencilBufferFormat::Depth32Float),
             },
         );
@@ -219,7 +228,7 @@ mod tests {
                 size: CanvasSize::new(12, 20),
                 sample_count: 2,
                 swap_chain_descriptor: None,
-                color_buffer_formats: Vec::new(),
+                color_buffer_descriptors: Vec::new(),
                 depth_stencil_buffer_format: Some(CanvasDepthStencilBufferFormat::Depth32Float),
             },
         );
@@ -247,7 +256,10 @@ mod tests {
                 size: CanvasSize::new(12, 20),
                 sample_count: 2,
                 swap_chain_descriptor: None,
-                color_buffer_formats: vec![CanvasColorBufferFormat::Bgra8Unorm],
+                color_buffer_descriptors: vec![CanvasBufferColorBufferDescriptor {
+                    format: CanvasColorBufferFormat::Bgra8Unorm,
+                    usage: CanvasColorBufferUsage::empty(),
+                }],
                 depth_stencil_buffer_format: None,
             },
         );
@@ -275,7 +287,10 @@ mod tests {
                 size: CanvasSize::new(12, 20),
                 sample_count: 2,
                 swap_chain_descriptor: None,
-                color_buffer_formats: vec![CanvasColorBufferFormat::default()],
+                color_buffer_descriptors: vec![CanvasBufferColorBufferDescriptor {
+                    format: CanvasColorBufferFormat::default(),
+                    usage: CanvasColorBufferUsage::empty(),
+                }],
                 depth_stencil_buffer_format: None,
             },
         );
@@ -303,7 +318,7 @@ mod tests {
                 size: CanvasSize::new(12, 20),
                 sample_count: 2,
                 swap_chain_descriptor: None,
-                color_buffer_formats: Vec::new(),
+                color_buffer_descriptors: Vec::new(),
                 depth_stencil_buffer_format: Some(CanvasDepthStencilBufferFormat::Depth24Plus),
             },
         );

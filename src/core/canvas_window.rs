@@ -74,7 +74,7 @@ impl CanvasWindow {
                     surface: &surface,
                     format: desc.color_buffer_format,
                 }),
-                color_buffer_formats: Vec::new(),
+                color_buffer_descriptors: Vec::new(),
                 depth_stencil_buffer_format: desc.depth_stencil_buffer_format,
             },
         );
@@ -109,7 +109,7 @@ impl CanvasWindow {
                         surface: &self.surface,
                         format: self.color_buffer_format(),
                     }),
-                    color_buffer_formats: Vec::new(),
+                    color_buffer_descriptors: Vec::new(),
                     depth_stencil_buffer_format: self.depth_stencil_buffer_format(),
                 },
             );

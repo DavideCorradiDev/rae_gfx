@@ -1,16 +1,18 @@
 use std::default::Default;
 
 use super::{
-    Canvas, CanvasBuffer, CanvasBufferDescriptor, CanvasColorBufferFormat,
-    CanvasDepthStencilBufferFormat, CanvasFrame, CanvasSize, Instance, SampleCount, Size,
-    SwapChainError, TextureView,
+    Canvas, CanvasBuffer, CanvasBufferColorBufferDescriptor, CanvasBufferDescriptor,
+    CanvasColorBufferFormat, CanvasDepthStencilBufferFormat, CanvasFrame, CanvasSize, Instance,
+    SampleCount, Size, SwapChainError, TextureView,
 };
+
+pub type CanvasTextureColorBufferDescriptor = CanvasBufferColorBufferDescriptor;
 
 #[derive(Debug, PartialEq, Clone, serde::Serialize, serde::Deserialize)]
 pub struct CanvasTextureDescriptor {
     pub size: Size<u32>,
     pub sample_count: SampleCount,
-    pub color_buffer_format: Option<CanvasColorBufferFormat>,
+    pub color_buffer_descriptor: Option<CanvasTextureColorBufferDescriptor>,
     pub depth_stencil_buffer_format: Option<CanvasDepthStencilBufferFormat>,
 }
 
@@ -19,7 +21,7 @@ impl Default for CanvasTextureDescriptor {
         Self {
             size: Size::new(1, 1),
             sample_count: 1,
-            color_buffer_format: Some(CanvasColorBufferFormat::default()),
+            color_buffer_descriptor: Some(CanvasTextureColorBufferDescriptor::default()),
             depth_stencil_buffer_format: None,
         }
     }
@@ -38,8 +40,8 @@ impl CanvasTexture {
                 size: desc.size,
                 sample_count: desc.sample_count,
                 swap_chain_descriptor: None,
-                color_buffer_formats: match desc.color_buffer_format {
-                    Some(format) => vec![format],
+                color_buffer_descriptors: match desc.color_buffer_descriptor {
+                    Some(v) => vec![v],
                     None => Vec::new(),
                 },
                 depth_stencil_buffer_format: desc.depth_stencil_buffer_format,
@@ -239,7 +241,7 @@ mod tests {
         let mut texture = CanvasTexture::new(
             &instance,
             &CanvasTextureDescriptor {
-                color_buffer_format: None,
+                color_buffer_descriptor: None,
                 depth_stencil_buffer_format: Some(CanvasDepthStencilBufferFormat::Depth24Plus),
                 ..CanvasTextureDescriptor::default()
             },
@@ -316,7 +318,7 @@ mod tests {
         let _texture = CanvasTexture::new(
             &instance,
             &CanvasTextureDescriptor {
-                color_buffer_format: None,
+                color_buffer_descriptor: None,
                 depth_stencil_buffer_format: None,
                 ..CanvasTextureDescriptor::default()
             },

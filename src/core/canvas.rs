@@ -206,11 +206,27 @@ impl<'a> CanvasColorBufferRef<'a> {
     }
 }
 
+bitflags::bitflags! {
+    #[derive(serde::Serialize, serde::Deserialize)]
+    pub struct CanvasColorBufferUsage : u32 {
+        const COPY_SRC = TextureUsage::COPY_SRC.bits();
+        const COPY_DST = TextureUsage::COPY_DST.bits();
+        const SAMPLED = TextureUsage::SAMPLED.bits();
+    }
+}
+
+impl From<CanvasColorBufferUsage> for TextureUsage {
+    fn from(usage: CanvasColorBufferUsage) -> Self {
+        TextureUsage::from_bits(usage.bits()).unwrap()
+    }
+}
+
 #[derive(Debug, PartialEq, Clone, Copy)]
 pub struct CanvasColorBufferDescriptor {
     pub size: CanvasSize,
     pub sample_count: SampleCount,
     pub format: CanvasColorBufferFormat,
+    pub usage: CanvasColorBufferUsage,
 }
 
 #[derive(Debug)]
@@ -222,6 +238,10 @@ pub struct CanvasColorBuffer {
     main_buffer: TextureView,
 }
 
+// TODO: make usage a parameter in the descriptor. Allow specifying if canvas
+// texture should be sampled and/or "capturable" and set the corresponding
+// flags.
+// ALSO: Depth stencil doesn't need to be sampled.
 impl CanvasColorBuffer {
     pub fn new(instance: &Instance, desc: &CanvasColorBufferDescriptor) -> Self {
         let mut tex_desc = TextureDescriptor {
@@ -234,7 +254,7 @@ impl CanvasColorBuffer {
             sample_count: 1,
             dimension: TextureDimension::D2,
             format: TextureFormat::from(desc.format),
-            usage: TextureUsage::SAMPLED | TextureUsage::OUTPUT_ATTACHMENT,
+            usage: TextureUsage::from(desc.usage) | TextureUsage::OUTPUT_ATTACHMENT,
             label: None,
         };
 
@@ -337,7 +357,7 @@ impl CanvasDepthStencilBuffer {
                 sample_count: desc.sample_count,
                 dimension: TextureDimension::D2,
                 format: TextureFormat::from(desc.format),
-                usage: TextureUsage::SAMPLED | TextureUsage::OUTPUT_ATTACHMENT,
+                usage: TextureUsage::OUTPUT_ATTACHMENT,
                 label: None,
             },
         )
@@ -402,12 +422,27 @@ pub struct CanvasBufferSwapChainDescriptor<'a> {
     pub format: CanvasColorBufferFormat,
 }
 
+#[derive(Debug, PartialEq, Eq, Clone, Copy, serde::Serialize, serde::Deserialize)]
+pub struct CanvasBufferColorBufferDescriptor {
+    pub format: CanvasColorBufferFormat,
+    pub usage: CanvasColorBufferUsage,
+}
+
+impl Default for CanvasBufferColorBufferDescriptor {
+    fn default() -> Self {
+        Self {
+            format: CanvasColorBufferFormat::default(),
+            usage: CanvasColorBufferUsage::empty(),
+        }
+    }
+}
+
 #[derive(Debug, Clone)]
 pub struct CanvasBufferDescriptor<'a> {
     pub size: CanvasSize,
     pub sample_count: SampleCount,
     pub swap_chain_descriptor: Option<CanvasBufferSwapChainDescriptor<'a>>,
-    pub color_buffer_formats: Vec<CanvasColorBufferFormat>,
+    pub color_buffer_descriptors: Vec<CanvasBufferColorBufferDescriptor>,
     pub depth_stencil_buffer_format: Option<CanvasDepthStencilBufferFormat>,
 }
 
@@ -435,14 +470,15 @@ impl CanvasBuffer {
             None => None,
         };
 
-        let mut color_buffers = Vec::with_capacity(desc.color_buffer_formats.len());
-        for format in desc.color_buffer_formats.iter() {
+        let mut color_buffers = Vec::with_capacity(desc.color_buffer_descriptors.len());
+        for cbd in desc.color_buffer_descriptors.iter() {
             color_buffers.push(CanvasColorBuffer::new(
                 instance,
                 &CanvasColorBufferDescriptor {
                     size: desc.size,
                     sample_count: desc.sample_count,
-                    format: *format,
+                    format: cbd.format,
+                    usage: cbd.usage,
                 },
             ));
         }
@@ -579,6 +615,7 @@ mod tests {
                 sample_count: 2,
                 format: CanvasColorBufferFormat::Bgra8Unorm,
                 size: CanvasSize::new(12, 20),
+                usage: CanvasColorBufferUsage::empty(),
             },
         );
 
@@ -639,9 +676,15 @@ mod tests {
                     surface: &surface,
                     format: CanvasColorBufferFormat::default(),
                 }),
-                color_buffer_formats: vec![
-                    CanvasColorBufferFormat::default(),
-                    CanvasColorBufferFormat::Bgra8Unorm,
+                color_buffer_descriptors: vec![
+                    CanvasBufferColorBufferDescriptor {
+                        format: CanvasColorBufferFormat::default(),
+                        usage: CanvasColorBufferUsage::empty(),
+                    },
+                    CanvasBufferColorBufferDescriptor {
+                        format: CanvasColorBufferFormat::Bgra8Unorm,
+                        usage: CanvasColorBufferUsage::empty(),
+                    },
                 ],
                 depth_stencil_buffer_format: Some(CanvasDepthStencilBufferFormat::Depth32Float),
             },
@@ -702,7 +745,7 @@ mod tests {
                 size: CanvasSize::new(12, 20),
                 sample_count: 2,
                 swap_chain_descriptor: None,
-                color_buffer_formats: Vec::new(),
+                color_buffer_descriptors: Vec::new(),
                 depth_stencil_buffer_format: None,
             },
         );

@@ -14,7 +14,8 @@ use rae_math::{
 
 use rae_gfx::{
     core::{
-        AddressMode, Canvas, CanvasTexture, CanvasTextureDescriptor, CanvasWindow,
+        AddressMode, Canvas, CanvasColorBufferFormat, CanvasColorBufferUsage, CanvasTexture,
+        CanvasTextureColorBufferDescriptor, CanvasTextureDescriptor, CanvasWindow,
         CanvasWindowDescriptor, ColorF32, ColorF64, ColorOperations, CommandSequence, Instance,
         InstanceDescriptor, LoadOp, RenderPassOperations, SampleCount, Sampler, SamplerDescriptor,
         Size,
@@ -102,6 +103,10 @@ impl EventHandler<ApplicationError, ApplicationEvent> for ApplicationImpl {
             &CanvasTextureDescriptor {
                 size: Size::new(100, 100),
                 sample_count: Self::SAMPLE_COUNT,
+                color_buffer_descriptor: Some(CanvasTextureColorBufferDescriptor {
+                    format: CanvasColorBufferFormat::default(),
+                    usage: CanvasColorBufferUsage::SAMPLED,
+                }),
                 ..CanvasTextureDescriptor::default()
             },
         );
