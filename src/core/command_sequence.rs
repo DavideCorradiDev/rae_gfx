@@ -128,3 +128,62 @@ impl CommandSequence {
         instance.submit(iter::once(self.encoder.finish()))
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    use galvanic_assert::{matchers::*, *};
+
+    use crate::core::{CanvasBuffer, CanvasBufferDescriptor, CanvasSize, InstanceDescriptor};
+
+    #[test]
+    fn creation() {
+        let instance = Instance::new(&InstanceDescriptor::default()).unwrap();
+        let _cmd_seq = CommandSequence::new(&instance);
+    }
+
+    #[test]
+    fn render_pass() {
+        let instance = Instance::new(&InstanceDescriptor::default()).unwrap();
+        let mut cmd_seq = CommandSequence::new(&instance);
+        let mut buffer = CanvasBuffer::new(
+            &instance,
+            &CanvasBufferDescriptor {
+                size: CanvasSize::new(12, 20),
+                sample_count: 2,
+                swap_chain_descriptor: None,
+                color_buffer_formats: vec![CanvasColorBufferFormat::default()],
+                depth_stencil_buffer_format: Some(CanvasDepthStencilBufferFormat::Depth32Float),
+            },
+        );
+
+        {
+            let frame = buffer.current_frame().unwrap();
+            let _rpass = cmd_seq.begin_render_pass(
+                &frame,
+                &RenderPassRequirements {
+                    sample_count: 2,
+                    color_buffer_formats: vec![CanvasColorBufferFormat::default()],
+                    depth_stencil_buffer_format: Some(CanvasDepthStencilBufferFormat::Depth32Float),
+                },
+                &RenderPassOperations::default(),
+            );
+        }
+
+        {
+            let frame = buffer.current_frame().unwrap();
+            let _rpass = cmd_seq.begin_render_pass(
+                &frame,
+                &RenderPassRequirements {
+                    sample_count: 2,
+                    color_buffer_formats: vec![CanvasColorBufferFormat::default()],
+                    depth_stencil_buffer_format: Some(CanvasDepthStencilBufferFormat::Depth32Float),
+                },
+                &RenderPassOperations::default(),
+            );
+        }
+
+        cmd_seq.submit(&instance);
+    }
+}
