@@ -34,3 +34,76 @@ impl<T: Copy + Zero + PartialOrd> Size<T> {
         self.height = value;
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    use galvanic_assert::{matchers::*, *};
+
+    #[test]
+    fn creation() {
+        let size = Size::<f32>::new(3., 4.);
+        expect_that!(&size.width(), eq(3.));
+        expect_that!(&size.height(), eq(4.));
+    }
+
+    #[test]
+    fn zero() {
+        let size = Size::<f32>::new(0., 0.);
+        expect_that!(&size.width(), eq(0.));
+        expect_that!(&size.height(), eq(0.));
+    }
+
+    #[test]
+    #[should_panic(expected = "A negative size is invalid")]
+    fn creation_failure_invalid_width() {
+        let _size = Size::<f32>::new(-3., 4.);
+    }
+
+    #[test]
+    #[should_panic(expected = "A negative size is invalid")]
+    fn creation_failure_invalid_height() {
+        let _size = Size::<f32>::new(3., -4.);
+    }
+
+    #[test]
+    #[should_panic(expected = "A negative size is invalid")]
+    fn creation_failure_invalid_width_and_height() {
+        let _size = Size::<f32>::new(-3., -4.);
+    }
+
+    #[test]
+    fn set_width() {
+        let mut size = Size::<f32>::new(0., 0.);
+        expect_that!(&size.width(), eq(0.));
+        expect_that!(&size.height(), eq(0.));
+        size.set_width(2.);
+        expect_that!(&size.width(), eq(2.));
+        expect_that!(&size.height(), eq(0.));
+    }
+
+    #[test]
+    #[should_panic(expected = "A negative size is invalid")]
+    fn set_width_invalid_value() {
+        let mut size = Size::<f32>::new(0., 0.);
+        size.set_width(-2.);
+    }
+
+    #[test]
+    fn set_height() {
+        let mut size = Size::<f32>::new(0., 0.);
+        expect_that!(&size.width(), eq(0.));
+        expect_that!(&size.height(), eq(0.));
+        size.set_height(3.);
+        expect_that!(&size.width(), eq(0.));
+        expect_that!(&size.height(), eq(3.));
+    }
+
+    #[test]
+    #[should_panic(expected = "A negative size is invalid")]
+    fn set_height_invalid_value() {
+        let mut size = Size::<f32>::new(0., 0.);
+        size.set_height(-2.);
+    }
+}
