@@ -1,9 +1,9 @@
 use std::{default::Default, iter};
 
 use super::{
-    CanvasColorBufferFormat, CanvasFrame, ColorOperations, CommandEncoder,
-    CommandEncoderDescriptor, DepthOperations, CanvasDepthStencilBufferFormat, Instance, Operations,
-    RenderPass, RenderPassColorAttachmentDescriptor, RenderPassDepthStencilAttachmentDescriptor,
+    CanvasColorBufferFormat, CanvasDepthStencilBufferFormat, CanvasFrame, ColorOperations,
+    CommandEncoder, CommandEncoderDescriptor, DepthOperations, Instance, Operations, RenderPass,
+    RenderPassColorAttachmentDescriptor, RenderPassDepthStencilAttachmentDescriptor,
     RenderPassDescriptor, SampleCount, StencilOperations,
 };
 
@@ -49,10 +49,10 @@ impl CommandSequence {
         operations: &RenderPassOperations,
     ) -> RenderPass<'a> {
         // Define color attachments.
-        let has_swap_chain = canvas_frame.swap_chain.is_some();
+        let has_swap_chain = canvas_frame.swap_chain().is_some();
         let required_color_buffer_count = requirements.color_buffer_formats.len();
         let available_color_buffer_count =
-            canvas_frame.color_buffers.len() + if has_swap_chain { 1 } else { 0 };
+            canvas_frame.color_buffers().len() + if has_swap_chain { 1 } else { 0 };
         assert!(
             required_color_buffer_count <= available_color_buffer_count,
             "Failed to begin render pass ({} color buffers were required by the pipeline but only \
@@ -68,8 +68,8 @@ impl CommandSequence {
                 Some(v) => *v,
                 None => Operations::default(),
             };
-            if i == 0 && canvas_frame.swap_chain.is_some() {
-                let swap_chain = canvas_frame.swap_chain.as_ref().unwrap();
+            if i == 0 && has_swap_chain {
+                let swap_chain = canvas_frame.swap_chain().unwrap();
                 assert!(
                     required_format == swap_chain.format(),
                     "Incompatible swap chain format"
@@ -82,7 +82,7 @@ impl CommandSequence {
             } else {
                 let buffer_index = i - if has_swap_chain { 1 } else { 0 };
                 let color_buffer = canvas_frame
-                    .color_buffers
+                    .color_buffers()
                     .get(buffer_index)
                     .expect("Not enough color buffers");
                 assert!(
@@ -99,7 +99,7 @@ impl CommandSequence {
 
         // Define depth stencil attachments.
         let depth_stencil_attachment = match requirements.depth_stencil_buffer_format {
-            Some(required_format) => match &canvas_frame.depth_stencil_buffer {
+            Some(required_format) => match canvas_frame.depth_stencil_buffer() {
                 Some(ds_buffer) => {
                     assert!(
                         required_format == ds_buffer.format(),

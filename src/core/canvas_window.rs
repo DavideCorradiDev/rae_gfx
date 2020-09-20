@@ -452,11 +452,11 @@ mod tests {
         expect_that!(&window.depth_stencil_buffer_format(), eq(None));
 
         let frame = window.current_frame().unwrap();
-        expect_that!(frame.swap_chain.is_some());
-        expect_that!(frame.color_buffers.is_empty());
-        expect_that!(frame.depth_stencil_buffer.is_none());
+        expect_that!(frame.swap_chain().is_some());
+        expect_that!(frame.color_buffers().is_empty());
+        expect_that!(frame.depth_stencil_buffer().is_none());
 
-        let swap_chain_ref = frame.swap_chain.as_ref().unwrap();
+        let swap_chain_ref = frame.swap_chain().unwrap();
         expect_that!(&swap_chain_ref.sample_count(), eq(1));
         expect_that!(
             &swap_chain_ref.format(),
@@ -485,11 +485,11 @@ mod tests {
         expect_that!(&window.depth_stencil_buffer_format(), eq(None));
 
         let frame = window.current_frame().unwrap();
-        expect_that!(frame.swap_chain.is_some());
-        expect_that!(frame.color_buffers.is_empty());
-        expect_that!(frame.depth_stencil_buffer.is_none());
+        expect_that!(frame.swap_chain().is_some());
+        expect_that!(frame.color_buffers().is_empty());
+        expect_that!(frame.depth_stencil_buffer().is_none());
 
-        let swap_chain_ref = frame.swap_chain.as_ref().unwrap();
+        let swap_chain_ref = frame.swap_chain().unwrap();
         expect_that!(&swap_chain_ref.sample_count(), eq(2));
         expect_that!(
             &swap_chain_ref.format(),
@@ -521,18 +521,18 @@ mod tests {
         );
 
         let frame = window.current_frame().unwrap();
-        expect_that!(frame.swap_chain.is_some());
-        expect_that!(frame.color_buffers.is_empty());
-        expect_that!(frame.depth_stencil_buffer.is_some());
+        expect_that!(frame.swap_chain().is_some());
+        expect_that!(frame.color_buffers().is_empty());
+        expect_that!(frame.depth_stencil_buffer().is_some());
 
-        let swap_chain_ref = frame.swap_chain.as_ref().unwrap();
+        let swap_chain_ref = frame.swap_chain().unwrap();
         expect_that!(&swap_chain_ref.sample_count(), eq(1));
         expect_that!(
             &swap_chain_ref.format(),
             eq(CanvasColorBufferFormat::default())
         );
 
-        let ds_buffer_ref = frame.depth_stencil_buffer.as_ref().unwrap();
+        let ds_buffer_ref = frame.depth_stencil_buffer().unwrap();
         expect_that!(&ds_buffer_ref.sample_count(), eq(1));
         expect_that!(
             &ds_buffer_ref.format(),
@@ -565,18 +565,18 @@ mod tests {
         );
 
         let frame = window.current_frame().unwrap();
-        expect_that!(frame.swap_chain.is_some());
-        expect_that!(frame.color_buffers.is_empty());
-        expect_that!(frame.depth_stencil_buffer.is_some());
+        expect_that!(frame.swap_chain().is_some());
+        expect_that!(frame.color_buffers().is_empty());
+        expect_that!(frame.depth_stencil_buffer().is_some());
 
-        let swap_chain_ref = frame.swap_chain.as_ref().unwrap();
+        let swap_chain_ref = frame.swap_chain().unwrap();
         expect_that!(&swap_chain_ref.sample_count(), eq(2));
         expect_that!(
             &swap_chain_ref.format(),
             eq(CanvasColorBufferFormat::default())
         );
 
-        let ds_buffer_ref = frame.depth_stencil_buffer.as_ref().unwrap();
+        let ds_buffer_ref = frame.depth_stencil_buffer().unwrap();
         expect_that!(&ds_buffer_ref.sample_count(), eq(2));
         expect_that!(
             &ds_buffer_ref.format(),
@@ -605,11 +605,11 @@ mod tests {
         expect_that!(&window.depth_stencil_buffer_format(), eq(None));
 
         let frame = window.current_frame().unwrap();
-        expect_that!(frame.swap_chain.is_some());
-        expect_that!(frame.color_buffers.is_empty());
-        expect_that!(frame.depth_stencil_buffer.is_none());
+        expect_that!(frame.swap_chain().is_some());
+        expect_that!(frame.color_buffers().is_empty());
+        expect_that!(frame.depth_stencil_buffer().is_none());
 
-        let swap_chain_ref = frame.swap_chain.as_ref().unwrap();
+        let swap_chain_ref = frame.swap_chain().unwrap();
         expect_that!(&swap_chain_ref.sample_count(), eq(1));
         expect_that!(
             &swap_chain_ref.format(),

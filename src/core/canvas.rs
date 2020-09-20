@@ -43,7 +43,9 @@ impl From<CanvasDepthStencilBufferFormat> for TextureFormat {
         match f {
             CanvasDepthStencilBufferFormat::Depth32Float => TextureFormat::Depth32Float,
             CanvasDepthStencilBufferFormat::Depth24Plus => TextureFormat::Depth24Plus,
-            CanvasDepthStencilBufferFormat::Depth24PlusStencil8 => TextureFormat::Depth24PlusStencil8,
+            CanvasDepthStencilBufferFormat::Depth24PlusStencil8 => {
+                TextureFormat::Depth24PlusStencil8
+            }
         }
     }
 }
@@ -357,9 +359,23 @@ impl CanvasDepthStencilBuffer {
 
 #[derive(Debug)]
 pub struct CanvasFrame<'a> {
-    pub swap_chain: Option<CanvasSwapChainRef<'a>>,
-    pub color_buffers: Vec<CanvasColorBufferRef<'a>>,
-    pub depth_stencil_buffer: Option<CanvasDepthStencilBufferRef<'a>>,
+    swap_chain: Option<CanvasSwapChainRef<'a>>,
+    color_buffers: Vec<CanvasColorBufferRef<'a>>,
+    depth_stencil_buffer: Option<CanvasDepthStencilBufferRef<'a>>,
+}
+
+impl<'a> CanvasFrame<'a> {
+    pub fn swap_chain(&self) -> Option<&CanvasSwapChainRef<'a>> {
+        self.swap_chain.as_ref()
+    }
+
+    pub fn color_buffers(&self) -> &Vec<CanvasColorBufferRef<'a>> {
+        &self.color_buffers
+    }
+
+    pub fn depth_stencil_buffer(&self) -> Option<&CanvasDepthStencilBufferRef<'a>> {
+        self.depth_stencil_buffer.as_ref()
+    }
 }
 
 #[derive(Debug, Clone)]

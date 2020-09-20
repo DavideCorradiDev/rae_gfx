@@ -20,7 +20,7 @@ impl Default for CanvasTextureDescriptor {
             size: Size::new(1, 1),
             sample_count: 1,
             color_buffer_format: Some(CanvasColorBufferFormat::default()),
-            depth_stencil_buffer_format: Some(CanvasDepthStencilBufferFormat::Depth32Float),
+            depth_stencil_buffer_format: None,
         }
     }
 }
@@ -90,5 +90,40 @@ impl Canvas for CanvasTexture {
 
     fn sample_count(&self) -> SampleCount {
         self.canvas_buffer.sample_count()
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    use galvanic_assert::{matchers::*, *};
+
+    use crate::core::InstanceDescriptor;
+
+    #[test]
+    fn default_parameters() {
+        let instance = Instance::new(&InstanceDescriptor::default()).unwrap();
+        let mut texture = CanvasTexture::new(&instance, &CanvasTextureDescriptor::default());
+
+        expect_that!(texture.canvas_size(), eq(CanvasSize::new(1, 1)));
+        expect_that!(&texture.sample_count(), eq(1));
+        expect_that!(
+            &texture.color_buffer_format(),
+            eq(Some(CanvasColorBufferFormat::default()))
+        );
+        expect_that!(&texture.depth_stencil_buffer_format(), eq(None));
+
+        let frame = texture.current_frame().unwrap();
+        expect_that!(frame.swap_chain().is_none());
+        expect_that!(&frame.color_buffers().len(), eq(1));
+        expect_that!(frame.depth_stencil_buffer().is_none());
+
+        let color_buffer_ref = &frame.color_buffers()[0];
+        expect_that!(&color_buffer_ref.sample_count(), eq(1));
+        expect_that!(
+            &color_buffer_ref.format(),
+            eq(CanvasColorBufferFormat::default())
+        );
     }
 }
