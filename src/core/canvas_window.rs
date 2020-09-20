@@ -267,7 +267,7 @@ mod tests {
     fn create_window(
         size: window::PhysicalSize<u32>,
         desc: &CanvasWindowDescriptor,
-    ) -> CanvasWindow {
+    ) -> (CanvasWindow, Instance) {
         let instance = Instance::new(&InstanceDescriptor::default()).unwrap();
         let event_loop = EventLoop::<()>::new_any_thread();
         let window = WindowBuilder::new()
@@ -275,7 +275,8 @@ mod tests {
             .with_visible(false)
             .build(&event_loop)
             .unwrap();
-        unsafe { CanvasWindow::from_window(&instance, window, desc) }
+        let window = unsafe { CanvasWindow::from_window(&instance, window, desc) };
+        (window, instance)
     }
 
     #[test]
@@ -371,7 +372,7 @@ mod tests {
 
     #[test]
     fn canvas_size() {
-        let window = create_window(
+        let (window, _) = create_window(
             window::PhysicalSize {
                 width: 150,
                 height: 30,
@@ -383,19 +384,13 @@ mod tests {
 
     #[test]
     fn canvas_size_after_resizing() {
-        let instance = Instance::new(&InstanceDescriptor::default()).unwrap();
-        let event_loop = EventLoop::<()>::new_any_thread();
-        let window = WindowBuilder::new()
-            .with_inner_size(window::PhysicalSize {
+        let (mut window, instance) = create_window(
+            window::PhysicalSize {
                 width: 150,
                 height: 30,
-            })
-            .with_visible(false)
-            .build(&event_loop)
-            .unwrap();
-        let mut window = unsafe {
-            CanvasWindow::from_window(&instance, window, &CanvasWindowDescriptor::default())
-        };
+            },
+            &CanvasWindowDescriptor::default(),
+        );
 
         window.set_inner_size(
             &instance,
@@ -421,25 +416,57 @@ mod tests {
     }
 
     #[test]
+    fn update_buffer() {
+        let (mut window, instance) = create_window(
+            window::PhysicalSize {
+                width: 150,
+                height: 30,
+            },
+            &CanvasWindowDescriptor::default(),
+        );
+        expect_that!(window.canvas_size(), eq(CanvasSize::new(150, 30)));
+        window.window.set_inner_size(window::PhysicalSize::<u32> {
+            width: 200,
+            height: 100,
+        });
+        expect_that!(window.canvas_size(), eq(CanvasSize::new(150, 30)));
+        window.update_buffer(&instance);
+        expect_that!(window.canvas_size(), eq(CanvasSize::new(200, 100)));
+    }
+
+    #[test]
     fn default_buffer_parameters() {
-        let window = create_window(
+        let (mut window, _) = create_window(
             window::PhysicalSize {
                 width: 20,
                 height: 30,
             },
             &CanvasWindowDescriptor::default(),
         );
+
         expect_that!(&window.sample_count(), eq(1));
         expect_that!(
             &window.color_buffer_format(),
             eq(CanvasColorBufferFormat::default())
         );
         expect_that!(&window.depth_stencil_buffer_format(), eq(None));
+
+        let frame = window.current_frame().unwrap();
+        expect_that!(frame.swap_chain.is_some());
+        expect_that!(frame.color_buffers.is_empty());
+        expect_that!(frame.depth_stencil_buffer.is_none());
+
+        let swap_chain_ref = frame.swap_chain.as_ref().unwrap();
+        expect_that!(&swap_chain_ref.sample_count(), eq(1));
+        expect_that!(
+            &swap_chain_ref.format(),
+            eq(CanvasColorBufferFormat::default())
+        );
     }
 
     #[test]
     fn multisampled_window() {
-        let window = create_window(
+        let (mut window, _) = create_window(
             window::PhysicalSize {
                 width: 20,
                 height: 30,
@@ -449,17 +476,30 @@ mod tests {
                 ..CanvasWindowDescriptor::default()
             },
         );
+
         expect_that!(&window.sample_count(), eq(2));
         expect_that!(
             &window.color_buffer_format(),
             eq(CanvasColorBufferFormat::default())
         );
         expect_that!(&window.depth_stencil_buffer_format(), eq(None));
+
+        let frame = window.current_frame().unwrap();
+        expect_that!(frame.swap_chain.is_some());
+        expect_that!(frame.color_buffers.is_empty());
+        expect_that!(frame.depth_stencil_buffer.is_none());
+
+        let swap_chain_ref = frame.swap_chain.as_ref().unwrap();
+        expect_that!(&swap_chain_ref.sample_count(), eq(2));
+        expect_that!(
+            &swap_chain_ref.format(),
+            eq(CanvasColorBufferFormat::default())
+        );
     }
 
     #[test]
     fn with_depth_stencil_buffer() {
-        let window = create_window(
+        let (mut window, _) = create_window(
             window::PhysicalSize {
                 width: 20,
                 height: 30,
@@ -469,6 +509,7 @@ mod tests {
                 ..CanvasWindowDescriptor::default()
             },
         );
+
         expect_that!(&window.sample_count(), eq(1));
         expect_that!(
             &window.color_buffer_format(),
@@ -477,12 +518,31 @@ mod tests {
         expect_that!(
             &window.depth_stencil_buffer_format(),
             eq(Some(CanvasDepthStencilBufferFormat::Depth32Float))
+        );
+
+        let frame = window.current_frame().unwrap();
+        expect_that!(frame.swap_chain.is_some());
+        expect_that!(frame.color_buffers.is_empty());
+        expect_that!(frame.depth_stencil_buffer.is_some());
+
+        let swap_chain_ref = frame.swap_chain.as_ref().unwrap();
+        expect_that!(&swap_chain_ref.sample_count(), eq(1));
+        expect_that!(
+            &swap_chain_ref.format(),
+            eq(CanvasColorBufferFormat::default())
+        );
+
+        let ds_buffer_ref = frame.depth_stencil_buffer.as_ref().unwrap();
+        expect_that!(&ds_buffer_ref.sample_count(), eq(1));
+        expect_that!(
+            &ds_buffer_ref.format(),
+            eq(CanvasDepthStencilBufferFormat::Depth32Float)
         );
     }
 
     #[test]
     fn multisampled_with_depth_stencil_buffer() {
-        let window = create_window(
+        let (mut window, _) = create_window(
             window::PhysicalSize {
                 width: 20,
                 height: 30,
@@ -493,6 +553,7 @@ mod tests {
                 ..CanvasWindowDescriptor::default()
             },
         );
+
         expect_that!(&window.sample_count(), eq(2));
         expect_that!(
             &window.color_buffer_format(),
@@ -502,11 +563,30 @@ mod tests {
             &window.depth_stencil_buffer_format(),
             eq(Some(CanvasDepthStencilBufferFormat::Depth32Float))
         );
+
+        let frame = window.current_frame().unwrap();
+        expect_that!(frame.swap_chain.is_some());
+        expect_that!(frame.color_buffers.is_empty());
+        expect_that!(frame.depth_stencil_buffer.is_some());
+
+        let swap_chain_ref = frame.swap_chain.as_ref().unwrap();
+        expect_that!(&swap_chain_ref.sample_count(), eq(2));
+        expect_that!(
+            &swap_chain_ref.format(),
+            eq(CanvasColorBufferFormat::default())
+        );
+
+        let ds_buffer_ref = frame.depth_stencil_buffer.as_ref().unwrap();
+        expect_that!(&ds_buffer_ref.sample_count(), eq(2));
+        expect_that!(
+            &ds_buffer_ref.format(),
+            eq(CanvasDepthStencilBufferFormat::Depth32Float)
+        );
     }
 
     #[test]
     fn non_default_color_buffer_format() {
-        let window = create_window(
+        let (mut window, _) = create_window(
             window::PhysicalSize {
                 width: 20,
                 height: 30,
@@ -516,11 +596,24 @@ mod tests {
                 ..CanvasWindowDescriptor::default()
             },
         );
+
         expect_that!(&window.sample_count(), eq(1));
         expect_that!(
             &window.color_buffer_format(),
             eq(CanvasColorBufferFormat::Bgra8Unorm)
         );
         expect_that!(&window.depth_stencil_buffer_format(), eq(None));
+
+        let frame = window.current_frame().unwrap();
+        expect_that!(frame.swap_chain.is_some());
+        expect_that!(frame.color_buffers.is_empty());
+        expect_that!(frame.depth_stencil_buffer.is_none());
+
+        let swap_chain_ref = frame.swap_chain.as_ref().unwrap();
+        expect_that!(&swap_chain_ref.sample_count(), eq(1));
+        expect_that!(
+            &swap_chain_ref.format(),
+            eq(CanvasColorBufferFormat::Bgra8Unorm)
+        );
     }
 }
