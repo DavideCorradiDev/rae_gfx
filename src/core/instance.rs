@@ -420,16 +420,22 @@ impl DerefMut for BindGroup {
 #[derive(Debug)]
 pub struct Texture {
     value: wgpu::Texture,
+    size: Extent3d,
 }
 
 impl Texture {
     pub fn new(instance: &Instance, desc: &TextureDescriptor) -> Self {
         Self {
             value: instance.device.create_texture(desc),
+            size: desc.size,
         }
     }
 
-    pub fn from_image(instance: &Instance, img: &image::RgbaImage) -> Self {
+    pub fn size(&self) -> &Extent3d {
+        &self.size
+    }
+
+    pub fn from_image(instance: &Instance, img: &image::RgbaImage, usage: TextureUsage) -> Self {
         let img_dimensions = img.dimensions();
         let size = Extent3d {
             width: img_dimensions.0,
@@ -445,7 +451,7 @@ impl Texture {
                 sample_count: 1,
                 dimension: TextureDimension::D2,
                 format: TextureFormat::Rgba8UnormSrgb,
-                usage: TextureUsage::SAMPLED | TextureUsage::COPY_DST,
+                usage: usage | TextureUsage::COPY_DST,
             },
         );
         texture.write(
@@ -462,6 +468,20 @@ impl Texture {
         );
         texture
     }
+
+    // pub fn to_image(&self, instance: &Instance) -> image::RgbaImage {
+    //     let buffer_size =
+    //     let output_buffer = Buffer::new(
+    //         instance,
+    //         &BufferDescriptor {
+    //             label: None,
+    //             size: *self.size(),
+    //             usage: BufferUsage::MAP_READ | BufferUsage::COPY_DST,
+    //             mapped_at_creation: false,
+    //         },
+    //     );
+    //     let mut encoder = CommandEncoder::new(instance,
+    // &CommandEncoderDescriptor::default()); }
 
     pub fn write(
         &self,

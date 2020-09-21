@@ -16,7 +16,7 @@ use rae_gfx::{
     core::{
         AddressMode, Canvas, CanvasWindow, CanvasWindowDescriptor, ColorF32, CommandSequence,
         FilterMode, Instance, InstanceDescriptor, RenderPassOperations, SampleCount, Sampler,
-        SamplerDescriptor, Texture, TextureViewDescriptor,
+        SamplerDescriptor, Texture, TextureUsage, TextureViewDescriptor,
     },
     sprite,
     sprite::{MeshTemplates as SpriteMeshTemplates, Renderer as SpriteRenderer},
@@ -48,8 +48,8 @@ impl ApplicationImpl {
         let image = image::open("examples/data/gioconda.jpg")
             .expect("Failed to load texture image")
             .into_rgba();
-        let sprite_texture =
-            Texture::from_image(instance, &image).create_view(&TextureViewDescriptor::default());
+        let sprite_texture = Texture::from_image(instance, &image, TextureUsage::SAMPLED)
+            .create_view(&TextureViewDescriptor::default());
 
         vec![
             Sprite {
