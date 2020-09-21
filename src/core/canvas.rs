@@ -239,7 +239,7 @@ pub struct CanvasColorBuffer {
     sample_count: SampleCount,
     format: CanvasColorBufferFormat,
     multisampled_buffer: Option<TextureView>,
-    main_buffer: TextureView,
+    main_buffer_view: TextureView,
     main_buffer_texture: Texture,
 }
 
@@ -260,7 +260,7 @@ impl CanvasColorBuffer {
         };
 
         let main_buffer_texture = Texture::new(instance, &tex_desc);
-        let main_buffer = main_buffer_texture.create_view(&TextureViewDescriptor::default());
+        let main_buffer_view = main_buffer_texture.create_view(&TextureViewDescriptor::default());
 
         let multisampled_buffer = if desc.sample_count > 1 {
             tex_desc.sample_count = desc.sample_count;
@@ -274,7 +274,7 @@ impl CanvasColorBuffer {
             sample_count: desc.sample_count,
             format: desc.format,
             multisampled_buffer,
-            main_buffer,
+            main_buffer_view,
             main_buffer_texture,
         }
     }
@@ -292,7 +292,7 @@ impl CanvasColorBuffer {
     }
 
     pub fn texture_view(&self) -> &TextureView {
-        &self.main_buffer
+        &self.main_buffer_view
     }
 
     pub fn texture(&self) -> &Texture {
@@ -308,7 +308,7 @@ impl CanvasColorBuffer {
             sample_count: self.sample_count,
             format: self.format,
             multisampled_buffer,
-            main_buffer: &self.main_buffer,
+            main_buffer: &self.main_buffer_view,
         }
     }
 }
@@ -346,7 +346,7 @@ pub struct CanvasDepthStencilBuffer {
     size: CanvasSize,
     sample_count: SampleCount,
     format: CanvasDepthStencilBufferFormat,
-    buffer: TextureView,
+    buffer_view: TextureView,
     buffer_texture: Texture,
 }
 
@@ -368,12 +368,12 @@ impl CanvasDepthStencilBuffer {
                 label: None,
             },
         );
-        let buffer = buffer_texture.create_view(&TextureViewDescriptor::default());
+        let buffer_view = buffer_texture.create_view(&TextureViewDescriptor::default());
         Self {
             size: desc.size,
             sample_count: desc.sample_count,
             format: desc.format,
-            buffer,
+            buffer_view,
             buffer_texture,
         }
     }
@@ -391,7 +391,7 @@ impl CanvasDepthStencilBuffer {
     }
 
     pub fn texture_view(&self) -> &TextureView {
-        &self.buffer
+        &self.buffer_view
     }
 
     pub fn texture(&self) -> &Texture {
@@ -402,7 +402,7 @@ impl CanvasDepthStencilBuffer {
         CanvasDepthStencilBufferRef {
             sample_count: self.sample_count,
             format: self.format,
-            buffer: &self.buffer,
+            buffer: &self.buffer_view,
         }
     }
 }
