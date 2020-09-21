@@ -193,6 +193,13 @@ impl EventHandler<ApplicationError, ApplicationEvent> for ApplicationImpl {
         Ok(ControlFlow::Continue)
     }
 
+    fn on_event_loop_destroyed(&mut self) -> Result<ControlFlow, Self::Error> {
+        if std::path::Path::new("screenshot.png").exists() {
+            std::fs::remove_file("screenshot.png").unwrap();
+        }
+        Ok(ControlFlow::Continue)
+    }
+
     fn on_resized(
         &mut self,
         wid: WindowId,

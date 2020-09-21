@@ -81,15 +81,15 @@ impl ChangingColor {
 
     pub fn update(&mut self, dt: std::time::Duration) {
         #[cfg_attr(rustfmt, rustfmt_skip)]
-        const COLORS: [ColorF32; 1] = [
-            // ColorF32::WHITE,
-            // ColorF32::BLACK,
+        const COLORS: [ColorF32; 8] = [
+            ColorF32::WHITE,
+            ColorF32::BLACK,
             ColorF32::RED,
-            // ColorF32::GREEN,
-            // ColorF32::BLUE,
-            // ColorF32::YELLOW,
-            // ColorF32::CYAN,
-            // ColorF32::MAGENTA
+            ColorF32::GREEN,
+            ColorF32::BLUE,
+            ColorF32::YELLOW,
+            ColorF32::CYAN,
+            ColorF32::MAGENTA
         ];
         const COLOR_CHANGE_SPEED: f32 = 1.;
 
