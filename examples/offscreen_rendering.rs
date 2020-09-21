@@ -172,18 +172,25 @@ impl EventHandler<ApplicationError, ApplicationEvent> for ApplicationImpl {
     fn on_key_released(
         &mut self,
         wid: WindowId,
-        device_id: DeviceId,
-        scan_code: keyboard::ScanCode,
+        _device_id: DeviceId,
+        _scan_code: keyboard::ScanCode,
         key_code: Option<keyboard::KeyCode>,
-        is_synthetic: bool,
+        _is_synthetic: bool,
     ) -> Result<ControlFlow, Self::Error> {
-        // if wid == self.window.id() {
-        //     if let Some(key) = key_code {
-        //         if key == keyboard::KeyCode::Return {
-        //             self.canvas.texture().to_image();
-        //         }
-        //     }
-        // }
+        if wid == self.window.id() {
+            if let Some(key) = key_code {
+                if key == keyboard::KeyCode::Return {
+                    let image = self
+                        .canvas
+                        .color_texture()
+                        .unwrap()
+                        .to_image(&self.instance);
+                    println!("CREATED IMAGE");
+                    image.save("screenshot.png").unwrap();
+                    println!("SAVED IMAGE");
+                }
+            }
+        }
         Ok(ControlFlow::Continue)
     }
 

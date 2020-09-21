@@ -12,7 +12,7 @@ use raw_window_handle::HasRawWindowHandle;
 use super::{
     AdapterInfo, Backend, BindGroupDescriptor, BindGroupLayoutDescriptor, BufferAddress,
     BufferCopyView, BufferDescriptor, BufferInitDescriptor, BufferUsage, ColorF64, CommandBuffer,
-    CommandEncoderDescriptor, Extent3d, Features, Limits, Maintain, Operations, Origin3d,
+    CommandEncoderDescriptor, Extent3d, Features, Limits, Maintain, MapMode, Operations, Origin3d,
     PipelineLayoutDescriptor, PowerPreference, RenderBundleEncoderDescriptor,
     RenderPipelineDescriptor, SamplerDescriptor, ShaderModuleSource, SwapChainDescriptor,
     TextureCopyView, TextureDataLayout, TextureDescriptor, TextureDimension, TextureFormat,
@@ -506,7 +506,7 @@ impl Texture {
                 label: None,
                 size: buffer_size.byte_count(),
                 usage: BufferUsage::MAP_READ | BufferUsage::COPY_DST,
-                mapped_at_creation: true,
+                mapped_at_creation: false,
             },
         );
         let mut encoder = CommandEncoder::new(instance, &CommandEncoderDescriptor::default());
@@ -531,13 +531,24 @@ impl Texture {
         instance.submit(Some(encoder.finish()));
 
         let buffer_slice = output_buffer.slice(..);
-        let padded_buffer = buffer_slice.get_mapped_range();
-        image::RgbaImage::from_raw(
-            self.size.width,
-            self.size.height,
-            padded_buffer.deref().to_vec(),
-        )
-        .unwrap()
+        let buffer_future = buffer_slice.map_async(MapMode::Read);
+        instance.poll(Maintain::Wait);
+
+        let future_image = async {
+            buffer_future.await.unwrap();
+            let padded_buffer = buffer_slice.get_mapped_range();
+            let image = image::RgbaImage::from_raw(
+                self.size.width,
+                self.size.height,
+                padded_buffer.deref().to_vec(),
+            )
+            .unwrap();
+            drop(padded_buffer);
+            output_buffer.unmap();
+            image
+        };
+
+        futures::executor::block_on(future_image)
     }
 
     pub fn write(
