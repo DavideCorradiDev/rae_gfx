@@ -2,7 +2,7 @@ use std::iter;
 
 use rae_app::{
     application::Application,
-    event::{ControlFlow, EventHandler, EventLoop},
+    event::{keyboard, ControlFlow, DeviceId, EventHandler, EventLoop},
     window,
     window::{WindowBuilder, WindowId},
 };
@@ -105,7 +105,7 @@ impl EventHandler<ApplicationError, ApplicationEvent> for ApplicationImpl {
                 sample_count: Self::SAMPLE_COUNT,
                 color_buffer_descriptor: Some(CanvasTextureColorBufferDescriptor {
                     format: CanvasColorBufferFormat::default(),
-                    usage: CanvasColorBufferUsage::SAMPLED,
+                    usage: CanvasColorBufferUsage::SAMPLED | CanvasColorBufferUsage::COPY_SRC,
                 }),
                 ..CanvasTextureDescriptor::default()
             },
@@ -167,6 +167,24 @@ impl EventHandler<ApplicationError, ApplicationEvent> for ApplicationImpl {
             current_angle: 0.,
             color,
         })
+    }
+
+    fn on_key_released(
+        &mut self,
+        wid: WindowId,
+        device_id: DeviceId,
+        scan_code: keyboard::ScanCode,
+        key_code: Option<keyboard::KeyCode>,
+        is_synthetic: bool,
+    ) -> Result<ControlFlow, Self::Error> {
+        // if wid == self.window.id() {
+        //     if let Some(key) = key_code {
+        //         if key == keyboard::KeyCode::Return {
+        //             self.canvas.texture().to_image();
+        //         }
+        //     }
+        // }
+        Ok(ControlFlow::Continue)
     }
 
     fn on_resized(
