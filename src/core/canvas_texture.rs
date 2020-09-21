@@ -3,7 +3,7 @@ use std::default::Default;
 use super::{
     Canvas, CanvasBuffer, CanvasBufferColorBufferDescriptor, CanvasBufferDescriptor,
     CanvasColorBufferFormat, CanvasDepthStencilBufferFormat, CanvasFrame, CanvasSize, Instance,
-    SampleCount, Size, SwapChainError, TextureView,
+    SampleCount, Size, SwapChainError, Texture, TextureView,
 };
 
 pub type CanvasTextureColorBufferDescriptor = CanvasBufferColorBufferDescriptor;
@@ -70,6 +70,14 @@ impl CanvasTexture {
             None
         } else {
             Some(self.canvas_buffer.color_buffers()[0].texture_view())
+        }
+    }
+
+    pub fn color_texture(&self) -> Option<&Texture> {
+        if self.canvas_buffer.color_buffers().is_empty() {
+            None
+        } else {
+            Some(self.canvas_buffer.color_buffers()[0].texture())
         }
     }
 

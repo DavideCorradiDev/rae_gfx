@@ -236,6 +236,7 @@ pub struct CanvasColorBuffer {
     format: CanvasColorBufferFormat,
     multisampled_buffer: Option<TextureView>,
     main_buffer: TextureView,
+    main_buffer_texture: Texture,
 }
 
 // TODO: make usage a parameter in the descriptor. Allow specifying if canvas
@@ -258,8 +259,8 @@ impl CanvasColorBuffer {
             label: None,
         };
 
-        let main_buffer =
-            Texture::new(instance, &tex_desc).create_view(&TextureViewDescriptor::default());
+        let main_buffer_texture = Texture::new(instance, &tex_desc);
+        let main_buffer = main_buffer_texture.create_view(&TextureViewDescriptor::default());
 
         let multisampled_buffer = if desc.sample_count > 1 {
             tex_desc.sample_count = desc.sample_count;
@@ -274,6 +275,7 @@ impl CanvasColorBuffer {
             format: desc.format,
             multisampled_buffer,
             main_buffer,
+            main_buffer_texture,
         }
     }
 
@@ -291,6 +293,10 @@ impl CanvasColorBuffer {
 
     pub fn texture_view(&self) -> &TextureView {
         &self.main_buffer
+    }
+
+    pub fn texture(&self) -> &Texture {
+        &self.main_buffer_texture
     }
 
     pub fn reference(&self) -> CanvasColorBufferRef {
