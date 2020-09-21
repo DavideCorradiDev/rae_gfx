@@ -185,9 +185,7 @@ impl EventHandler<ApplicationError, ApplicationEvent> for ApplicationImpl {
                         .color_texture()
                         .unwrap()
                         .to_image(&self.instance);
-                    println!("CREATED IMAGE");
                     image.save("screenshot.png").unwrap();
-                    println!("SAVED IMAGE");
                 }
             }
         }

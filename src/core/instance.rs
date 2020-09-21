@@ -537,12 +537,17 @@ impl Texture {
         let future_image = async {
             buffer_future.await.unwrap();
             let padded_buffer = buffer_slice.get_mapped_range();
-            let image = image::RgbaImage::from_raw(
-                self.size.width,
-                self.size.height,
-                padded_buffer.deref().to_vec(),
-            )
-            .unwrap();
+
+            let mut unpadded_buffer =
+                Vec::with_capacity((self.size.width * self.size.height) as usize);
+            for chunk in padded_buffer.chunks(buffer_size.padded_bytes_per_row as usize) {
+                unpadded_buffer
+                    .extend_from_slice(&chunk[..buffer_size.unpadded_bytes_per_row as usize]);
+            }
+            let image =
+                image::RgbaImage::from_raw(self.size.width, self.size.height, unpadded_buffer)
+                    .unwrap();
+
             drop(padded_buffer);
             output_buffer.unmap();
             image
