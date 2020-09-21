@@ -104,7 +104,7 @@ impl EventHandler<ApplicationError, ApplicationEvent> for ApplicationImpl {
                 size: Size::new(100, 100),
                 sample_count: Self::SAMPLE_COUNT,
                 color_buffer_descriptor: Some(CanvasTextureColorBufferDescriptor {
-                    format: CanvasColorBufferFormat::default(),
+                    format: CanvasColorBufferFormat::Rgba8UnormSrgb,
                     usage: CanvasColorBufferUsage::SAMPLED | CanvasColorBufferUsage::COPY_SRC,
                 }),
                 ..CanvasTextureDescriptor::default()
@@ -115,6 +115,7 @@ impl EventHandler<ApplicationError, ApplicationEvent> for ApplicationImpl {
             &instance,
             &shape2::RenderPipelineDescriptor {
                 sample_count: Self::SAMPLE_COUNT,
+                color_buffer_format: CanvasColorBufferFormat::Rgba8UnormSrgb,
                 ..shape2::RenderPipelineDescriptor::default()
             },
         );

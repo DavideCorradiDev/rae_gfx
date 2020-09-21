@@ -6,6 +6,8 @@ use super::{
 
 #[derive(Debug, PartialEq, Eq, Clone, Copy, serde::Serialize, serde::Deserialize)]
 pub enum CanvasColorBufferFormat {
+    Rgba8Unorm,
+    Rgba8UnormSrgb,
     Bgra8Unorm,
     Bgra8UnormSrgb,
 }
@@ -25,6 +27,8 @@ impl Default for CanvasColorBufferFormat {
 impl From<CanvasColorBufferFormat> for TextureFormat {
     fn from(f: CanvasColorBufferFormat) -> Self {
         match f {
+            CanvasColorBufferFormat::Rgba8Unorm => TextureFormat::Rgba8Unorm,
+            CanvasColorBufferFormat::Rgba8UnormSrgb => TextureFormat::Rgba8UnormSrgb,
             CanvasColorBufferFormat::Bgra8Unorm => TextureFormat::Bgra8Unorm,
             CanvasColorBufferFormat::Bgra8UnormSrgb => TextureFormat::Bgra8UnormSrgb,
         }
@@ -239,10 +243,6 @@ pub struct CanvasColorBuffer {
     main_buffer_texture: Texture,
 }
 
-// TODO: make usage a parameter in the descriptor. Allow specifying if canvas
-// texture should be sampled and/or "capturable" and set the corresponding
-// flags.
-// ALSO: Depth stencil doesn't need to be sampled.
 impl CanvasColorBuffer {
     pub fn new(instance: &Instance, desc: &CanvasColorBufferDescriptor) -> Self {
         let mut tex_desc = TextureDescriptor {
