@@ -45,6 +45,7 @@ struct ApplicationImpl {
 
 impl ApplicationImpl {
     const SAMPLE_COUNT: SampleCount = 8;
+    const SCREENSHOT_PATH: &'static str = "screenshot.png";
 
     pub fn update_angle(&mut self, dt: std::time::Duration) {
         const ANGULAR_SPEED: f32 = std::f32::consts::PI * 0.25;
@@ -186,7 +187,7 @@ impl EventHandler<ApplicationError, ApplicationEvent> for ApplicationImpl {
                         .color_texture()
                         .unwrap()
                         .to_image(&self.instance);
-                    image.save("screenshot.png").unwrap();
+                    image.save(Self::SCREENSHOT_PATH).unwrap();
                 }
             }
         }
@@ -194,8 +195,8 @@ impl EventHandler<ApplicationError, ApplicationEvent> for ApplicationImpl {
     }
 
     fn on_event_loop_destroyed(&mut self) -> Result<ControlFlow, Self::Error> {
-        if std::path::Path::new("screenshot.png").exists() {
-            std::fs::remove_file("screenshot.png").unwrap();
+        if std::path::Path::new(Self::SCREENSHOT_PATH).exists() {
+            std::fs::remove_file(Self::SCREENSHOT_PATH).unwrap();
         }
         Ok(ControlFlow::Continue)
     }
