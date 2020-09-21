@@ -11,11 +11,12 @@ use raw_window_handle::HasRawWindowHandle;
 
 use super::{
     AdapterInfo, Backend, BindGroupDescriptor, BindGroupLayoutDescriptor, BufferAddress,
-    BufferDescriptor, BufferInitDescriptor, ColorF64, CommandBuffer, CommandEncoderDescriptor,
-    Extent3d, Features, Limits, Maintain, Operations, Origin3d, PipelineLayoutDescriptor,
-    PowerPreference, RenderBundleEncoderDescriptor, RenderPipelineDescriptor, SamplerDescriptor,
-    ShaderModuleSource, SwapChainDescriptor, TextureCopyView, TextureDataLayout, TextureDescriptor,
-    TextureDimension, TextureFormat, TextureUsage,
+    BufferCopyView, BufferDescriptor, BufferInitDescriptor, BufferUsage, ColorF64, CommandBuffer,
+    CommandEncoderDescriptor, Extent3d, Features, Limits, Maintain, MapMode, Operations, Origin3d,
+    PipelineLayoutDescriptor, PowerPreference, RenderBundleEncoderDescriptor,
+    RenderPipelineDescriptor, SamplerDescriptor, ShaderModuleSource, SwapChainDescriptor,
+    TextureCopyView, TextureDataLayout, TextureDescriptor, TextureDimension, TextureFormat,
+    TextureUsage,
 };
 
 pub type SampleCount = u32;
@@ -417,19 +418,53 @@ impl DerefMut for BindGroup {
     }
 }
 
+#[derive(Debug, PartialEq, Eq, Clone, Copy)]
+struct TextureBufferSize {
+    width: u64,
+    height: u64,
+    unpadded_bytes_per_row: u64,
+    padded_bytes_per_row: u64,
+}
+
+impl TextureBufferSize {
+    pub fn new(width: u64, height: u64) -> Self {
+        let bytes_per_pixel = std::mem::size_of::<u32>() as u64;
+        let unpadded_bytes_per_row = width * bytes_per_pixel;
+        let align = wgpu::COPY_BYTES_PER_ROW_ALIGNMENT as u64;
+        let padded_bytes_per_row_padding = (align - unpadded_bytes_per_row % align) % align;
+        let padded_bytes_per_row = unpadded_bytes_per_row + padded_bytes_per_row_padding;
+        Self {
+            width,
+            height,
+            unpadded_bytes_per_row,
+            padded_bytes_per_row,
+        }
+    }
+
+    pub fn byte_count(&self) -> u64 {
+        self.padded_bytes_per_row * self.height
+    }
+}
+
 #[derive(Debug)]
 pub struct Texture {
     value: wgpu::Texture,
+    size: Extent3d,
 }
 
 impl Texture {
     pub fn new(instance: &Instance, desc: &TextureDescriptor) -> Self {
         Self {
             value: instance.device.create_texture(desc),
+            size: desc.size,
         }
     }
 
-    pub fn from_image(instance: &Instance, img: &image::RgbaImage) -> Self {
+    pub fn size(&self) -> &Extent3d {
+        &self.size
+    }
+
+    pub fn from_image(instance: &Instance, img: &image::RgbaImage, usage: TextureUsage) -> Self {
         let img_dimensions = img.dimensions();
         let size = Extent3d {
             width: img_dimensions.0,
@@ -445,7 +480,7 @@ impl Texture {
                 sample_count: 1,
                 dimension: TextureDimension::D2,
                 format: TextureFormat::Rgba8UnormSrgb,
-                usage: TextureUsage::SAMPLED | TextureUsage::COPY_DST,
+                usage: usage | TextureUsage::COPY_DST,
             },
         );
         texture.write(
@@ -461,6 +496,64 @@ impl Texture {
             size,
         );
         texture
+    }
+
+    pub fn to_image(&self, instance: &Instance) -> image::RgbaImage {
+        let buffer_size = TextureBufferSize::new(self.size.width as u64, self.size.height as u64);
+        let output_buffer = Buffer::new(
+            instance,
+            &BufferDescriptor {
+                label: None,
+                size: buffer_size.byte_count(),
+                usage: BufferUsage::MAP_READ | BufferUsage::COPY_DST,
+                mapped_at_creation: false,
+            },
+        );
+        let mut encoder = CommandEncoder::new(instance, &CommandEncoderDescriptor::default());
+        {
+            encoder.copy_texture_to_buffer(
+                TextureCopyView {
+                    texture: &self.value,
+                    mip_level: 0,
+                    origin: Origin3d::ZERO,
+                },
+                BufferCopyView {
+                    buffer: &output_buffer,
+                    layout: TextureDataLayout {
+                        offset: 0,
+                        bytes_per_row: buffer_size.padded_bytes_per_row as u32,
+                        rows_per_image: 0,
+                    },
+                },
+                *self.size(),
+            );
+        }
+        instance.submit(Some(encoder.finish()));
+
+        let buffer_slice = output_buffer.slice(..);
+        let buffer_future = buffer_slice.map_async(MapMode::Read);
+        instance.poll(Maintain::Wait);
+
+        let future_image = async {
+            buffer_future.await.unwrap();
+            let padded_buffer = buffer_slice.get_mapped_range();
+
+            let mut unpadded_buffer =
+                Vec::with_capacity((self.size.width * self.size.height) as usize);
+            for chunk in padded_buffer.chunks(buffer_size.padded_bytes_per_row as usize) {
+                unpadded_buffer
+                    .extend_from_slice(&chunk[..buffer_size.unpadded_bytes_per_row as usize]);
+            }
+            let image =
+                image::RgbaImage::from_raw(self.size.width, self.size.height, unpadded_buffer)
+                    .unwrap();
+
+            drop(padded_buffer);
+            output_buffer.unmap();
+            image
+        };
+
+        futures::executor::block_on(future_image)
     }
 
     pub fn write(

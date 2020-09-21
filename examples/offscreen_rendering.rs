@@ -2,7 +2,7 @@ use std::iter;
 
 use rae_app::{
     application::Application,
-    event::{ControlFlow, EventHandler, EventLoop},
+    event::{keyboard, ControlFlow, DeviceId, EventHandler, EventLoop},
     window,
     window::{WindowBuilder, WindowId},
 };
@@ -45,6 +45,7 @@ struct ApplicationImpl {
 
 impl ApplicationImpl {
     const SAMPLE_COUNT: SampleCount = 8;
+    const SCREENSHOT_PATH: &'static str = "screenshot.png";
 
     pub fn update_angle(&mut self, dt: std::time::Duration) {
         const ANGULAR_SPEED: f32 = std::f32::consts::PI * 0.25;
@@ -104,8 +105,8 @@ impl EventHandler<ApplicationError, ApplicationEvent> for ApplicationImpl {
                 size: Size::new(100, 100),
                 sample_count: Self::SAMPLE_COUNT,
                 color_buffer_descriptor: Some(CanvasTextureColorBufferDescriptor {
-                    format: CanvasColorBufferFormat::default(),
-                    usage: CanvasColorBufferUsage::SAMPLED,
+                    format: CanvasColorBufferFormat::Rgba8UnormSrgb,
+                    usage: CanvasColorBufferUsage::SAMPLED | CanvasColorBufferUsage::COPY_SRC,
                 }),
                 ..CanvasTextureDescriptor::default()
             },
@@ -115,6 +116,7 @@ impl EventHandler<ApplicationError, ApplicationEvent> for ApplicationImpl {
             &instance,
             &shape2::RenderPipelineDescriptor {
                 sample_count: Self::SAMPLE_COUNT,
+                color_buffer_format: CanvasColorBufferFormat::Rgba8UnormSrgb,
                 ..shape2::RenderPipelineDescriptor::default()
             },
         );
@@ -167,6 +169,36 @@ impl EventHandler<ApplicationError, ApplicationEvent> for ApplicationImpl {
             current_angle: 0.,
             color,
         })
+    }
+
+    fn on_key_released(
+        &mut self,
+        wid: WindowId,
+        _device_id: DeviceId,
+        _scan_code: keyboard::ScanCode,
+        key_code: Option<keyboard::KeyCode>,
+        _is_synthetic: bool,
+    ) -> Result<ControlFlow, Self::Error> {
+        if wid == self.window.id() {
+            if let Some(key) = key_code {
+                if key == keyboard::KeyCode::Return {
+                    let image = self
+                        .canvas
+                        .color_texture()
+                        .unwrap()
+                        .to_image(&self.instance);
+                    image.save(Self::SCREENSHOT_PATH).unwrap();
+                }
+            }
+        }
+        Ok(ControlFlow::Continue)
+    }
+
+    fn on_event_loop_destroyed(&mut self) -> Result<ControlFlow, Self::Error> {
+        if std::path::Path::new(Self::SCREENSHOT_PATH).exists() {
+            std::fs::remove_file(Self::SCREENSHOT_PATH).unwrap();
+        }
+        Ok(ControlFlow::Continue)
     }
 
     fn on_resized(

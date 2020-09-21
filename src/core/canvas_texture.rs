@@ -3,7 +3,7 @@ use std::default::Default;
 use super::{
     Canvas, CanvasBuffer, CanvasBufferColorBufferDescriptor, CanvasBufferDescriptor,
     CanvasColorBufferFormat, CanvasDepthStencilBufferFormat, CanvasFrame, CanvasSize, Instance,
-    SampleCount, Size, SwapChainError, TextureView,
+    SampleCount, Size, SwapChainError, Texture, TextureView,
 };
 
 pub type CanvasTextureColorBufferDescriptor = CanvasBufferColorBufferDescriptor;
@@ -76,6 +76,21 @@ impl CanvasTexture {
     pub fn depth_stencil_texture_view(&self) -> Option<&TextureView> {
         match &self.canvas_buffer.depth_stencil_buffer() {
             Some(v) => Some(v.texture_view()),
+            None => None,
+        }
+    }
+
+    pub fn color_texture(&self) -> Option<&Texture> {
+        if self.canvas_buffer.color_buffers().is_empty() {
+            None
+        } else {
+            Some(self.canvas_buffer.color_buffers()[0].texture())
+        }
+    }
+
+    pub fn depth_stencil_texture(&self) -> Option<&Texture> {
+        match &self.canvas_buffer.depth_stencil_buffer() {
+            Some(v) => Some(v.texture()),
             None => None,
         }
     }
