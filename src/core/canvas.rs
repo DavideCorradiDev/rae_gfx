@@ -347,11 +347,12 @@ pub struct CanvasDepthStencilBuffer {
     sample_count: SampleCount,
     format: CanvasDepthStencilBufferFormat,
     buffer: TextureView,
+    buffer_texture: Texture,
 }
 
 impl CanvasDepthStencilBuffer {
     pub fn new(instance: &Instance, desc: &CanvasDepthStencilBufferDescriptor) -> Self {
-        let buffer = Texture::new(
+        let buffer_texture = Texture::new(
             instance,
             &TextureDescriptor {
                 size: Extent3d {
@@ -366,13 +367,14 @@ impl CanvasDepthStencilBuffer {
                 usage: TextureUsage::OUTPUT_ATTACHMENT,
                 label: None,
             },
-        )
-        .create_view(&TextureViewDescriptor::default());
+        );
+        let buffer = buffer_texture.create_view(&TextureViewDescriptor::default());
         Self {
             size: desc.size,
             sample_count: desc.sample_count,
             format: desc.format,
             buffer,
+            buffer_texture,
         }
     }
 
@@ -390,6 +392,10 @@ impl CanvasDepthStencilBuffer {
 
     pub fn texture_view(&self) -> &TextureView {
         &self.buffer
+    }
+
+    pub fn texture(&self) -> &Texture {
+        &self.buffer_texture
     }
 
     pub fn reference(&self) -> CanvasDepthStencilBufferRef {
