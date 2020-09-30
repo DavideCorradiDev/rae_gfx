@@ -291,7 +291,7 @@ impl EventHandler<ApplicationError, ApplicationEvent> for ApplicationImpl {
 
             // Multiple draw using std::Vec
             for sprite in &self.sprites {
-                rpass.draw_sprites(
+                rpass.draw_sprite_array(
                     &self.pipeline,
                     vec![(
                         &sprite.uniform_constants,

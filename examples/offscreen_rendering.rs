@@ -1,5 +1,3 @@
-use std::iter;
-
 use rae_app::{
     application::Application,
     event::{keyboard, ControlFlow, DeviceId, EventHandler, EventLoop},
@@ -235,11 +233,9 @@ impl EventHandler<ApplicationError, ApplicationEvent> for ApplicationImpl {
                 );
                 rpass.draw_shape2(
                     &self.shape2_pipeline,
-                    iter::once(shape2::DrawCommandDescriptor {
-                        mesh: &self.triangle_mesh,
-                        index_range: 0..self.triangle_mesh.index_count(),
-                        push_constants: &push_constants,
-                    }),
+                    &self.triangle_mesh,
+                    &push_constants,
+                    0..self.triangle_mesh.index_count(),
                 );
             }
             cmd_sequence.submit(&self.instance);

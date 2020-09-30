@@ -336,7 +336,7 @@ pub trait Renderer<'a> {
         index_range: MeshIndexRange,
     );
 
-    fn draw_sprites<UcIt, MeshIt, PcIt, RangeIt>(
+    fn draw_sprite_array<UcIt, MeshIt, PcIt, RangeIt>(
         &mut self,
         pipeline: &'a RenderPipeline,
         draw_commands: UcIt,
@@ -364,7 +364,7 @@ impl<'a> Renderer<'a> for core::RenderPass<'a> {
         self.draw_indexed(index_range, 0, 0..1);
     }
 
-    fn draw_sprites<UcIt, MeshIt, PcIt, RangeIt>(
+    fn draw_sprite_array<UcIt, MeshIt, PcIt, RangeIt>(
         &mut self,
         pipeline: &'a RenderPipeline,
         draw_commands: UcIt,

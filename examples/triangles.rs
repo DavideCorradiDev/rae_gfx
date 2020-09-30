@@ -1,4 +1,4 @@
-use std::iter;
+use std::iter::once;
 
 use rand::Rng;
 
@@ -200,13 +200,13 @@ impl EventHandler<ApplicationError, ApplicationEvent> for ApplicationImpl {
     fn on_variable_update(&mut self, dt: std::time::Duration) -> Result<ControlFlow, Self::Error> {
         self.update_angle(dt);
 
-        let mut draw_static_triangle_commands = Vec::new();
+        let mut draw_static_triangle_params =
+            Vec::with_capacity(self.saved_triangle_constants.len());
         for saved_triangle_constant in self.saved_triangle_constants.iter() {
-            draw_static_triangle_commands.push(shape2::DrawCommandDescriptor {
-                mesh: &self.triangle_mesh,
-                index_range: 0..self.triangle_mesh.index_count(),
-                push_constants: &saved_triangle_constant,
-            })
+            draw_static_triangle_params.push((
+                saved_triangle_constant,
+                once(0..self.triangle_mesh.index_count()),
+            ));
         }
 
         let current_triangle_constants = self.generate_push_constant();
@@ -220,7 +220,10 @@ impl EventHandler<ApplicationError, ApplicationEvent> for ApplicationImpl {
                 &self.pipeline.render_pass_requirements(),
                 &RenderPassOperations::default(),
             );
-            rpass.draw_shape2(&self.pipeline, draw_static_triangle_commands);
+            rpass.draw_shape2_array(
+                &self.pipeline,
+                once((&self.triangle_mesh, draw_static_triangle_params)),
+            );
         }
 
         {
@@ -239,11 +242,9 @@ impl EventHandler<ApplicationError, ApplicationEvent> for ApplicationImpl {
             );
             rpass.draw_shape2(
                 &self.pipeline,
-                iter::once(shape2::DrawCommandDescriptor {
-                    mesh: &self.triangle_mesh,
-                    index_range: 0..self.triangle_mesh.index_count(),
-                    push_constants: &current_triangle_constants,
-                }),
+                &self.triangle_mesh,
+                &current_triangle_constants,
+                0..self.triangle_mesh.index_count(),
             );
         }
 
