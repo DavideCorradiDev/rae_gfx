@@ -277,28 +277,31 @@ impl EventHandler<ApplicationError, ApplicationEvent> for ApplicationImpl {
                 &self.pipeline.render_pass_requirements(),
                 &RenderPassOperations::default(),
             );
-            for sprite in &self.sprites {
-                rpass.draw_sprite(
-                    &self.pipeline,
-                    &sprite.uniform_constants,
-                    &sprite.mesh,
-                    &push_constants,
-                    0..sprite.mesh.index_count(),
-                );
-            }
+
+            // Single draw
             // for sprite in &self.sprites {
-            //     rpass.draw_sprites(
+            //     rpass.draw_sprite(
             //         &self.pipeline,
-            //         iter::once((
-            //             &sprite.uniform_constants,
-            //             iter::once((
-            //                 &sprite.mesh,
-            //                 iter::once((&push_constants,
-            // iter::once(0..sprite.mesh.index_count()))),
-            //             )),
-            //         )),
+            //         &sprite.uniform_constants,
+            //         &sprite.mesh,
+            //         &push_constants,
+            //         0..sprite.mesh.index_count(),
             //     );
             // }
+
+            // Multiple draw using std::Vec
+            for sprite in &self.sprites {
+                rpass.draw_sprites(
+                    &self.pipeline,
+                    vec![(
+                        &sprite.uniform_constants,
+                        vec![(
+                            &sprite.mesh,
+                            vec![(&push_constants, vec![0..sprite.mesh.index_count()])],
+                        )],
+                    )],
+                );
+            }
         }
         cmd_sequence.submit(&self.instance);
         Ok(ControlFlow::Continue)

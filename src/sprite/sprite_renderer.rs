@@ -1,5 +1,4 @@
-use ::core::iter::IntoIterator;
-use std::{convert::Into, default::Default};
+use std::{default::Default, iter::IntoIterator};
 
 use num_traits::Zero;
 
@@ -342,14 +341,10 @@ pub trait Renderer<'a> {
         pipeline: &'a RenderPipeline,
         draw_commands: UcIt,
     ) where
-        UcIt: IntoIterator,
-        UcIt::Item: Into<(&'a UniformConstants, MeshIt)>,
-        MeshIt: IntoIterator,
-        MeshIt::Item: Into<(&'a Mesh, PcIt)>,
-        PcIt: IntoIterator,
-        PcIt::Item: Into<(&'a PushConstants, RangeIt)>,
-        RangeIt: IntoIterator,
-        RangeIt::Item: Into<core::MeshIndexRange>;
+        UcIt: IntoIterator<Item = (&'a UniformConstants, MeshIt)>,
+        MeshIt: IntoIterator<Item = (&'a Mesh, PcIt)>,
+        PcIt: IntoIterator<Item = (&'a PushConstants, RangeIt)>,
+        RangeIt: IntoIterator<Item = core::MeshIndexRange>;
 }
 
 impl<'a> Renderer<'a> for core::RenderPass<'a> {
@@ -374,29 +369,21 @@ impl<'a> Renderer<'a> for core::RenderPass<'a> {
         pipeline: &'a RenderPipeline,
         draw_commands: UcIt,
     ) where
-        UcIt: IntoIterator,
-        UcIt::Item: Into<(&'a UniformConstants, MeshIt)>,
-        MeshIt: IntoIterator,
-        MeshIt::Item: Into<(&'a Mesh, PcIt)>,
-        PcIt: IntoIterator,
-        PcIt::Item: Into<(&'a PushConstants, RangeIt)>,
-        RangeIt: IntoIterator,
-        RangeIt::Item: Into<core::MeshIndexRange>,
+        UcIt: IntoIterator<Item = (&'a UniformConstants, MeshIt)>,
+        MeshIt: IntoIterator<Item = (&'a Mesh, PcIt)>,
+        PcIt: IntoIterator<Item = (&'a PushConstants, RangeIt)>,
+        RangeIt: IntoIterator<Item = core::MeshIndexRange>,
     {
         self.set_pipeline(&pipeline.pipeline);
-        for bind_uc in draw_commands.into_iter() {
-            let bind_uc = bind_uc.into();
-            self.set_bind_group(0, &bind_uc.0.bind_group, &[]);
-            for bind_mesh in bind_uc.1.into_iter() {
-                let bind_mesh = bind_mesh.into();
-                self.set_index_buffer(bind_mesh.0.index_buffer().slice(..));
-                self.set_vertex_buffer(0, bind_mesh.0.vertex_buffer().slice(..));
-                for bind_pc in bind_mesh.1.into_iter() {
-                    let bind_pc = bind_pc.into();
-                    self.set_push_constants(core::ShaderStage::VERTEX, 0, bind_pc.0.as_slice());
-                    for draw_range in bind_pc.1.into_iter() {
-                        let draw_range = draw_range.into();
-                        self.draw_indexed(draw_range, 0, 0..1);
+        for (uc, meshes) in draw_commands.into_iter() {
+            self.set_bind_group(0, &uc.bind_group, &[]);
+            for (mesh, pcs) in meshes.into_iter() {
+                self.set_index_buffer(mesh.index_buffer().slice(..));
+                self.set_vertex_buffer(0, mesh.vertex_buffer().slice(..));
+                for (pc, ranges) in pcs.into_iter() {
+                    self.set_push_constants(core::ShaderStage::VERTEX, 0, pc.as_slice());
+                    for range in ranges.into_iter() {
+                        self.draw_indexed(range, 0, 0..1);
                     }
                 }
             }
