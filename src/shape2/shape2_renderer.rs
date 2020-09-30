@@ -5,7 +5,7 @@ use num_traits::Zero;
 
 use rae_math::{conversion::ToHomogeneous3, geometry2, geometry3};
 
-use crate::{core, core::IndexedMeshRenderer};
+use crate::core;
 
 #[derive(Debug, PartialEq, Clone, Copy, serde::Serialize, serde::Deserialize)]
 pub struct Vertex {
@@ -208,12 +208,14 @@ impl<'a> Renderer<'a> for core::RenderPass<'a> {
         self.set_pipeline(&pipeline.pipeline);
         for draw_command in draw_commands.into_iter() {
             let draw_command = draw_command.into();
+            self.set_index_buffer(draw_command.mesh.index_buffer().slice(..));
+            self.set_vertex_buffer(0, draw_command.mesh.vertex_buffer().slice(..));
             self.set_push_constants(
                 core::ShaderStage::VERTEX,
                 0,
                 draw_command.push_constants.as_slice(),
             );
-            self.draw_indexed_mesh_range(draw_command.mesh, draw_command.index_range);
+            self.draw_indexed(draw_command.index_range, 0, 0..1);
         }
     }
 }
