@@ -1,5 +1,3 @@
-use std::iter;
-
 use rae_app::{
     application::Application,
     event::{ControlFlow, EventHandler, EventLoop},
@@ -282,16 +280,25 @@ impl EventHandler<ApplicationError, ApplicationEvent> for ApplicationImpl {
             for sprite in &self.sprites {
                 rpass.draw_sprite(
                     &self.pipeline,
-                    iter::once(sprite::DrawCommandDescriptor {
-                        uniform_constants: &sprite.uniform_constants,
-                        draw_mesh_commands: iter::once(sprite::DrawMeshCommandDescriptor {
-                            mesh: &sprite.mesh,
-                            index_range: 0..sprite.mesh.index_count(),
-                            push_constants: &push_constants,
-                        }),
-                    }),
+                    &sprite.uniform_constants,
+                    &sprite.mesh,
+                    &push_constants,
+                    0..sprite.mesh.index_count(),
                 );
             }
+            // for sprite in &self.sprites {
+            //     rpass.draw_sprites(
+            //         &self.pipeline,
+            //         iter::once((
+            //             &sprite.uniform_constants,
+            //             iter::once((
+            //                 &sprite.mesh,
+            //                 iter::once((&push_constants,
+            // iter::once(0..sprite.mesh.index_count()))),
+            //             )),
+            //         )),
+            //     );
+            // }
         }
         cmd_sequence.submit(&self.instance);
         Ok(ControlFlow::Continue)

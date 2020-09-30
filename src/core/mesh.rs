@@ -1,7 +1,11 @@
 use ::core::ops::Range;
 use std::marker::PhantomData;
 
-use super::{Buffer, BufferInitDescriptor, BufferUsage, Instance, RenderPass};
+use super::{Buffer, BufferInitDescriptor, BufferUsage, Instance};
+
+pub type MeshVertexRange = Range<u32>;
+pub type MeshIndexRange = Range<u32>;
+pub type MeshIndex = u16;
 
 #[derive(Debug)]
 struct TypedBuffer<T: bytemuck::Pod> {
@@ -49,16 +53,14 @@ impl<V: bytemuck::Pod> Mesh<V> {
     }
 }
 
-pub type Index = u16;
-
 #[derive(Debug)]
 pub struct IndexedMesh<V: bytemuck::Pod> {
     vertex_buffer: TypedBuffer<V>,
-    index_buffer: TypedBuffer<Index>,
+    index_buffer: TypedBuffer<MeshIndex>,
 }
 
 impl<V: bytemuck::Pod> IndexedMesh<V> {
-    pub fn new(instance: &Instance, vertex_list: &[V], index_list: &[Index]) -> Self {
+    pub fn new(instance: &Instance, vertex_list: &[V], index_list: &[MeshIndex]) -> Self {
         let vertex_buffer = TypedBuffer::new(instance, vertex_list, BufferUsage::VERTEX);
         let index_buffer = TypedBuffer::new(instance, index_list, BufferUsage::INDEX);
         Self {

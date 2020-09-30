@@ -263,14 +263,10 @@ impl EventHandler<ApplicationError, ApplicationEvent> for ApplicationImpl {
                 );
                 rpass.draw_sprite(
                     &self.sprite_pipeline,
-                    iter::once(sprite::DrawCommandDescriptor {
-                        uniform_constants: &self.sprite_uniform_constants,
-                        draw_mesh_commands: iter::once(sprite::DrawMeshCommandDescriptor {
-                            mesh: &self.quad_mesh,
-                            index_range: 0..self.quad_mesh.index_count(),
-                            push_constants: &push_constants,
-                        }),
-                    }),
+                    &self.sprite_uniform_constants,
+                    &self.quad_mesh,
+                    &push_constants,
+                    0..self.quad_mesh.index_count(),
                 );
             }
             cmd_sequence.submit(&self.instance);

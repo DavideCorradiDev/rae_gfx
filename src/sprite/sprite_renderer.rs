@@ -1,4 +1,4 @@
-use ::core::{iter::IntoIterator, ops::Range};
+use ::core::iter::IntoIterator;
 use std::{convert::Into, default::Default};
 
 use num_traits::Zero;
@@ -40,8 +40,8 @@ unsafe impl bytemuck::Zeroable for Vertex {
 
 unsafe impl bytemuck::Pod for Vertex {}
 
-pub type Index = core::Index;
-
+pub type MeshIndexRange = core::MeshIndexRange;
+pub type MeshIndex = core::MeshIndex;
 pub type Mesh = core::IndexedMesh<Vertex>;
 
 pub trait MeshTemplates {
@@ -327,54 +327,78 @@ impl RenderPipeline {
     }
 }
 
-#[derive(Debug)]
-pub struct DrawMeshCommandDescriptor<'a> {
-    pub mesh: &'a Mesh,
-    pub index_range: Range<u32>,
-    pub push_constants: &'a PushConstants,
-}
-
-#[derive(Debug)]
-pub struct DrawCommandDescriptor<'a, It>
-where
-    It: IntoIterator,
-    It::Item: Into<DrawMeshCommandDescriptor<'a>>,
-{
-    pub uniform_constants: &'a UniformConstants,
-    pub draw_mesh_commands: It,
-}
-
 pub trait Renderer<'a> {
-    fn draw_sprite<It, MeshIt>(&mut self, pipeline: &'a RenderPipeline, draw_commands: It)
-    where
-        It: IntoIterator,
-        It::Item: Into<DrawCommandDescriptor<'a, MeshIt>>,
+    fn draw_sprite(
+        &mut self,
+        pipeline: &'a RenderPipeline,
+        uniform_constants: &'a UniformConstants,
+        mesh: &'a Mesh,
+        push_constants: &'a PushConstants,
+        index_range: MeshIndexRange,
+    );
+
+    fn draw_sprites<UcIt, MeshIt, PcIt, RangeIt>(
+        &mut self,
+        pipeline: &'a RenderPipeline,
+        draw_commands: UcIt,
+    ) where
+        UcIt: IntoIterator,
+        UcIt::Item: Into<(&'a UniformConstants, MeshIt)>,
         MeshIt: IntoIterator,
-        MeshIt::Item: Into<DrawMeshCommandDescriptor<'a>>;
+        MeshIt::Item: Into<(&'a Mesh, PcIt)>,
+        PcIt: IntoIterator,
+        PcIt::Item: Into<(&'a PushConstants, RangeIt)>,
+        RangeIt: IntoIterator,
+        RangeIt::Item: Into<core::MeshIndexRange>;
 }
 
 impl<'a> Renderer<'a> for core::RenderPass<'a> {
-    fn draw_sprite<It, MeshIt>(&mut self, pipeline: &'a RenderPipeline, draw_commands: It)
-    where
-        It: IntoIterator,
-        It::Item: Into<DrawCommandDescriptor<'a, MeshIt>>,
+    fn draw_sprite(
+        &mut self,
+        pipeline: &'a RenderPipeline,
+        uniform_constants: &'a UniformConstants,
+        mesh: &'a Mesh,
+        push_constants: &'a PushConstants,
+        index_range: MeshIndexRange,
+    ) {
+        self.set_pipeline(&pipeline.pipeline);
+        self.set_bind_group(0, &uniform_constants.bind_group, &[]);
+        self.set_index_buffer(mesh.index_buffer().slice(..));
+        self.set_vertex_buffer(0, mesh.vertex_buffer().slice(..));
+        self.set_push_constants(core::ShaderStage::VERTEX, 0, push_constants.as_slice());
+        self.draw_indexed(index_range, 0, 0..1);
+    }
+
+    fn draw_sprites<UcIt, MeshIt, PcIt, RangeIt>(
+        &mut self,
+        pipeline: &'a RenderPipeline,
+        draw_commands: UcIt,
+    ) where
+        UcIt: IntoIterator,
+        UcIt::Item: Into<(&'a UniformConstants, MeshIt)>,
         MeshIt: IntoIterator,
-        MeshIt::Item: Into<DrawMeshCommandDescriptor<'a>>,
+        MeshIt::Item: Into<(&'a Mesh, PcIt)>,
+        PcIt: IntoIterator,
+        PcIt::Item: Into<(&'a PushConstants, RangeIt)>,
+        RangeIt: IntoIterator,
+        RangeIt::Item: Into<core::MeshIndexRange>,
     {
         self.set_pipeline(&pipeline.pipeline);
-        for draw_command in draw_commands.into_iter() {
-            let draw_command = draw_command.into();
-            self.set_bind_group(0, &draw_command.uniform_constants.bind_group, &[]);
-            for draw_mesh_command in draw_command.draw_mesh_commands.into_iter() {
-                let draw_mesh_command = draw_mesh_command.into();
-                self.set_index_buffer(draw_mesh_command.mesh.index_buffer().slice(..));
-                self.set_vertex_buffer(0, draw_mesh_command.mesh.vertex_buffer().slice(..));
-                self.set_push_constants(
-                    core::ShaderStage::VERTEX,
-                    0,
-                    draw_mesh_command.push_constants.as_slice(),
-                );
-                self.draw_indexed(draw_mesh_command.index_range, 0, 0..1);
+        for bind_uc in draw_commands.into_iter() {
+            let bind_uc = bind_uc.into();
+            self.set_bind_group(0, &bind_uc.0.bind_group, &[]);
+            for bind_mesh in bind_uc.1.into_iter() {
+                let bind_mesh = bind_mesh.into();
+                self.set_index_buffer(bind_mesh.0.index_buffer().slice(..));
+                self.set_vertex_buffer(0, bind_mesh.0.vertex_buffer().slice(..));
+                for bind_pc in bind_mesh.1.into_iter() {
+                    let bind_pc = bind_pc.into();
+                    self.set_push_constants(core::ShaderStage::VERTEX, 0, bind_pc.0.as_slice());
+                    for draw_range in bind_pc.1.into_iter() {
+                        let draw_range = draw_range.into();
+                        self.draw_indexed(draw_range, 0, 0..1);
+                    }
+                }
             }
         }
     }

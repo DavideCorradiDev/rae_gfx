@@ -32,8 +32,8 @@ unsafe impl bytemuck::Zeroable for Vertex {
 
 unsafe impl bytemuck::Pod for Vertex {}
 
-pub type Index = core::Index;
-
+pub type MeshIndexRange = core::MeshIndexRange;
+pub type MeshIndex = core::MeshIndex;
 pub type Mesh = core::IndexedMesh<Vertex>;
 
 #[derive(Debug, PartialEq, Clone, Copy, serde::Serialize, serde::Deserialize)]
