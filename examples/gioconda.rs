@@ -1,5 +1,3 @@
-use std::iter;
-
 use rae_app::{
     application::Application,
     event::{ControlFlow, EventHandler, EventLoop},
@@ -279,17 +277,29 @@ impl EventHandler<ApplicationError, ApplicationEvent> for ApplicationImpl {
                 &self.pipeline.render_pass_requirements(),
                 &RenderPassOperations::default(),
             );
+
+            // Single draw
+            // for sprite in &self.sprites {
+            //     rpass.draw_sprite(
+            //         &self.pipeline,
+            //         &sprite.uniform_constants,
+            //         &sprite.mesh,
+            //         &push_constants,
+            //         0..sprite.mesh.index_count(),
+            //     );
+            // }
+
+            // Multiple draw using std::Vec
             for sprite in &self.sprites {
-                rpass.draw_sprite(
+                rpass.draw_sprite_array(
                     &self.pipeline,
-                    iter::once(sprite::DrawCommandDescriptor {
-                        uniform_constants: &sprite.uniform_constants,
-                        draw_mesh_commands: iter::once(sprite::DrawMeshCommandDescriptor {
-                            mesh: &sprite.mesh,
-                            index_range: 0..sprite.mesh.index_count(),
-                            push_constants: &push_constants,
-                        }),
-                    }),
+                    vec![(
+                        &sprite.uniform_constants,
+                        vec![(
+                            &sprite.mesh,
+                            vec![(&push_constants, vec![0..sprite.mesh.index_count()])],
+                        )],
+                    )],
                 );
             }
         }
