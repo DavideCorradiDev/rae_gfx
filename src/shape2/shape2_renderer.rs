@@ -213,7 +213,7 @@ impl<'a> Renderer<'a> for core::RenderPass<'a> {
                 0,
                 draw_command.push_constants.as_slice(),
             );
-            self.draw_indexed_mesh(draw_command.mesh, &draw_command.index_range);
+            self.draw_indexed_mesh_range(draw_command.mesh, draw_command.index_range);
         }
     }
 }
